@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Empenhos - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}Gerenciar Empenhos{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>
+        Novo Empenho
+    </a>
+    <a href="{{ url_for('empenhos.novo_completo') }}" class="btn btn-success">
+        <i class="bi bi-file-earmark-plus me-1"></i>
+        Formulario Completo
+    </a>
+    <a href="{{ url_for('relatorios.importar') }}" class="btn btn-outline-success">
+        <i class="bi bi-cloud-arrow-up me-1"></i>
+        Importar
+    </a>
+    <a href="{{ url_for('relatorios.exportar_excel') }}{{ '?' + request.query_string.decode() if request.query_string else '' }}" class="btn btn-outline-primary">
+        <i class="bi bi-file-earmark-excel me-1"></i>
+        Exportar Excel
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Buscar</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Numero, pregao, contrato ou objeto...">
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Todos os status</option>
+                    <option value="PENDENTE" {% if status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                    <option value="APROVADO" {% if status == 'APROVADO' %}selected{% endif %}>Aprovado</option>
+                    <option value="PAGO" {% if status == 'PAGO' %}selected{% endif %}>Pago</option>
+                    <option value="REJEITADO" {% if status == 'REJEITADO' %}selected{% endif %}>Rejeitado</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>
+                        Filtrar
+                    </button>
+                    <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Limpar
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Acoes Rapidas</label>
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-funnel me-1"></i>
+                        Status
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('empenhos.por_status', status='PENDENTE') }}">Pendentes</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('empenhos.por_status', status='APROVADO') }}">Aprovados</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('empenhos.por_status', status='PAGO') }}">Pagos</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('empenhos.por_status', status='REJEITADO') }}">Rejeitados</a></li>
+                    </ul>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Empenhos -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-file-earmark-text me-2"></i>
+            Lista de Empenhos
+            {% if empenhos.total %}
+                <span class="badge bg-primary">{{ empenhos.total }}</span>
+            {% endif %}
+        </h5>
+        
+        {% if empenhos.total > 0 %}
+        <div class="text-muted small">
+            Mostrando {{ empenhos.per_page * (empenhos.page - 1) + 1 }} - 
+            {{ empenhos.per_page * (empenhos.page - 1) + empenhos.items|length }} 
+            de {{ empenhos.total }} empenhos
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="card-body p-0">
+        {% if empenhos.items %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Empenho</th>
+                        <th>Pregao</th>
+                        <th>Contrato</th>
+                        <th>Objeto</th>
+                        <th>Valor Empenhado</th>
+                        <th>Data</th>
+                        <th>Status</th>
+                        <th>Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for empenho in empenhos.items %}
+                    <tr>
+                        <td>
+                            <strong>{{ empenho.numero_empenho }}</strong>
+                            {% if empenho.numero_aditivo %}
+                                <br><small class="text-muted">Aditivo: {{ empenho.numero_aditivo }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ empenho.numero_pregao }}</td>
+                        <td>{{ empenho.numero_contrato }}</td>
+                        <td>
+                            <div style="max-width: 200px;">
+                                {{ empenho.objeto[:50] }}{% if empenho.objeto|length > 50 %}...{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <strong>{{ format_currency(empenho.valor_empenhado) }}</strong>
+                            {% if empenho.valor_liquido and empenho.valor_liquido != empenho.valor_empenhado %}
+                                <br><small class="text-muted">Liquido: {{ format_currency(empenho.valor_liquido) }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ format_date(empenho.data_empenho) }}</td>
+                        <td>
+                            <span class="badge status-{{ empenho.status.lower() }}">
+                                {{ empenho.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ url_for('empenhos.detalhes', id=empenho.id) }}" 
+                                   class="btn btn-outline-primary" title="Ver detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('empenhos.editar', id=empenho.id) }}" 
+                                   class="btn btn-outline-warning" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" 
+                                        title="Excluir" onclick="confirmarExclusao({{ empenho.id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Paginacao -->
+        {% if empenhos.pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Navegacao de paginas">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if empenhos.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('empenhos.index', page=empenhos.prev_num, search=search, status=status) }}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in empenhos.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != empenhos.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('empenhos.index', page=page_num, search=search, status=status) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if empenhos.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('empenhos.index', page=empenhos.next_num, search=search, status=status) }}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+            <h4 class="text-muted mt-3">Nenhum empenho encontrado</h4>
+            {% if search or status %}
+                <p class="text-muted">Tente ajustar os filtros ou</p>
+                <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Ver todos os empenhos
+                </a>
+            {% else %}
+                <p class="text-muted">Comece criando seu primeiro empenho</p>
+                <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Criar Primeiro Empenho
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de confirmacao de exclusao -->
+<div class="modal fade" id="modalExclusao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusao</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir este empenho?</p>
+                <p class="text-danger small">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Esta acao nao pode ser desfeita.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formExclusao" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>
+                        Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmarExclusao(id) {
+    document.getElementById('formExclusao').action = '/empenhos/' + id + '/excluir';
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
+    modal.show();
+}
+
+// Auto-submit do formulario de filtro quando o status muda
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('status');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+});
+</script>
+{% endblock %}

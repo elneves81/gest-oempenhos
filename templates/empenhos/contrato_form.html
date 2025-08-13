@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if contrato else 'Novo' }} Contrato - Sistema de Empenhos{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-contract mr-2"></i>
+                        {{ 'Editar' if contrato else 'Novo' }} Contrato
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ url_for('empenhos.contratos') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left mr-1"></i>
+                            Voltar
+                        </a>
+                    </div>
+                </div>
+                
+                <form method="POST" class="needs-validation" novalidate>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="numero_pregao">Numero do Pregao <span class="text-danger">*</span></label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="numero_pregao" 
+                                           name="numero_pregao" 
+                                           value="{{ contrato.numero_pregao if contrato else '' }}"
+                                           required>
+                                    <div class="invalid-feedback">
+                                        Por favor, informe o numero do pregao.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="numero_contrato">Numero do Contrato <span class="text-danger">*</span></label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="numero_contrato" 
+                                           name="numero_contrato" 
+                                           value="{{ contrato.numero_contrato if contrato else '' }}"
+                                           required>
+                                    <div class="invalid-feedback">
+                                        Por favor, informe o numero do contrato.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="objeto">Objeto do Contrato <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" 
+                                              id="objeto" 
+                                              name="objeto" 
+                                              rows="3" 
+                                              required>{{ contrato.objeto if contrato else '' }}</textarea>
+                                    <div class="invalid-feedback">
+                                        Por favor, informe o objeto do contrato.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="fornecedor">Fornecedor <span class="text-danger">*</span></label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="fornecedor" 
+                                           name="fornecedor" 
+                                           value="{{ contrato.fornecedor if contrato else '' }}"
+                                           required>
+                                    <div class="invalid-feedback">
+                                        Por favor, informe o fornecedor.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="valor_total">Valor Total <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">R$</span>
+                                        </div>
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="valor_total" 
+                                               name="valor_total" 
+                                               value="{{ contrato.valor_total if contrato else '' }}"
+                                               step="0.01" 
+                                               min="0"
+                                               required>
+                                        <div class="invalid-feedback">
+                                            Por favor, informe o valor total.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="data_assinatura">Data de Assinatura <span class="text-danger">*</span></label>
+                                    <input type="date" 
+                                           class="form-control" 
+                                           id="data_assinatura" 
+                                           name="data_assinatura" 
+                                           value="{{ contrato.data_assinatura.strftime('%Y-%m-%d') if contrato and contrato.data_assinatura else '' }}"
+                                           required>
+                                    <div class="invalid-feedback">
+                                        Por favor, informe a data de assinatura.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="data_inicio">Data de Inicio <span class="text-danger">*</span></label>
+                                    <input type="date" 
+                                           class="form-control" 
+                                           id="data_inicio" 
+                                           name="data_inicio" 
+                                           value="{{ contrato.data_inicio.strftime('%Y-%m-%d') if contrato and contrato.data_inicio else '' }}"
+                                           required>
+                                    <div class="invalid-feedback">
+                                        Por favor, informe a data de inicio.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="data_fim">Data de Fim <span class="text-danger">*</span></label>
+                                    <input type="date" 
+                                           class="form-control" 
+                                           id="data_fim" 
+                                           name="data_fim" 
+                                           value="{{ contrato.data_fim.strftime('%Y-%m-%d') if contrato and contrato.data_fim else '' }}"
+                                           required>
+                                    <div class="invalid-feedback">
+                                        Por favor, informe a data de fim.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="status">Status</label>
+                                    <select class="form-control" id="status" name="status">
+                                        <option value="ATIVO" {{ 'selected' if contrato and contrato.status == 'ATIVO' else '' }}>Ativo</option>
+                                        <option value="INATIVO" {{ 'selected' if contrato and contrato.status == 'INATIVO' else '' }}>Inativo</option>
+                                        <option value="VENCIDO" {{ 'selected' if contrato and contrato.status == 'VENCIDO' else '' }}>Vencido</option>
+                                        <option value="RESCINDIDO" {{ 'selected' if contrato and contrato.status == 'RESCINDIDO' else '' }}>Rescindido</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-1"></i>
+                                    {{ 'Atualizar' if contrato else 'Salvar' }} Contrato
+                                </button>
+                                <a href="{{ url_for('empenhos.contratos') }}" class="btn btn-secondary ml-2">
+                                    <i class="fas fa-times mr-1"></i>
+                                    Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validacao do formulario
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Validacao de datas
+document.getElementById('data_inicio').addEventListener('change', function() {
+    var dataInicio = new Date(this.value);
+    var dataFim = document.getElementById('data_fim');
+    
+    if (dataFim.value) {
+        var dataFimValue = new Date(dataFim.value);
+        if (dataInicio > dataFimValue) {
+            alert('A data de inicio nao pode ser posterior a data de fim.');
+            this.focus();
+        }
+    }
+});
+
+document.getElementById('data_fim').addEventListener('change', function() {
+    var dataFim = new Date(this.value);
+    var dataInicio = document.getElementById('data_inicio');
+    
+    if (dataInicio.value) {
+        var dataInicioValue = new Date(dataInicio.value);
+        if (dataFim < dataInicioValue) {
+            alert('A data de fim nao pode ser anterior a data de inicio.');
+            this.focus();
+        }
+    }
+});
+</script>
+{% endblock %}

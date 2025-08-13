@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Empenho {{ empenho.numero_empenho }} - Sistema de Empenhos{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-invoice-dollar mr-2"></i>
+                        Detalhes do Empenho - {{ empenho.numero_empenho }}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ url_for('empenhos.index') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left mr-1"></i>
+                            Voltar
+                        </a>
+                        <a href="{{ url_for('empenhos.editar', id=empenho.id) }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit mr-1"></i>
+                            Editar
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Informacoes Basicas -->
+                        <div class="col-md-6">
+                            <h5 class="mb-3">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Informacoes Basicas
+                            </h5>
+                            
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Numero do Empenho:</strong></td>
+                                    <td>{{ empenho.numero_empenho }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Data do Empenho:</strong></td>
+                                    <td>{{ empenho.data_empenho.strftime('%d/%m/%Y') if empenho.data_empenho else '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Numero do Pregao:</strong></td>
+                                    <td>{{ empenho.numero_pregao }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Numero do Contrato:</strong></td>
+                                    <td>{{ empenho.numero_contrato }}</td>
+                                </tr>
+                                {% if empenho.numero_aditivo %}
+                                <tr>
+                                    <td><strong>Numero do Aditivo:</strong></td>
+                                    <td>{{ empenho.numero_aditivo }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if empenho.status == 'PENDENTE' %}
+                                            <span class="badge badge-warning">{{ empenho.status }}</span>
+                                        {% elif empenho.status == 'APROVADO' %}
+                                            <span class="badge badge-success">{{ empenho.status }}</span>
+                                        {% elif empenho.status == 'REJEITADO' %}
+                                            <span class="badge badge-danger">{{ empenho.status }}</span>
+                                        {% elif empenho.status == 'PAGO' %}
+                                            <span class="badge badge-info">{{ empenho.status }}</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">{{ empenho.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <!-- Informacoes Financeiras -->
+                        <div class="col-md-6">
+                            <h5 class="mb-3">
+                                <i class="fas fa-calculator mr-2"></i>
+                                Informacoes Financeiras
+                            </h5>
+                            
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Valor Empenhado:</strong></td>
+                                    <td class="text-success">
+                                        <strong>R$ {{ "{:,.2f}".format(empenho.valor_empenhado).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
+                                    </td>
+                                </tr>
+                                {% if empenho.valor_unitario %}
+                                <tr>
+                                    <td><strong>Valor Unitario:</strong></td>
+                                    <td>R$ {{ "{:,.2f}".format(empenho.valor_unitario).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if empenho.quantidade %}
+                                <tr>
+                                    <td><strong>Quantidade:</strong></td>
+                                    <td>{{ empenho.quantidade }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if empenho.percentual_retencao %}
+                                <tr>
+                                    <td><strong>Percentual de Retencao:</strong></td>
+                                    <td>{{ empenho.percentual_retencao }}%</td>
+                                </tr>
+                                {% endif %}
+                                {% if empenho.valor_retencao %}
+                                <tr>
+                                    <td><strong>Valor de Retencao:</strong></td>
+                                    <td class="text-warning">
+                                        R$ {{ "{:,.2f}".format(empenho.valor_retencao).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if empenho.valor_liquido %}
+                                <tr>
+                                    <td><strong>Valor Liquido:</strong></td>
+                                    <td class="text-primary">
+                                        <strong>R$ {{ "{:,.2f}".format(empenho.valor_liquido).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if empenho.saldo_remanescente %}
+                                <tr>
+                                    <td><strong>Saldo Remanescente:</strong></td>
+                                    <td>R$ {{ "{:,.2f}".format(empenho.saldo_remanescente).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Objeto do Empenho -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5 class="mb-3">
+                                <i class="fas fa-clipboard-list mr-2"></i>
+                                Objeto do Empenho
+                            </h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <p class="mb-0">{{ empenho.objeto }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Informacoes Orcamentarias -->
+                    {% if empenho.dotacao_orcamentaria or empenho.fonte_recursos or empenho.modalidade_aplicacao or empenho.elemento_despesa or empenho.processo_administrativo or empenho.cpf_cnpj_credor %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5 class="mb-3">
+                                <i class="fas fa-university mr-2"></i>
+                                Informacoes Orcamentarias e Fiscais
+                            </h5>
+                            
+                            <div class="row">
+                                {% if empenho.dotacao_orcamentaria %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-primary">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-primary">
+                                                <i class="fas fa-chart-pie mr-1"></i> Dotacao Orcamentaria
+                                            </h6>
+                                            <p class="card-text font-monospace">{{ empenho.dotacao_orcamentaria }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if empenho.fonte_recursos %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-success">
+                                                <i class="fas fa-dollar-sign mr-1"></i> Fonte de Recursos
+                                            </h6>
+                                            <p class="card-text">
+                                                {{ empenho.fonte_recursos }} - 
+                                                {% if empenho.fonte_recursos == '100' %}Recursos Ordinarios
+                                                {% elif empenho.fonte_recursos == '102' %}Recursos Vinculados
+                                                {% elif empenho.fonte_recursos == '142' %}Transferencias da Uniao
+                                                {% elif empenho.fonte_recursos == '143' %}Transferencias dos Estados
+                                                {% elif empenho.fonte_recursos == '144' %}Transferencias dos Municipios
+                                                {% elif empenho.fonte_recursos == '170' %}Recursos de Convenios
+                                                {% else %}{{ empenho.fonte_recursos }}
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if empenho.modalidade_aplicacao %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-info">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-info">
+                                                <i class="fas fa-cogs mr-1"></i> Modalidade de Aplicacao
+                                            </h6>
+                                            <p class="card-text">
+                                                {{ empenho.modalidade_aplicacao }} - 
+                                                {% if empenho.modalidade_aplicacao == '90' %}Aplicacoes Diretas
+                                                {% elif empenho.modalidade_aplicacao == '91' %}Aplicacao Direta Decorrente de Operacao entre Orgaos
+                                                {% elif empenho.modalidade_aplicacao == '40' %}Transferencias a Municipios
+                                                {% elif empenho.modalidade_aplicacao == '50' %}Transferencias a Instituicoes Privadas
+                                                {% else %}{{ empenho.modalidade_aplicacao }}
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if empenho.elemento_despesa %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-warning">
+                                                <i class="fas fa-list-ol mr-1"></i> Elemento de Despesa
+                                            </h6>
+                                            <p class="card-text font-monospace">{{ empenho.elemento_despesa }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if empenho.processo_administrativo %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-secondary">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-secondary">
+                                                <i class="fas fa-folder-open mr-1"></i> Processo Administrativo
+                                            </h6>
+                                            <p class="card-text">{{ empenho.processo_administrativo }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if empenho.cpf_cnpj_credor %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-dark">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-dark">
+                                                <i class="fas fa-id-card mr-1"></i> CPF/CNPJ do Credor
+                                            </h6>
+                                            <p class="card-text font-monospace">{{ empenho.cpf_cnpj_credor }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Datas Importantes -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">
+                                <i class="fas fa-calendar mr-2"></i>
+                                Datas Importantes
+                            </h5>
+                            
+                            <table class="table table-borderless">
+                                {% if empenho.data_envio %}
+                                <tr>
+                                    <td><strong>Data de Envio:</strong></td>
+                                    <td>{{ empenho.data_envio.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if empenho.data_vencimento %}
+                                <tr>
+                                    <td><strong>Data de Vencimento:</strong></td>
+                                    <td>
+                                        {{ empenho.data_vencimento.strftime('%d/%m/%Y') }}
+                                        {% set dias_restantes = (empenho.data_vencimento - moment().date()).days %}
+                                        {% if dias_restantes < 0 %}
+                                            <span class="badge badge-danger ml-2">Vencido</span>
+                                        {% elif dias_restantes <= 7 %}
+                                            <span class="badge badge-warning ml-2">{{ dias_restantes }} dias</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if empenho.periodo_referencia %}
+                                <tr>
+                                    <td><strong>Periodo de Referencia:</strong></td>
+                                    <td>{{ empenho.periodo_referencia }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td><strong>Data de Criacao:</strong></td>
+                                    <td>{{ empenho.data_criacao.strftime('%d/%m/%Y as %H:%M') if empenho.data_criacao else '-' }}</td>
+                                </tr>
+                                {% if empenho.data_atualizacao %}
+                                <tr>
+                                    <td><strong>Ultima Atualizacao:</strong></td>
+                                    <td>{{ empenho.data_atualizacao.strftime('%d/%m/%Y as %H:%M') }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                        
+                        <!-- Informacoes Adicionais -->
+                        <div class="col-md-6">
+                            <h5 class="mb-3">
+                                <i class="fas fa-plus-circle mr-2"></i>
+                                Informacoes Adicionais
+                            </h5>
+                            
+                            <table class="table table-borderless">
+                                {% if empenho.unidade_mensal %}
+                                <tr>
+                                    <td><strong>Unidade Mensal:</strong></td>
+                                    <td>{{ empenho.unidade_mensal }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if empenho.nota_fiscal %}
+                                <tr>
+                                    <td><strong>Nota Fiscal:</strong></td>
+                                    <td>{{ empenho.nota_fiscal }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if empenho.usuario %}
+                                <tr>
+                                    <td><strong>Criado por:</strong></td>
+                                    <td>{{ empenho.usuario.nome }} ({{ empenho.usuario.username }})</td>
+                                </tr>
+                                {% endif %}
+                                {% if empenho.contrato %}
+                                <tr>
+                                    <td><strong>Contrato Relacionado:</strong></td>
+                                    <td>
+                                        <a href="{{ url_for('empenhos.visualizar_contrato', id=empenho.contrato.id) }}">
+                                            {{ empenho.contrato.numero_contrato }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Observacoes -->
+                    {% if empenho.observacoes %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5 class="mb-3">
+                                <i class="fas fa-sticky-note mr-2"></i>
+                                Observacoes
+                            </h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <p class="mb-0">{{ empenho.observacoes }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <a href="{{ url_for('empenhos.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left mr-1"></i>
+                                Voltar a Lista
+                            </a>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <a href="{{ url_for('empenhos.editar', id=empenho.id) }}" class="btn btn-primary">
+                                <i class="fas fa-edit mr-1"></i>
+                                Editar Empenho
+                            </a>
+                            <div class="btn-group ml-2">
+                                <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown">
+                                    <i class="fas fa-download mr-1"></i>
+                                    Exportar
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="#" onclick="window.print()">
+                                        <i class="fas fa-print mr-2"></i>
+                                        Imprimir
+                                    </a>
+                                    <a class="dropdown-item" href="{{ url_for('relatorios.exportar_pdf') }}">
+                                        <i class="fas fa-file-pdf mr-2"></i>
+                                        PDF
+                                    </a>
+                                    <a class="dropdown-item" href="{{ url_for('relatorios.exportar_excel') }}">
+                                        <i class="fas fa-file-excel mr-2"></i>
+                                        Excel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .card-header .card-tools,
+    .card-footer,
+    .btn,
+    .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
+
+.table-borderless td {
+    border: none;
+    padding: 0.25rem 0.75rem;
+}
+
+.table-borderless td:first-child {
+    width: 200px;
+}
+</style>
+{% endblock %}

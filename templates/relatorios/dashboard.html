@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Relatorios{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4 text-gray-800">
+                <i class="fas fa-chart-bar"></i> Dashboard - Relatorios
+            </h1>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total de Empenhos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_empenhos or 0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-invoice fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Valor Total Empenhado
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                R$ {{ "%.2f"|format(valor_total_empenhado or 0) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Valor Total Liquido
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                R$ {{ "%.2f"|format(valor_total_liquido or 0) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calculator fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Contratos Ativos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ top_contratos|length if top_contratos else 0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-handshake fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graficos e Tabelas -->
+    <div class="row">
+        <!-- Empenhos por Status -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Empenhos por Status</h6>
+                </div>
+                <div class="card-body">
+                    {% if empenhos_por_status %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Quantidade</th>
+                                    <th>Valor Total</th>
+                                    <th>Percentual</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for resultado in empenhos_por_status %}
+                                <tr>
+                                    <td>
+                                        <span class="badge badge-{% if resultado.status == 'PAGO' %}success{% elif resultado.status == 'PENDENTE' %}warning{% else %}secondary{% endif %}">
+                                            {{ resultado.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ resultado.quantidade }}</td>
+                                    <td>R$ {{ "{:,.2f}".format(resultado.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                                    <td>{{ "%.1f"|format((resultado.quantidade / total_empenhos * 100) if total_empenhos else 0) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nenhum dado disponivel</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Contratos -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Top 10 Contratos por Valor</h6>
+                </div>
+                <div class="card-body">
+                    {% if top_contratos %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Contrato</th>
+                                    <th>Valor Total</th>
+                                    <th>Qtd. Empenhos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for contrato in top_contratos %}
+                                <tr>
+                                    <td>{{ contrato.numero_contrato }}</td>
+                                    <td>R$ {{ "%.2f"|format(contrato.valor_total) }}</td>
+                                    <td>{{ contrato.quantidade }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nenhum contrato encontrado</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empenhos por Mes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Empenhos por Mes</h6>
+                </div>
+                <div class="card-body">
+                    {% if empenhos_por_mes %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Mes/Ano</th>
+                                    <th>Quantidade</th>
+                                    <th>Valor Total</th>
+                                    <th>Valor Medio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mes in empenhos_por_mes %}
+                                <tr>
+                                    <td>{{ mes.mes }}/{{ mes.ano }}</td>
+                                    <td>{{ mes.quantidade }}</td>
+                                    <td>R$ {{ "%.2f"|format(mes.valor_total) }}</td>
+                                    <td>R$ {{ "%.2f"|format(mes.valor_total / mes.quantidade if mes.quantidade else 0) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nenhum dado disponivel</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botoes de Acao -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Acoes</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('relatorios.importar') }}" class="btn btn-success btn-block">
+                                <i class="fas fa-upload"></i> Importar Dados
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('empenhos.index') }}" class="btn btn-primary btn-block">
+                                <i class="fas fa-list"></i> Ver Empenhos
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('empenhos.contratos') }}" class="btn btn-info btn-block">
+                                <i class="fas fa-handshake"></i> Ver Contratos
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button class="btn btn-secondary btn-block" onclick="window.print()">
+                                <i class="fas fa-print"></i> Imprimir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .card-header, .navbar, .sidebar {
+        display: none !important;
+    }
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+}
+</style>
+{% endblock %}

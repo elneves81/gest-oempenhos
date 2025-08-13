@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ 'Editar Empenho' if empenho else 'Novo Empenho' }} - Sistema de Empenhos
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-file-invoice"></i> 
+                        {{ 'Editar Empenho' if empenho else 'Novo Empenho' }}
+                    </h1>
+                    <p class="text-muted">Preencha todas as informacoes do empenho</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('empenhos.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit"></i> Formulario de Empenho
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="formEmpenho">
+                        <!-- Identificadores Basicos -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-id-card"></i> Identificadores Basicos
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="numero_pregao" class="form-label">Pregao *</label>
+                                <input type="text" class="form-control" id="numero_pregao" name="numero_pregao" 
+                                       value="{{ empenho.numero_pregao if empenho else '' }}" required>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="numero_ctr" class="form-label">N° CTR</label>
+                                <input type="text" class="form-control" id="numero_ctr" name="numero_ctr" 
+                                       value="{{ empenho.numero_ctr if empenho else '' }}">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="numero_contrato" class="form-label">Contrato *</label>
+                                <input type="text" class="form-control" id="numero_contrato" name="numero_contrato" 
+                                       value="{{ empenho.numero_contrato if empenho else '' }}" required>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="numero_empenho" class="form-label">N° Empenho *</label>
+                                <input type="text" class="form-control" id="numero_empenho" name="numero_empenho" 
+                                       value="{{ empenho.numero_empenho if empenho else '' }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Objeto e Fornecedor -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-clipboard-list"></i> Objeto e Fornecedor
+                                </h6>
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <label for="resumo_objeto" class="form-label">Resumo do Objeto *</label>
+                                <textarea class="form-control" id="resumo_objeto" name="resumo_objeto" rows="3" required>{{ empenho.resumo_objeto if empenho else '' }}</textarea>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="fornecedores" class="form-label">Fornecedores</label>
+                                <input type="text" class="form-control" id="fornecedores" name="fornecedores" 
+                                       value="{{ empenho.fornecedores if empenho else '' }}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="gestor_fiscal_e_superior" class="form-label">Gestor Fiscal e Superior</label>
+                                <input type="text" class="form-control" id="gestor_fiscal_e_superior" name="gestor_fiscal_e_superior" 
+                                       value="{{ empenho.gestor_fiscal_e_superior if empenho else '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Datas Principais -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-calendar-alt"></i> Datas Principais
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="data_assinatura" class="form-label">Data de Assinatura</label>
+                                <input type="date" class="form-control" id="data_assinatura" name="data_assinatura" 
+                                       value="{{ empenho.data_assinatura.strftime('%Y-%m-%d') if empenho and empenho.data_assinatura else '' }}">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="data_limite" class="form-label">Data Limite</label>
+                                <input type="date" class="form-control" id="data_limite" name="data_limite" 
+                                       value="{{ empenho.data_limite.strftime('%Y-%m-%d') if empenho and empenho.data_limite else '' }}">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="data_empenho" class="form-label">Data do Empenho *</label>
+                                <input type="date" class="form-control" id="data_empenho" name="data_empenho" 
+                                       value="{{ empenho.data_empenho.strftime('%Y-%m-%d') if empenho and empenho.data_empenho else '' }}" required>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="data_vencimento" class="form-label">Data de Vencimento</label>
+                                <input type="date" class="form-control" id="data_vencimento" name="data_vencimento" 
+                                       value="{{ empenho.data_vencimento.strftime('%Y-%m-%d') if empenho and empenho.data_vencimento else '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Informacoes Orcamentarias e Fiscais -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-university"></i> Informacoes Orcamentarias e Fiscais
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="dotacao_orcamentaria" class="form-label">Dotacao Orcamentaria *</label>
+                                <input type="text" class="form-control" id="dotacao_orcamentaria" name="dotacao_orcamentaria" 
+                                       value="{{ empenho.dotacao_orcamentaria if empenho else '' }}" required
+                                       placeholder="Ex: 02.04.01.122.0001.2001.3390.39.00">
+                                <div class="form-text">Codigo da dotacao orcamentaria conforme LOA</div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="fonte_recursos" class="form-label">Fonte de Recursos *</label>
+                                <select class="form-select" id="fonte_recursos" name="fonte_recursos" required>
+                                    <option value="">Selecione a fonte</option>
+                                    <option value="100" {{ 'selected' if empenho and empenho.fonte_recursos == '100' else '' }}>100 - Recursos Ordinarios</option>
+                                    <option value="102" {{ 'selected' if empenho and empenho.fonte_recursos == '102' else '' }}>102 - Recursos Vinculados</option>
+                                    <option value="142" {{ 'selected' if empenho and empenho.fonte_recursos == '142' else '' }}>142 - Transferencias da Uniao</option>
+                                    <option value="143" {{ 'selected' if empenho and empenho.fonte_recursos == '143' else '' }}>143 - Transferencias dos Estados</option>
+                                    <option value="144" {{ 'selected' if empenho and empenho.fonte_recursos == '144' else '' }}>144 - Transferencias dos Municipios</option>
+                                    <option value="170" {{ 'selected' if empenho and empenho.fonte_recursos == '170' else '' }}>170 - Recursos de Convenios</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="modalidade_aplicacao" class="form-label">Modalidade de Aplicacao *</label>
+                                <select class="form-select" id="modalidade_aplicacao" name="modalidade_aplicacao" required>
+                                    <option value="">Selecione a modalidade</option>
+                                    <option value="90" {{ 'selected' if empenho and empenho.modalidade_aplicacao == '90' else '' }}>90 - Aplicacoes Diretas</option>
+                                    <option value="91" {{ 'selected' if empenho and empenho.modalidade_aplicacao == '91' else '' }}>91 - Aplicacao Direta Decorrente de Operacao entre Orgaos</option>
+                                    <option value="40" {{ 'selected' if empenho and empenho.modalidade_aplicacao == '40' else '' }}>40 - Transferencias a Municipios</option>
+                                    <option value="50" {{ 'selected' if empenho and empenho.modalidade_aplicacao == '50' else '' }}>50 - Transferencias a Instituicoes Privadas</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="elemento_despesa" class="form-label">Elemento de Despesa *</label>
+                                <input type="text" class="form-control" id="elemento_despesa" name="elemento_despesa" 
+                                       value="{{ empenho.elemento_despesa if empenho else '' }}" required
+                                       placeholder="Ex: 3.3.90.30.00">
+                                <div class="form-text">Codigo do elemento de despesa</div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="processo_administrativo" class="form-label">Processo Administrativo</label>
+                                <input type="text" class="form-control" id="processo_administrativo" name="processo_administrativo" 
+                                       value="{{ empenho.processo_administrativo if empenho else '' }}"
+                                       placeholder="Ex: 2024.001.123">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="cpf_cnpj_credor" class="form-label">CPF/CNPJ do Credor *</label>
+                                <input type="text" class="form-control" id="cpf_cnpj_credor" name="cpf_cnpj_credor" 
+                                       value="{{ empenho.cpf_cnpj_credor if empenho else '' }}" required
+                                       placeholder="000.000.000-00 ou 00.000.000/0001-00">
+                            </div>
+                        </div>
+
+                        <!-- Valores Financeiros -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-dollar-sign"></i> Valores Financeiros
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="valor_empenhado" class="form-label">Valor Empenhado *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" class="form-control" id="valor_empenhado" name="valor_empenhado" 
+                                           step="0.01" min="0" value="{{ empenho.valor_empenhado if empenho else '' }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="valor_periodo" class="form-label">Valor Periodo</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" class="form-control" id="valor_periodo" name="valor_periodo" 
+                                           step="0.01" min="0" value="{{ empenho.valor_periodo if empenho else '' }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="percentual_retencao" class="form-label">% Retencao</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="percentual_retencao" name="percentual_retencao" 
+                                           step="0.01" min="0" max="100" value="{{ empenho.percentual_retencao if empenho else '0' }}">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informacoes Complementares -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-info"></i> Informacoes Complementares
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="PENDENTE" {{ 'selected' if empenho and empenho.status == 'PENDENTE' else '' }}>Pendente</option>
+                                    <option value="APROVADO" {{ 'selected' if empenho and empenho.status == 'APROVADO' else '' }}>Aprovado</option>
+                                    <option value="REJEITADO" {{ 'selected' if empenho and empenho.status == 'REJEITADO' else '' }}>Rejeitado</option>
+                                    <option value="PAGO" {{ 'selected' if empenho and empenho.status == 'PAGO' else '' }}>Pago</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="nota_fiscal" class="form-label">Nota Fiscal</label>
+                                <input type="text" class="form-control" id="nota_fiscal" name="nota_fiscal" 
+                                       value="{{ empenho.nota_fiscal if empenho else '' }}">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="periodo_referencia" class="form-label">Periodo de Referencia</label>
+                                <input type="text" class="form-control" id="periodo_referencia" name="periodo_referencia" 
+                                       value="{{ empenho.periodo_referencia if empenho else '' }}">
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <label for="observacoes" class="form-label">Observacoes</label>
+                                <textarea class="form-control" id="observacoes" name="observacoes" rows="3">{{ empenho.observacoes if empenho else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Botoes -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('empenhos.index') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> 
+                                        {{ 'Atualizar' if empenho else 'Salvar' }} Empenho
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.text-primary {
+    color: #0d6efd !important;
+}
+
+.border-bottom {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.btn {
+    border-radius: 0.375rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculo automatico de valores
+    const valorEmpenhado = document.getElementById('valor_empenhado');
+    const percentualRetencao = document.getElementById('percentual_retencao');
+    
+    function calcularValores() {
+        const valor = parseFloat(valorEmpenhado.value) || 0;
+        const percentual = parseFloat(percentualRetencao.value) || 0;
+        
+        // Aqui voce pode adicionar logica para calcular outros valores automaticamente
+        console.log('Valor Empenhado:', valor);
+        console.log('Percentual Retencao:', percentual);
+    }
+    
+    valorEmpenhado.addEventListener('input', calcularValores);
+    percentualRetencao.addEventListener('input', calcularValores);
+    
+    // Validacao do formulario
+    document.getElementById('formEmpenho').addEventListener('submit', function(e) {
+        const requiredFields = this.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Por favor, preencha todos os campos obrigatorios.');
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if empenho else 'Novo' }} Empenho - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}{{ 'Editar' if empenho else 'Novo' }} Empenho{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>
+        Voltar
+    </a>
+    {% if empenho %}
+    <a href="{{ url_for('empenhos.detalhes', id=empenho.id) }}" class="btn btn-outline-primary">
+        <i class="bi bi-eye me-1"></i>
+        Ver Detalhes
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-{{ 'pencil' if empenho else 'plus-circle' }} me-2"></i>
+                    {{ 'Editar' if empenho else 'Criar Novo' }} Empenho
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="formEmpenho">
+                    <!-- Dados Basicos -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Dados Basicos
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="numero_pregao" class="form-label">Pregao *</label>
+                            <input type="text" class="form-control" id="numero_pregao" name="numero_pregao" 
+                                   value="{{ empenho.numero_pregao if empenho else '' }}" required>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="numero_contrato" class="form-label">Contrato *</label>
+                            <input type="text" class="form-control" id="numero_contrato" name="numero_contrato" 
+                                   value="{{ empenho.numero_contrato if empenho else '' }}" required>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="numero_aditivo" class="form-label">Aditivo</label>
+                            <input type="text" class="form-control" id="numero_aditivo" name="numero_aditivo" 
+                                   value="{{ empenho.numero_aditivo if empenho else '' }}">
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="objeto" class="form-label">Objeto *</label>
+                            <textarea class="form-control" id="objeto" name="objeto" rows="3" required>{{ empenho.objeto if empenho else '' }}</textarea>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="unidade_mensal" class="form-label">Unidade Mensal</label>
+                            <input type="text" class="form-control" id="unidade_mensal" name="unidade_mensal" 
+                                   value="{{ empenho.unidade_mensal if empenho else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="valor_unitario" class="form-label">Valor Unitario</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_unitario" name="valor_unitario" 
+                                       step="0.01" min="0" value="{{ empenho.valor_unitario if empenho else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dados do Empenho -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-file-earmark-text me-1"></i>
+                                Dados do Empenho
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="numero_empenho" class="form-label">Numero do Empenho *</label>
+                            <input type="text" class="form-control" id="numero_empenho" name="numero_empenho" 
+                                   value="{{ empenho.numero_empenho if empenho else '' }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="data_empenho" class="form-label">Data do Empenho *</label>
+                            <input type="date" class="form-control" id="data_empenho" name="data_empenho" 
+                                   value="{{ empenho.data_empenho.strftime('%Y-%m-%d') if empenho and empenho.data_empenho else '' }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="valor_empenhado" class="form-label">Valor Empenhado *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_empenhado" name="valor_empenhado" 
+                                       step="0.01" min="0" value="{{ empenho.valor_empenhado if empenho else '' }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="quantidade" class="form-label">Quantidade</label>
+                            <input type="number" class="form-control" id="quantidade" name="quantidade" 
+                                   step="0.01" min="0" value="{{ empenho.quantidade if empenho else '' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- Dados Financeiros -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-currency-dollar me-1"></i>
+                                Dados Financeiros
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="valor_periodo" class="form-label">Valor do Periodo</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_periodo" name="valor_periodo" 
+                                       step="0.01" min="0" value="{{ empenho.valor_periodo if empenho else '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="percentual_retencao" class="form-label">Retencao (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="percentual_retencao" name="percentual_retencao" 
+                                       step="0.01" min="0" max="100" value="{{ empenho.percentual_retencao if empenho else '0' }}">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="valor_retencao" class="form-label">Valor Retencao</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_retencao" name="valor_retencao" 
+                                       step="0.01" min="0" value="{{ empenho.valor_retencao if empenho else '0' }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="valor_liquido" class="form-label">Valor Liquido</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_liquido" name="valor_liquido" 
+                                       step="0.01" min="0" value="{{ empenho.valor_liquido if empenho else '0' }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="saldo_remanescente" class="form-label">Saldo Remanescente</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="saldo_remanescente" name="saldo_remanescente" 
+                                       step="0.01" value="{{ empenho.saldo_remanescente if empenho else '0' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Datas e Periodo -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-calendar me-1"></i>
+                                Datas e Periodo
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="data_envio" class="form-label">Data de Envio</label>
+                            <input type="date" class="form-control" id="data_envio" name="data_envio" 
+                                   value="{{ empenho.data_envio.strftime('%Y-%m-%d') if empenho and empenho.data_envio else '' }}">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="data_vencimento" class="form-label">Data de Vencimento</label>
+                            <input type="date" class="form-control" id="data_vencimento" name="data_vencimento" 
+                                   value="{{ empenho.data_vencimento.strftime('%Y-%m-%d') if empenho and empenho.data_vencimento else '' }}">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="periodo_referencia" class="form-label">Periodo de Referencia</label>
+                            <input type="text" class="form-control" id="periodo_referencia" name="periodo_referencia" 
+                                   value="{{ empenho.periodo_referencia if empenho else '' }}" placeholder="Ex: 01/2024">
+                        </div>
+                    </div>
+                    
+                    <!-- Status e Observacoes -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-gear me-1"></i>
+                                Status e Observacoes
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="PENDENTE" {% if not empenho or empenho.status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                                <option value="APROVADO" {% if empenho and empenho.status == 'APROVADO' %}selected{% endif %}>Aprovado</option>
+                                <option value="PAGO" {% if empenho and empenho.status == 'PAGO' %}selected{% endif %}>Pago</option>
+                                <option value="REJEITADO" {% if empenho and empenho.status == 'REJEITADO' %}selected{% endif %}>Rejeitado</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="nota_fiscal" class="form-label">Nota Fiscal</label>
+                            <input type="text" class="form-control" id="nota_fiscal" name="nota_fiscal" 
+                                   value="{{ empenho.nota_fiscal if empenho else '' }}">
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="observacoes" class="form-label">Observacoes</label>
+                            <textarea class="form-control" id="observacoes" name="observacoes" rows="3">{{ empenho.observacoes if empenho else '' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Botoes -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    {{ 'Atualizar' if empenho else 'Criar' }} Empenho
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar com dicas -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-lightbulb me-1"></i>
+                    Dicas de Preenchimento
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <div class="mb-3">
+                        <strong>Campos Obrigatorios:</strong>
+                        <ul class="mt-1 mb-0">
+                            <li>Pregao</li>
+                            <li>Contrato</li>
+                            <li>Objeto</li>
+                            <li>Numero do Empenho</li>
+                            <li>Data do Empenho</li>
+                            <li>Valor Empenhado</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Calculos Automaticos:</strong>
+                        <p class="mt-1 mb-0">Os valores de retencao e liquido sao calculados automaticamente baseados no valor empenhado e percentual de retencao.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <ul class="mt-1 mb-0">
+                            <li><span class="badge status-pendente">PENDENTE</span> - Aguardando aprovacao</li>
+                            <li><span class="badge status-aprovado">APROVADO</span> - Aprovado para pagamento</li>
+                            <li><span class="badge status-pago">PAGO</span> - Pagamento realizado</li>
+                            <li><span class="badge status-rejeitado">REJEITADO</span> - Rejeitado</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if empenho %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Informacoes do Registro
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <p class="mb-1">
+                        <strong>Criado em:</strong><br>
+                        {{ format_date(empenho.data_criacao) }} as {{ empenho.data_criacao.strftime('%H:%M') if empenho.data_criacao else '' }}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Ultima atualizacao:</strong><br>
+                        {{ format_date(empenho.data_atualizacao) }} as {{ empenho.data_atualizacao.strftime('%H:%M') if empenho.data_atualizacao else '' }}
+                    </p>
+                    <p class="mb-0">
+                        <strong>Criado por:</strong><br>
+                        {{ empenho.usuario.nome if empenho.usuario else 'N/A' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Calcular valores automaticamente
+function calcularValores() {
+    const valorEmpenhado = parseFloat(document.getElementById('valor_empenhado').value) || 0;
+    const percentualRetencao = parseFloat(document.getElementById('percentual_retencao').value) || 0;
+    
+    const valorRetencao = valorEmpenhado * (percentualRetencao / 100);
+    const valorLiquido = valorEmpenhado - valorRetencao;
+    
+    document.getElementById('valor_retencao').value = valorRetencao.toFixed(2);
+    document.getElementById('valor_liquido').value = valorLiquido.toFixed(2);
+}
+
+// Event listeners para calculo automatico
+document.addEventListener('DOMContentLoaded', function() {
+    const valorEmpenhado = document.getElementById('valor_empenhado');
+    const percentualRetencao = document.getElementById('percentual_retencao');
+    
+    if (valorEmpenhado) {
+        valorEmpenhado.addEventListener('input', calcularValores);
+        valorEmpenhado.addEventListener('change', calcularValores);
+    }
+    
+    if (percentualRetencao) {
+        percentualRetencao.addEventListener('input', calcularValores);
+        percentualRetencao.addEventListener('change', calcularValores);
+    }
+    
+    // Calcular valores iniciais se estiver editando
+    if (document.getElementById('valor_empenhado').value) {
+        calcularValores();
+    }
+});
+
+// Validacao do formulario
+document.getElementById('formEmpenho').addEventListener('submit', function(e) {
+    const valorEmpenhado = parseFloat(document.getElementById('valor_empenhado').value);
+    const percentualRetencao = parseFloat(document.getElementById('percentual_retencao').value);
+    
+    if (valorEmpenhado <= 0) {
+        e.preventDefault();
+        alert('O valor empenhado deve ser maior que zero.');
+        document.getElementById('valor_empenhado').focus();
+        return false;
+    }
+    
+    if (percentualRetencao < 0 || percentualRetencao > 100) {
+        e.preventDefault();
+        alert('O percentual de retencao deve estar entre 0 e 100.');
+        document.getElementById('percentual_retencao').focus();
+        return false;
+    }
+});
+</script>
+{% endblock %}

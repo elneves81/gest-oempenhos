@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}Contratos - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}Gerenciar Contratos{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('contratos.novo') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>
+        Novo Contrato
+    </a>
+    <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>
+        Voltar para Empenhos
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Buscar</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Numero, pregao, objeto ou fornecedor...">
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Todos</option>
+                    <option value="ATIVO" {{ 'selected' if status == 'ATIVO' }}>Ativo</option>
+                    <option value="ENCERRADO" {{ 'selected' if status == 'ENCERRADO' }}>Encerrado</option>
+                    <option value="SUSPENSO" {{ 'selected' if status == 'SUSPENSO' }}>Suspenso</option>
+                    <option value="RESCINDIDO" {{ 'selected' if status == 'RESCINDIDO' }}>Rescindido</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-search me-1"></i>
+                    Filtrar
+                </button>
+                <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>
+                    Limpar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resumo -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total de Contratos</h6>
+                        <h4>{{ contratos|length }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-file-earmark-text fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Contratos Ativos</h6>
+                        <h4>{{ contratos|selectattr('status', 'equalto', 'ATIVO')|list|length }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-check-circle fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Vencendo em 30 dias</h6>
+                        <h4>
+                            {% set count = 0 %}
+                            {% for contrato in contratos %}
+                                {% if contrato.dias_para_vencimento and contrato.dias_para_vencimento <= 30 and contrato.dias_para_vencimento >= 0 %}
+                                    {% set count = count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ count }}
+                        </h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-exclamation-triangle fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Valor Total</h6>
+                        <h4>{{ (contratos|sum(attribute='valor_total') or 0)|format_currency }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-currency-dollar fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Contratos -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Lista de Contratos</h5>
+        <small class="text-muted">{{ contratos|length }} contrato(s) encontrado(s)</small>
+    </div>
+    <div class="card-body p-0">
+        {% if contratos %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nº Contrato</th>
+                        <th>Pregao</th>
+                        <th>Fornecedor</th>
+                        <th>Objeto</th>
+                        <th>Valor Total</th>
+                        <th>Vigencia</th>
+                        <th>Status</th>
+                        <th>Aditivos</th>
+                        <th class="text-center">Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contrato in contratos %}
+                    <tr>
+                        <td>
+                            <strong>{{ contrato.numero_contrato }}</strong>
+                            {% if contrato.numero_ctr %}
+                                <br><small class="text-muted">CTR: {{ contrato.numero_ctr }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ contrato.numero_pregao }}</td>
+                        <td>{{ contrato.fornecedor }}</td>
+                        <td>
+                            <span title="{{ contrato.objeto }}">
+                                {{ contrato.objeto[:50] }}...
+                            </span>
+                        </td>
+                        <td>{{ contrato.valor_total|format_currency }}</td>
+                        <td>
+                            {{ contrato.data_inicio.strftime('%d/%m/%Y') }} -
+                            {{ contrato.data_fim.strftime('%d/%m/%Y') }}
+                            {% set dias = contrato.dias_para_vencimento %}
+                            {% if dias is not none %}
+                                {% if dias < 0 %}
+                                    <br><small class="text-danger">Vencido ha {{ -dias }} dias</small>
+                                {% elif dias <= 30 %}
+                                    <br><small class="text-warning">Vence em {{ dias }} dias</small>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if contrato.status == 'ATIVO' %}
+                                <span class="badge bg-success">{{ contrato.status }}</span>
+                            {% elif contrato.status == 'ENCERRADO' %}
+                                <span class="badge bg-secondary">{{ contrato.status }}</span>
+                            {% elif contrato.status == 'SUSPENSO' %}
+                                <span class="badge bg-warning">{{ contrato.status }}</span>
+                            {% elif contrato.status == 'RESCINDIDO' %}
+                                <span class="badge bg-danger">{{ contrato.status }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark">{{ contrato.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if contrato.aditivos %}
+                                <span class="badge bg-info">{{ contrato.aditivos|length }}</span>
+                                <a href="#" 
+                                   class="btn btn-sm btn-outline-info ms-1" title="Ver Aditivos"
+                                   onclick="abrirModalAditivos({{ contrato.id }}, '{{ contrato.numero_contrato }}'); return false;">
+                                    <i class="bi bi-list-ul"></i>
+                                </a>
+                            {% else %}
+                                <span class="text-muted">Nenhum</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" 
+                                   class="btn btn-outline-primary" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('contratos.editar', id=contrato.id) }}" 
+                                   class="btn btn-outline-warning" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="#" 
+                                   class="btn btn-outline-info" title="Aditivos" 
+                                   onclick="abrirModalAditivos({{ contrato.id }}, '{{ contrato.numero_contrato }}'); return false;">
+                                    <i class="bi bi-plus-square"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" 
+                                        title="Excluir" onclick="confirmarExclusao({{ contrato.id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-file-earmark-text text-muted" style="font-size: 4rem;"></i>
+            <h5 class="mt-3 text-muted">Nenhum contrato encontrado</h5>
+            <p class="text-muted">
+                {% if search or status %}
+                    Tente ajustar os filtros de busca ou 
+                    <a href="{{ url_for('contratos.index') }}">limpar filtros</a>.
+                {% else %}
+                    Comece criando um novo contrato.
+                {% endif %}
+            </p>
+            {% if not search and not status %}
+            <a href="{{ url_for('contratos.novo') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>
+                Criar Primeiro Contrato
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de Confirmacao de Exclusao -->
+<div class="modal fade" id="modalExclusao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusao</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir este contrato?</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Esta acao nao pode ser desfeita e ira excluir tambem todos os aditivos e empenhos vinculados.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formExclusao" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Excluir Contrato</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Gerenciar Aditivos -->
+<div class="modal fade" id="modalAditivos" tabindex="-1" aria-labelledby="modalAditivosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAditivosLabel">
+                    <i class="bi bi-plus-square me-2"></i>
+                    Gerenciar Termos Aditivos - <span id="contratoNumero"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Lista de Aditivos Existentes -->
+                <div class="mb-4">
+                    <h6 class="text-primary border-bottom pb-2">
+                        <i class="bi bi-list-check me-1"></i>
+                        Aditivos Existentes
+                    </h6>
+                    <div id="listaAditivos">
+                        <!-- Sera preenchido via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Formulario para Novo Aditivo -->
+                <div class="border-top pt-4">
+                    <h6 class="text-success border-bottom pb-2">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Adicionar Novo Termo Aditivo
+                    </h6>
+                    <form id="formNovoAditivo">
+                        <input type="hidden" id="contratoId" name="contrato_id">
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="numeroAditivo" class="form-label">Numero do Termo *</label>
+                                <select class="form-select" id="numeroAditivo" name="numero_aditivo" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="1">1° Termo Aditivo</option>
+                                    <option value="2">2° Termo Aditivo</option>
+                                    <option value="3">3° Termo Aditivo</option>
+                                    <option value="4">4° Termo Aditivo</option>
+                                    <option value="5">5° Termo Aditivo</option>
+                                    <option value="6">6° Termo Aditivo</option>
+                                    <option value="7">7° Termo Aditivo</option>
+                                    <option value="8">8° Termo Aditivo</option>
+                                    <option value="9">9° Termo Aditivo</option>
+                                    <option value="10">10° Termo Aditivo</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="tipoAditivo" class="form-label">Tipo do Aditivo *</label>
+                                <select class="form-select" id="tipoAditivo" name="tipo" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="PRORROGACAO">Prorrogacao de Prazo</option>
+                                    <option value="ACRESCIMO">Acrescimo de Valor</option>
+                                    <option value="SUPRESSAO">Supressao de Valor</option>
+                                    <option value="REAJUSTE">Reajuste de Precos</option>
+                                    <option value="ALTERACAO">Alteracao Contratual</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="dataAditivo" class="form-label">Data do Aditivo *</label>
+                                <input type="date" class="form-control" id="dataAditivo" name="data_aditivo" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="valorFinanceiro" class="form-label">Valor Financeiro (R$)</label>
+                                <input type="number" class="form-control" id="valorFinanceiro" name="valor_financeiro" 
+                                       step="0.01" min="0" placeholder="0,00">
+                                <small class="text-muted">Para acrescimos, supressoes ou reajustes</small>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="prazoDias" class="form-label">Prazo (Dias)</label>
+                                <input type="number" class="form-control" id="prazoDias" name="prazo_dias" 
+                                       min="0" placeholder="0">
+                                <small class="text-muted">Para prorrogacoes</small>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="novaDataFim" class="form-label">Nova Data Fim</label>
+                                <input type="date" class="form-control" id="novaDataFim" name="nova_data_fim">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="justificativa" class="form-label">Justificativa/Observacoes *</label>
+                            <textarea class="form-control" id="justificativa" name="justificativa" 
+                                      rows="3" required placeholder="Descreva o motivo do aditivo..."></textarea>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Fechar
+                </button>
+                <button type="button" class="btn btn-success" onclick="salvarAditivo()">
+                    <i class="bi bi-check-circle me-1"></i>
+                    Salvar Aditivo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript">
+function confirmarExclusao(id) {
+    document.getElementById('formExclusao').action = '/contratos/' + id + '/excluir';
+    var modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
+    modal.show();
+}
+
+function abrirModalAditivos(contratoId, numeroContrato) {
+    document.getElementById('contratoId').value = contratoId;
+    document.getElementById('contratoNumero').textContent = numeroContrato;
+    document.getElementById('formNovoAditivo').reset();
+    document.getElementById('contratoId').value = contratoId;
+    var modal = new bootstrap.Modal(document.getElementById('modalAditivos'));
+    modal.show();
+}
+
+function salvarAditivo() {
+    var form = document.getElementById('formNovoAditivo');
+    if (form) {
+        form.submit();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var statusSelect = document.getElementById('status');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Contrato - Sistema de Empenhos{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-file-contract"></i> Detalhes do Contrato</h1>
+                    <p class="text-muted">{{ contrato.numero_contrato }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('empenhos.contratos') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </a>
+                    <a href="{{ url_for('empenhos.editar_contrato', id=contrato.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Editar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informacoes do Contrato -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Informacoes Gerais
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Numero do Pregao:</strong> {{ contrato.numero_pregao }}</p>
+                            <p><strong>Numero do Contrato:</strong> {{ contrato.numero_contrato }}</p>
+                            <p><strong>Fornecedor:</strong> {{ contrato.fornecedor }}</p>
+                            <p><strong>Status:</strong> 
+                                {% if contrato.status == 'ATIVO' %}
+                                    <span class="badge bg-success">{{ contrato.status }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ contrato.status }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Valor Total:</strong> R$ {{ "{:,.2f}".format(contrato.valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}</p>
+                            <p><strong>Data de Assinatura:</strong> {{ contrato.data_assinatura.strftime('%d/%m/%Y') }}</p>
+                            <p><strong>Periodo:</strong> {{ contrato.data_inicio.strftime('%d/%m/%Y') }} a {{ contrato.data_fim.strftime('%d/%m/%Y') }}</p>
+                            <p><strong>Criado em:</strong> {{ contrato.data_criacao.strftime('%d/%m/%Y as %H:%M') }}</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <p><strong>Objeto:</strong></p>
+                            <div class="bg-light p-3 rounded">
+                                {{ contrato.objeto }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumo Financeiro -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie"></i> Resumo Financeiro
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% set total_empenhado = empenhos | sum(attribute='valor_empenhado') | default(0) %}
+                    {% set saldo_disponivel = contrato.valor_total - total_empenhado %}
+                    {% set percentual_utilizado = (total_empenhado / contrato.valor_total * 100) if contrato.valor_total > 0 else 0 %}
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Valor do Contrato</small>
+                        <h4 class="text-primary">R$ {{ "{:,.2f}".format(contrato.valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}</h4>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Total Empenhado</small>
+                        <h5 class="text-warning">R$ {{ "{:,.2f}".format(total_empenhado).replace(',', 'X').replace('.', ',').replace('X', '.') }}</h5>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Saldo Disponivel</small>
+                        <h5 class="{{ 'text-success' if saldo_disponivel > 0 else 'text-danger' }}">
+                            R$ {{ "{:,.2f}".format(saldo_disponivel).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                        </h5>
+                    </div>
+                    
+                    <div class="progress mb-2">
+                        <div class="progress-bar {{ 'bg-success' if percentual_utilizado < 80 else 'bg-warning' if percentual_utilizado < 95 else 'bg-danger' }}" 
+                             role="progressbar" 
+                             style="width: {{ percentual_utilizado }}%"
+                             aria-valuenow="{{ percentual_utilizado }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ "%.1f"|format(percentual_utilizado) }}% utilizado</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Empenhos -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list"></i> Empenhos Vinculados
+                        <span class="badge bg-primary ms-2">{{ empenhos|length }}</span>
+                    </h5>
+                    <a href="{{ url_for('empenhos.novo') }}?contrato_id={{ contrato.id }}" class="btn btn-sm btn-success">
+                        <i class="fas fa-plus"></i> Novo Empenho
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if empenhos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Numero</th>
+                                    <th>Data</th>
+                                    <th>Valor Empenhado</th>
+                                    <th>Status</th>
+                                    <th>Acoes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for empenho in empenhos %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ empenho.numero_empenho }}</strong>
+                                    </td>
+                                    <td>{{ empenho.data_empenho.strftime('%d/%m/%Y') }}</td>
+                                    <td>R$ {{ "{:,.2f}".format(empenho.valor_empenhado).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                                    <td>
+                                        {% if empenho.status == 'PENDENTE' %}
+                                            <span class="badge bg-warning">{{ empenho.status }}</span>
+                                        {% elif empenho.status == 'APROVADO' %}
+                                            <span class="badge bg-success">{{ empenho.status }}</span>
+                                        {% elif empenho.status == 'REJEITADO' %}
+                                            <span class="badge bg-danger">{{ empenho.status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ empenho.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('empenhos.detalhes', id=empenho.id) }}" 
+                                               class="btn btn-outline-info" title="Ver Detalhes">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('empenhos.editar', id=empenho.id) }}" 
+                                               class="btn btn-outline-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum empenho vinculado</h5>
+                        <p class="text-muted">Este contrato ainda nao possui empenhos vinculados.</p>
+                        <a href="{{ url_for('empenhos.novo') }}?contrato_id={{ contrato.id }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Criar Primeiro Empenho
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.progress {
+    height: 10px;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}

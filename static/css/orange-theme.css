@@ -1,0 +1,146 @@
+/* Custom CSS - Tema Laranja */
+:root {
+    --primary-color: #ff6b35;
+    --primary-dark: #e55a2e;
+    --primary-light: #ff8c5a;
+    --gradient-start: #ff6b35;
+    --gradient-end: #ff8c5a;
+}
+
+/* Sobrescrevendo cores primárias do Bootstrap */
+.btn-primary {
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+    border-color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.btn-primary:focus,
+.btn-primary.focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.bg-primary {
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%) !important;
+}
+
+.badge.bg-primary {
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%) !important;
+}
+
+.border-primary {
+    border-color: var(--primary-color) !important;
+}
+
+/* Sidebar */
+.sidebar {
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+}
+
+/* Form controls focus */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+}
+
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+}
+
+/* Input group focus */
+.input-group-text {
+    border-color: #dee2e6;
+}
+
+.form-control:focus + .input-group-text {
+    border-color: var(--primary-color);
+}
+
+/* Cards com destaque */
+.card.bg-primary {
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%) !important;
+}
+
+/* Links */
+a.text-primary {
+    color: var(--primary-color) !important;
+}
+
+a.text-primary:hover {
+    color: var(--primary-dark) !important;
+}
+
+/* Alertas */
+.alert-primary {
+    background-color: rgba(255, 107, 53, 0.1);
+    border-color: var(--primary-color);
+    color: var(--primary-dark);
+}
+
+/* Tabelas */
+.table-primary {
+    background-color: rgba(255, 107, 53, 0.1);
+}
+
+/* Progress bars */
+.progress-bar {
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+}
+
+/* Spinners */
+.spinner-border.text-primary {
+    color: var(--primary-color) !important;
+}
+
+/* Custom checkbox and radio */
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-check-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(255, 107, 53, 0.25);
+}
+
+/* Nav pills */
+.nav-pills .nav-link.active {
+    background-color: var(--primary-color);
+}
+
+/* Dropdown */
+.dropdown-item.active {
+    background-color: var(--primary-color);
+}
+
+/* Paginação */
+.page-link {
+    color: var(--primary-color);
+}
+
+.page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.page-link:hover {
+    color: var(--primary-dark);
+}
+
+/* Charts - cores para gráficos */
+.chart-orange-1 { color: #ff6b35; }
+.chart-orange-2 { color: #ff8c5a; }
+.chart-orange-3 { color: #ffa76f; }
+.chart-orange-4 { color: #ffb380; }
+.chart-orange-5 { color: #ffc195; }

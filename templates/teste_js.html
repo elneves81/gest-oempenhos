@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Teste JS - Sistema de Empenhos{% endblock %}
+{% block page_title %}Teste JavaScript{% endblock %}
+
+{% block page_header_actions %}
+<div class="d-flex gap-2">
+    <button class="btn btn-danger" onclick="testeExclusao(1, 'TESTE')">Testar Exclusao</button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h5>Teste de JavaScript</h5>
+        <p>Esta pagina testa se o JavaScript funciona corretamente.</p>
+    </div>
+</div>
+
+<!-- Modal de teste -->
+<div class="modal fade" id="modalTeste" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Teste Modal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Modal funcionando! Contrato: <strong id="contratoTeste"></strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function testeExclusao(id, numero) {
+    document.getElementById('contratoTeste').textContent = numero;
+    var modal = new bootstrap.Modal(document.getElementById('modalTeste'));
+    modal.show();
+}
+</script>
+{% endblock %}

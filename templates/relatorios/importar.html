@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Importar Dados - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}Importar Dados{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>
+        Voltar
+    </a>
+    <a href="#" onclick="downloadTemplate()" class="btn btn-outline-primary">
+        <i class="bi bi-download me-1"></i>
+        Baixar Template
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-cloud-arrow-up me-2"></i>
+                    Importar Planilha de Empenhos
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="formImportar">
+                    <div class="mb-4">
+                        <label for="arquivo" class="form-label">Selecionar Arquivo</label>
+                        <input type="file" class="form-control" id="arquivo" name="arquivo" 
+                               accept=".xlsx,.xls,.csv" required>
+                        <div class="form-text">
+                            Formatos aceitos: Excel (.xlsx, .xls) ou CSV (.csv)
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Instrucoes para Importacao
+                        </h6>
+                        <ul class="mb-0">
+                            <li>Use o template fornecido para garantir a formatacao correta</li>
+                            <li>Certifique-se de que os campos obrigatorios estao preenchidos</li>
+                            <li>Datas devem estar no formato DD/MM/AAAA</li>
+                            <li>Valores monetarios podem usar virgula ou ponto como separador decimal</li>
+                            <li>Numeros de empenho devem ser unicos</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="btnImportar">
+                            <i class="bi bi-cloud-arrow-up me-1"></i>
+                            Importar Dados
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-list-check me-1"></i>
+                    Campos Reconhecidos
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <p><strong>Campos Obrigatorios:</strong></p>
+                    <ul>
+                        <li>PREGAO / PREGAO</li>
+                        <li>CTR / CONTRATO</li>
+                        <li>EMPENHO</li>
+                        <li>VALOR_EMPENHADO</li>
+                        <li>DATA_EMPENHO</li>
+                        <li>OBJETO</li>
+                    </ul>
+                    
+                    <p><strong>Campos Opcionais:</strong></p>
+                    <ul class="small">
+                        <li>ADITIVO</li>
+                        <li>UNID_MENSAL</li>
+                        <li>V_UNIT / VALOR_UNITARIO</li>
+                        <li>QTD / QUANTIDADE</li>
+                        <li>VALOR_PERIODO</li>
+                        <li>RETENCAO / PERCENTUAL_RETENCAO</li>
+                        <li>DATA_ENVIO</li>
+                        <li>DATA_VENCIMENTO</li>
+                        <li>PERIODO / PERIODO_REFERENCIA</li>
+                        <li>STATUS / SITUACAO</li>
+                        <li>NOTA / NOTA_FISCAL</li>
+                        <li>OBSERVACOES / OBS</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Importante
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <div class="alert alert-warning">
+                        <strong>Backup Recomendado:</strong><br>
+                        Faca um backup dos dados antes de importar grandes quantidades de registros.
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Duplicatas:</strong><br>
+                        Empenhos com numeros ja existentes serao ignorados durante a importacao.
+                    </div>
+                    
+                    <div class="alert alert-success">
+                        <strong>Validacao:</strong><br>
+                        O sistema validara automaticamente os dados e informara sobre erros encontrados.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de progresso -->
+<div class="modal fade" id="modalProgresso" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-cloud-arrow-up me-2"></i>
+                    Importando Dados
+                </h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <p>Processando arquivo, aguarde...</p>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Mostrar modal de progresso durante importacao
+document.getElementById('formImportar').addEventListener('submit', function(e) {
+    const arquivo = document.getElementById('arquivo').files[0];
+    
+    if (!arquivo) {
+        e.preventDefault();
+        alert('Por favor, selecione um arquivo para importar.');
+        return false;
+    }
+    
+    // Validar tipo de arquivo
+    const tiposPermitidos = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+                            'application/vnd.ms-excel', 
+                            'text/csv'];
+    
+    if (!tiposPermitidos.includes(arquivo.type) && !arquivo.name.match(/\.(xlsx|xls|csv)$/i)) {
+        e.preventDefault();
+        alert('Tipo de arquivo nao permitido. Use Excel (.xlsx, .xls) ou CSV (.csv).');
+        return false;
+    }
+    
+    // Validar tamanho (maximo 10MB)
+    if (arquivo.size > 10 * 1024 * 1024) {
+        e.preventDefault();
+        alert('Arquivo muito grande. O tamanho maximo e 10MB.');
+        return false;
+    }
+    
+    // Mostrar modal de progresso
+    const modal = new bootstrap.Modal(document.getElementById('modalProgresso'));
+    modal.show();
+    
+    // Desabilitar botao
+    document.getElementById('btnImportar').disabled = true;
+});
+
+// Funcao para baixar template
+function downloadTemplate() {
+    // Criar dados do template
+    const templateData = [
+        ['PREGAO', 'CTR', 'ADITIVO', 'OBJETO', 'UNID_MENSAL', 'V_UNIT', 'EMPENHO', 'DATA_EMPENHO', 'VALOR_EMPENHADO', 'QTD', 'VALOR_PERIODO', 'RETENCAO', 'DATA_ENVIO', 'DATA_VENCIMENTO', 'PERIODO', 'STATUS', 'NOTA', 'OBSERVACOES'],
+        ['2024001', '001/2024', '', 'Exemplo de objeto do contrato', 'UN', '100.00', '2024NE000001', '01/01/2024', '1000.00', '10', '1000.00', '0', '01/01/2024', '31/01/2024', '01/2024', 'PENDENTE', '', 'Exemplo de observacao']
+    ];
+    
+    // Converter para CSV
+    const csvContent = templateData.map(row => row.join(',')).join('\n');
+    
+    // Criar e baixar arquivo
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'template_importacao_empenhos.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Preview do arquivo selecionado
+document.getElementById('arquivo').addEventListener('change', function(e) {
+    const arquivo = e.target.files[0];
+    if (arquivo) {
+        const info = document.createElement('div');
+        info.className = 'mt-2 small text-muted';
+        info.innerHTML = `
+            <i class="bi bi-file-earmark me-1"></i>
+            <strong>${arquivo.name}</strong> (${(arquivo.size / 1024 / 1024).toFixed(2)} MB)
+        `;
+        
+        // Remover info anterior se existir
+        const infoAnterior = e.target.parentNode.querySelector('.small.text-muted');
+        if (infoAnterior) {
+            infoAnterior.remove();
+        }
+        
+        e.target.parentNode.appendChild(info);
+    }
+});
+</script>
+{% endblock %}

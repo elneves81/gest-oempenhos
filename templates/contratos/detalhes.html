@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Contrato {{ contrato.numero_contrato }} - Sistema de Empenhos{% endblock %}
+
+{% block page_title %}Detalhes do Contrato {{ contrato.numero_contrato }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>
+        Voltar
+    </a>
+    <a href="{{ url_for('contratos.editar', id=contrato.id) }}" class="btn btn-outline-warning">
+        <i class="bi bi-pencil me-1"></i>
+        Editar
+    </a>
+    <button type="button" class="btn btn-outline-info" 
+            onclick="abrirModalAditivos({{ contrato.id }}, '{{ contrato.numero_contrato }}')">
+        <i class="bi bi-plus-square me-1"></i>
+        Aditivos ({{ contrato.aditivos|length }})
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Informacoes Principais -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-file-earmark-text me-2"></i>
+                    Informacoes do Contrato
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Identificacao -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-card-heading me-1"></i>
+                            Identificacao
+                        </h6>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>Numero do Pregao:</strong><br>
+                        <span class="text-muted">{{ contrato.numero_pregao }}</span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>Numero do Contrato:</strong><br>
+                        <span class="text-muted">{{ contrato.numero_contrato }}</span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>Numero CTR:</strong><br>
+                        <span class="text-muted">{{ contrato.numero_ctr or '-' }}</span>
+                    </div>
+                </div>
+
+                <!-- Objeto e Fornecedor -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-building me-1"></i>
+                            Objeto e Fornecedor
+                        </h6>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <strong>Objeto do Contrato:</strong><br>
+                        <span class="text-muted">{{ contrato.objeto }}</span>
+                    </div>
+                    {% if contrato.resumo_objeto %}
+                    <div class="col-12 mb-3">
+                        <strong>Resumo do Objeto:</strong><br>
+                        <span class="text-muted">{{ contrato.resumo_objeto }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Fornecedor:</strong><br>
+                        <span class="text-muted">{{ contrato.fornecedor }}</span>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong>Valor Total:</strong><br>
+                        <span class="text-success fw-bold">{{ contrato.valor_total|format_currency }}</span>
+                    </div>
+                    {% if contrato.valor_inicial %}
+                    <div class="col-md-3 mb-3">
+                        <strong>Valor Inicial:</strong><br>
+                        <span class="text-muted">{{ contrato.valor_inicial|format_currency }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Datas e Prazos -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-calendar me-1"></i>
+                            Prazos e Vigencia
+                        </h6>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong>Data de Assinatura:</strong><br>
+                        <span class="text-muted">{{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</span>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong>Data de Inicio:</strong><br>
+                        <span class="text-muted">{{ contrato.data_inicio.strftime('%d/%m/%Y') if contrato.data_inicio else '-' }}</span>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong>Data de Fim:</strong><br>
+                        <span class="text-muted">{{ contrato.data_fim.strftime('%d/%m/%Y') if contrato.data_fim else '-' }}</span>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong>Situacao:</strong><br>
+                        {% set dias = contrato.dias_para_vencimento %}
+                        {% if dias is not none %}
+                            {% if dias < 0 %}
+                                <span class="badge bg-danger">Vencido ha {{ -dias }} dias</span>
+                            {% elif dias <= 30 %}
+                                <span class="badge bg-warning">Vence em {{ dias }} dias</span>
+                            {% else %}
+                                <span class="badge bg-success">{{ dias }} dias para vencer</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-secondary">Data nao definida</span>
+                        {% endif %}
+                    </div>
+                    {% if contrato.data_fim_original %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Data de Fim Original:</strong><br>
+                        <small class="text-muted">{{ contrato.data_fim_original.strftime('%d/%m/%Y') }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Gestao -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-people me-1"></i>
+                            Gestao e Controle
+                        </h6>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>Gestor Fiscal:</strong><br>
+                        <span class="text-muted">{{ contrato.gestor_fiscal or '-' }}</span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>Gestor Superior:</strong><br>
+                        <span class="text-muted">{{ contrato.gestor_superior or '-' }}</span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>Status:</strong><br>
+                        {% if contrato.status == 'ATIVO' %}
+                            <span class="badge bg-success">{{ contrato.status }}</span>
+                        {% elif contrato.status == 'ENCERRADO' %}
+                            <span class="badge bg-secondary">{{ contrato.status }}</span>
+                        {% elif contrato.status == 'SUSPENSO' %}
+                            <span class="badge bg-warning">{{ contrato.status }}</span>
+                        {% elif contrato.status == 'RESCINDIDO' %}
+                            <span class="badge bg-danger">{{ contrato.status }}</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark">{{ contrato.status }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Informacoes Municipais -->
+                {% if contrato.modalidade_licitacao or contrato.numero_processo or contrato.lei_base %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-building-check me-1"></i>
+                            Informacoes Municipais
+                        </h6>
+                    </div>
+                    {% if contrato.modalidade_licitacao %}
+                    <div class="col-md-4 mb-3">
+                        <strong>Modalidade de Licitacao:</strong><br>
+                        <span class="text-muted">{{ contrato.modalidade_licitacao }}</span>
+                    </div>
+                    {% endif %}
+                    {% if contrato.numero_processo %}
+                    <div class="col-md-4 mb-3">
+                        <strong>Numero do Processo:</strong><br>
+                        <span class="text-muted">{{ contrato.numero_processo }}</span>
+                    </div>
+                    {% endif %}
+                    {% if contrato.lei_base %}
+                    <div class="col-md-4 mb-3">
+                        <strong>Lei Base:</strong><br>
+                        <span class="text-muted">{{ contrato.lei_base }}</span>
+                    </div>
+                    {% endif %}
+                    {% if contrato.orgao_contratante %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Orgao Contratante:</strong><br>
+                        <span class="text-muted">{{ contrato.orgao_contratante }}</span>
+                    </div>
+                    {% endif %}
+                    {% if contrato.secretaria %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Secretaria:</strong><br>
+                        <span class="text-muted">{{ contrato.secretaria }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Garantias -->
+                {% if contrato.tipo_garantia or contrato.valor_garantia %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-shield-check me-1"></i>
+                            Garantias e Seguros
+                        </h6>
+                    </div>
+                    {% if contrato.tipo_garantia %}
+                    <div class="col-md-4 mb-3">
+                        <strong>Tipo de Garantia:</strong><br>
+                        <span class="text-muted">{{ contrato.tipo_garantia }}</span>
+                    </div>
+                    {% endif %}
+                    {% if contrato.valor_garantia %}
+                    <div class="col-md-4 mb-3">
+                        <strong>Valor da Garantia:</strong><br>
+                        <span class="text-muted">{{ contrato.valor_garantia|format_currency }}</span>
+                    </div>
+                    {% endif %}
+                    {% if contrato.validade_garantia %}
+                    <div class="col-md-4 mb-3">
+                        <strong>Validade da Garantia:</strong><br>
+                        <span class="text-muted">{{ contrato.validade_garantia.strftime('%d/%m/%Y') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Observacoes -->
+                {% if contrato.observacoes %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-chat-text me-1"></i>
+                            Observacoes
+                        </h6>
+                        <p class="text-muted">{{ contrato.observacoes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Aditivos -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-plus-square me-1"></i>
+                    Termos Aditivos ({{ contrato.aditivos|length }})
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if contrato.aditivos %}
+                    <div class="list-group list-group-flush">
+                        {% for aditivo in contrato.aditivos %}
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-fill">
+                                    <h6 class="mb-1">{{ aditivo.numero_aditivo }}° Termo Aditivo</h6>
+                                    <p class="mb-1 small text-muted">{{ aditivo.tipo }}</p>
+                                    <small class="text-muted">{{ aditivo.data_aditivo.strftime('%d/%m/%Y') if aditivo.data_aditivo else '-' }}</small>
+                                    {% if aditivo.valor_financeiro %}
+                                        <br><small class="text-success">{{ aditivo.valor_financeiro|format_currency }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-outline-info btn-sm w-100" 
+                                onclick="abrirModalAditivos({{ contrato.id }}, '{{ contrato.numero_contrato }}')">
+                            <i class="bi bi-plus me-1"></i>
+                            Gerenciar Aditivos
+                        </button>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Nenhum aditivo cadastrado ainda.
+                    </p>
+                    <button type="button" class="btn btn-outline-primary btn-sm w-100" 
+                            onclick="abrirModalAditivos({{ contrato.id }}, '{{ contrato.numero_contrato }}')">
+                        <i class="bi bi-plus me-1"></i>
+                        Adicionar Primeiro Aditivo
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Empenhos Relacionados -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-file-earmark-text me-1"></i>
+                    Empenhos Relacionados ({{ contrato.empenhos|length }})
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if contrato.empenhos %}
+                    <div class="list-group list-group-flush">
+                        {% for empenho in contrato.empenhos %}
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ empenho.numero_empenho }}</h6>
+                                    <small class="text-muted">{{ empenho.data_empenho.strftime('%d/%m/%Y') if empenho.data_empenho else '-' }}</small>
+                                    <br><small class="text-success">{{ empenho.valor_empenhado|format_currency if empenho.valor_empenhado else '-' }}</small>
+                                </div>
+                                <a href="{{ url_for('empenhos.detalhes', id=empenho.id) }}" 
+                                   class="btn btn-outline-primary btn-sm" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Nenhum empenho relacionado ainda.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Metadados -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Informacoes do Sistema
+                </h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <strong>Criado em:</strong><br>
+                    {{ contrato.data_criacao.strftime('%d/%m/%Y as %H:%M') if contrato.data_criacao else '-' }}<br><br>
+                    <strong>Ultima atualizacao:</strong><br>
+                    {{ contrato.data_atualizacao.strftime('%d/%m/%Y as %H:%M') if contrato.data_atualizacao else '-' }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Aditivos (Reutilizar do index) -->
+<div class="modal fade" id="modalAditivos" tabindex="-1" aria-labelledby="modalAditivosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAditivosLabel">
+                    <i class="bi bi-plus-square me-2"></i>
+                    Gerenciar Termos Aditivos - <span id="contratoNumero"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Lista de Aditivos Existentes -->
+                <div class="mb-4">
+                    <h6 class="text-primary border-bottom pb-2">
+                        <i class="bi bi-list-check me-1"></i>
+                        Aditivos Existentes
+                    </h6>
+                    <div id="listaAditivos">
+                        <!-- Sera preenchido via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Formulario para Novo Aditivo -->
+                <div class="border-top pt-4">
+                    <h6 class="text-success border-bottom pb-2">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Adicionar Novo Termo Aditivo
+                    </h6>
+                    <form id="formNovoAditivo">
+                        <input type="hidden" id="contratoId" name="contrato_id">
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="numeroAditivo" class="form-label">Numero do Termo *</label>
+                                <select class="form-select" id="numeroAditivo" name="numero_aditivo" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="1">1° Termo Aditivo</option>
+                                    <option value="2">2° Termo Aditivo</option>
+                                    <option value="3">3° Termo Aditivo</option>
+                                    <option value="4">4° Termo Aditivo</option>
+                                    <option value="5">5° Termo Aditivo</option>
+                                    <option value="6">6° Termo Aditivo</option>
+                                    <option value="7">7° Termo Aditivo</option>
+                                    <option value="8">8° Termo Aditivo</option>
+                                    <option value="9">9° Termo Aditivo</option>
+                                    <option value="10">10° Termo Aditivo</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="tipoAditivo" class="form-label">Tipo do Aditivo *</label>
+                                <select class="form-select" id="tipoAditivo" name="tipo" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="PRORROGACAO">Prorrogacao de Prazo</option>
+                                    <option value="ACRESCIMO">Acrescimo de Valor</option>
+                                    <option value="SUPRESSAO">Supressao de Valor</option>
+                                    <option value="REAJUSTE">Reajuste de Precos</option>
+                                    <option value="ALTERACAO">Alteracao Contratual</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="dataAditivo" class="form-label">Data do Aditivo *</label>
+                                <input type="date" class="form-control" id="dataAditivo" name="data_aditivo" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="valorFinanceiro" class="form-label">Valor Financeiro (R$)</label>
+                                <input type="number" class="form-control" id="valorFinanceiro" name="valor_financeiro" 
+                                       step="0.01" min="0" placeholder="0,00">
+                                <small class="text-muted">Para acrescimos, supressoes ou reajustes</small>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="prazoDias" class="form-label">Prazo (Dias)</label>
+                                <input type="number" class="form-control" id="prazoDias" name="prazo_dias" 
+                                       min="0" placeholder="0">
+                                <small class="text-muted">Para prorrogacoes</small>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="novaDataFim" class="form-label">Nova Data Fim</label>
+                                <input type="date" class="form-control" id="novaDataFim" name="nova_data_fim">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="justificativa" class="form-label">Justificativa/Observacoes *</label>
+                            <textarea class="form-control" id="justificativa" name="justificativa" 
+                                      rows="3" required placeholder="Descreva o motivo do aditivo..."></textarea>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Fechar
+                </button>
+                <button type="button" class="btn btn-success" onclick="salvarAditivo()">
+                    <i class="bi bi-check-circle me-1"></i>
+                    Salvar Aditivo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aditivos-modal.js') }}"></script>
+{% endblock %}
