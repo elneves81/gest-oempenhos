@@ -140,17 +140,17 @@ def editar(id):
             empenho.numero_ctr = request.form.get('numero_ctr')
             
             # Objeto e fornecedores
-            empenho.objeto = request.form['objeto']
-            empenho.resumo_objeto = request.form.get('resumo_objeto')
+            empenho.resumo_objeto = request.form.get('resumo_objeto', '')
+            empenho.objeto = request.form.get('resumo_objeto', '')  # Compatibilidade
             empenho.fornecedores = request.form.get('fornecedores')
             empenho.gestor_fiscal_e_superior = request.form.get('gestor_fiscal_e_superior')
             
             # Valores e unidades
             empenho.unidade_mensal = request.form.get('unidade_mensal')
-            empenho.valor_unitario = float(request.form['valor_unitario']) if request.form.get('valor_unitario') else None
+            empenho.valor_unitario = None  # Campo não existe no formulário
             empenho.numero_empenho = request.form['numero_empenho']
             empenho.valor_empenhado = float(request.form['valor_empenhado'])
-            empenho.quantidade = float(request.form['quantidade']) if request.form.get('quantidade') else None
+            empenho.quantidade = None  # Campo não existe no formulário
             empenho.valor_periodo = float(request.form['valor_periodo']) if request.form.get('valor_periodo') else None
             empenho.percentual_retencao = float(request.form.get('percentual_retencao', 0))
             
@@ -158,7 +158,7 @@ def editar(id):
             empenho.data_empenho = datetime.strptime(request.form['data_empenho'], '%Y-%m-%d').date()
             empenho.data_assinatura = datetime.strptime(request.form['data_assinatura'], '%Y-%m-%d').date() if request.form.get('data_assinatura') else None
             empenho.data_limite = datetime.strptime(request.form['data_limite'], '%Y-%m-%d').date() if request.form.get('data_limite') else None
-            empenho.data_envio = datetime.strptime(request.form['data_envio'], '%Y-%m-%d').date() if request.form.get('data_envio') else None
+            empenho.data_envio = None  # Campo não existe no formulário
             empenho.data_vencimento = datetime.strptime(request.form['data_vencimento'], '%Y-%m-%d').date() if request.form.get('data_vencimento') else None
             
             # Informações Orçamentárias e Fiscais
