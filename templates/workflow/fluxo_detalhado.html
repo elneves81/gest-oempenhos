@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Fluxo do Contrato{{ contrato.numero_contrato }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="bi bi-diagram-3 me-2"></i>
+                        Fluxo do Contrato
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Acompanhamento detalhado das etapas do contrato {{ contrato.numero_contrato }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Voltar ao Contrato
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações do Contrato -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-text me-2"></i>
+                        Informações do Contrato
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Número:</strong><br>
+                            {{ contrato.numero_contrato }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Fornecedor:</strong><br>
+                            {{ contrato.fornecedor }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Valor:</strong><br>
+                            R$ {{ "{:,.2f}".format(contrato.valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Status:</strong><br>
+                            <span class="badge bg-{{ 'success' if contrato.status == 'ATIVO' else 'secondary' }}">
+                                {{ contrato.status }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline do Fluxo -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Timeline das Etapas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for etapa in etapas %}
+                        <div class="timeline-item {{ etapa.status }}">
+                            <div class="timeline-marker">
+                                {% if etapa.status == 'concluido' %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                {% elif etapa.status == 'em_andamento' %}
+                                    <i class="bi bi-clock-fill text-warning"></i>
+                                {% else %}
+                                    <i class="bi bi-circle text-muted"></i>
+                                {% endif %}
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <h6 class="mb-1">{{ etapa.nome }}</h6>
+                                    <small class="text-muted">
+                                        {% if etapa.data %}
+                                            {{ etapa.data.strftime('%d/%m/%Y') if etapa.data.strftime else etapa.data }}
+                                        {% else %}
+                                            Pendente
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <p class="mb-2">{{ etapa.descricao }}</p>
+                                <div class="timeline-footer">
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-person me-1"></i>
+                                        {{ etapa.responsavel }}
+                                    </span>
+                                    {% if etapa.status == 'concluido' %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check me-1"></i>
+                                            Concluído
+                                        </span>
+                                    {% elif etapa.status == 'em_andamento' %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-clock me-1"></i>
+                                            Em Andamento
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-pause me-1"></i>
+                                            Pendente
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightning me-2"></i>
+                        Ações Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('workflow.nova_comunicacao', contrato_id=contrato.id) }}" 
+                           class="btn btn-primary">
+                            <i class="bi bi-chat-dots me-2"></i>
+                            Nova Comunicação
+                        </a>
+                        <a href="{{ url_for('workflow.comunicacoes', contrato_id=contrato.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-list me-2"></i>
+                            Ver Comunicações
+                        </a>
+                        <a href="{{ url_for('contratos.editar', id=contrato.id) }}" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-pencil me-2"></i>
+                            Editar Contrato
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 3rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2.5rem;
+    top: 0;
+    font-size: 1.2rem;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-left: 1rem;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: between;
+    align-items: start;
+    margin-bottom: 0.5rem;
+}
+
+.timeline-footer {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.timeline-item.concluido .timeline-content {
+    border-left: 4px solid #198754;
+}
+
+.timeline-item.em_andamento .timeline-content {
+    border-left: 4px solid #ffc107;
+}
+
+.timeline-item.pendente .timeline-content {
+    border-left: 4px solid #6c757d;
+}
+</style>
+{% endblock %}

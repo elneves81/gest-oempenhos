@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Workflow{% endblock %}
+
+{% block page_title %}Dashboard de Workflow{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-primary">
+        <i class="bi bi-file-earmark-ruled me-1"></i>
+        Gerenciar Contratos
+    </a>
+    <a href="/" class="btn btn-outline-secondary">
+        <i class="bi bi-house me-1"></i>
+        Dashboard Principal
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Cards de estatísticas -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3>{{ contratos_ativos }}</h3>
+                        <p>Contratos Ativos</p>
+                    </div>
+                    <div>
+                        <i class="bi bi-check-circle" style="font-size: 2rem; opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3>{{ total_geral }}</h3>
+                        <p>Total de Contratos</p>
+                    </div>
+                    <div>
+                        <i class="bi bi-file-earmark-ruled" style="font-size: 2rem; opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3>{{ vencendo_30_dias }}</h3>
+                        <p>Vencendo em 30 dias</p>
+                    </div>
+                    <div>
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2rem; opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3>{{ (contratos|sum(attribute='valor_total') or 0)|format_currency }}</h3>
+                        <p>Valor Total</p>
+                    </div>
+                    <div>
+                        <i class="bi bi-currency-dollar" style="font-size: 2rem; opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Lista de Contratos no Workflow -->
+    <div class="col-lg-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-diagram-3 me-2"></i>
+                    Contratos no Workflow
+                </h5>
+                <a href="{{ url_for('contratos.index') }}" class="btn btn-sm btn-outline-primary">
+                    Ver Todos
+                </a>
+            </div>
+            <div class="card-body">
+                {% if contratos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nº Contrato</th>
+                                <th>Pregão</th>
+                                <th>Fornecedor</th>
+                                <th>Objeto</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Vigência</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contrato in contratos.items[:10] %}
+                            <tr>
+                                <td>
+                                    <strong>{{ contrato.numero_contrato }}</strong>
+                                </td>
+                                <td>{{ contrato.numero_pregao or '-' }}</td>
+                                <td>{{ contrato.fornecedor or '-' }}</td>
+                                <td>
+                                    <span title="{{ contrato.objeto }}">
+                                        {{ contrato.objeto[:40] }}{% if contrato.objeto|length > 40 %}...{% endif %}
+                                    </span>
+                                </td>
+                                <td>{{ contrato.valor_total|format_currency }}</td>
+                                <td>
+                                    {% if contrato.status == 'ATIVO' %}
+                                        <span class="badge bg-success">{{ contrato.status }}</span>
+                                    {% elif contrato.status == 'ENCERRADO' %}
+                                        <span class="badge bg-secondary">{{ contrato.status }}</span>
+                                    {% elif contrato.status == 'SUSPENSO' %}
+                                        <span class="badge bg-warning">{{ contrato.status }}</span>
+                                    {% elif contrato.status == 'RESCINDIDO' %}
+                                        <span class="badge bg-danger">{{ contrato.status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">{{ contrato.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if contrato.data_fim %}
+                                        {{ contrato.data_fim.strftime('%d/%m/%Y') }}
+                                        {% set dias = contrato.dias_para_vencimento %}
+                                        {% if dias is not none %}
+                                            {% if dias < 0 %}
+                                                <br><small class="text-danger">Vencido há {{ -dias }} dias</small>
+                                            {% elif dias <= 30 %}
+                                                <br><small class="text-warning">Vence em {{ dias }} dias</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" 
+                                           class="btn btn-outline-primary" title="Ver Detalhes">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('contratos.editar', id=contrato.id) }}" 
+                                           class="btn btn-outline-secondary" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-inbox" style="font-size: 3rem; color: #dee2e6;"></i>
+                    <h6 class="text-muted mt-3">Nenhum contrato encontrado</h6>
+                    <p class="text-muted">
+                        <a href="{{ url_for('contratos.novo') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Criar Primeiro Contrato
+                        </a>
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção de Comunicação e Workflow -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bell me-2"></i>
+                    Alertas e Notificações
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Sistema de Workflow Ativo</strong><br>
+                    Monitoramento automático de contratos e prazos.
+                </div>
+                
+                {% set vencendo_30 = contratos|selectattr('dias_para_vencimento', 'defined')|selectattr('dias_para_vencimento', '<=', 30)|selectattr('dias_para_vencimento', '>=', 0)|list %}
+                {% if vencendo_30 %}
+                <div class="alert alert-warning" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>{{ vencendo_30|length }} contrato(s) vencendo em 30 dias</strong><br>
+                    Revise os prazos de vigência dos contratos.
+                </div>
+                {% endif %}
+                
+                {% set vencidos = contratos|selectattr('dias_para_vencimento', 'defined')|selectattr('dias_para_vencimento', '<', 0)|list %}
+                {% if vencidos %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-x-circle me-2"></i>
+                    <strong>{{ vencidos|length }} contrato(s) vencido(s)</strong><br>
+                    Contratos com vigência expirada requerem atenção.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-gear me-2"></i>
+                    Ações do Workflow
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-list-ul me-2"></i>
+                        Gerenciar Contratos
+                    </a>
+                    
+                    <a href="{{ url_for('contratos.novo') }}" class="btn btn-outline-success">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Novo Contrato
+                    </a>
+                    
+                    <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-info">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Relatórios
+                    </a>
+                    
+                    <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-house me-2"></i>
+                        Dashboard Principal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
