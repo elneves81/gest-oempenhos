@@ -1,0 +1,731 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if contrato else 'Novo' }} Contrato - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}{{ 'Editar' if contrato else 'Novo' }} Contrato{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Layout do formulário de contratos */
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    /* Corrigir sobreposição das abas */
+    .nav-tabs {
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 0;
+        z-index: 10;
+        position: relative;
+        background: white;
+        padding-left: 0;
+    }
+    
+    .nav-tabs .nav-item {
+        margin-bottom: -2px;
+    }
+    
+    .nav-tabs .nav-link {
+        border: 2px solid transparent;
+        border-top-left-radius: 0.5rem;
+        border-top-right-radius: 0.5rem;
+        background: #f8f9fa;
+        color: #6c757d;
+        margin-right: 3px;
+        padding: 0.75rem 1.25rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border-color: #e9ecef #e9ecef #dee2e6;
+        background: #e9ecef;
+        color: #0d6efd;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: #0d6efd;
+        background-color: white;
+        border-color: #0d6efd #0d6efd white;
+        border-bottom: 2px solid white;
+        z-index: 11;
+        box-shadow: 0 -2px 8px rgba(255, 107, 53, 0.1);
+    }
+    
+    .tab-content {
+        position: relative;
+        z-index: 1;
+        background: white;
+        border: 2px solid #dee2e6;
+        border-top: none;
+        padding: 1.5rem;
+        border-radius: 0 0 0.5rem 0.5rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        min-height: 400px;
+    }
+    
+    .tab-pane {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Melhorias nos campos */
+    .form-label {
+        font-weight: 600;
+        color: #0d6efd;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
+    /* Seções organizadas */
+    .section-header {
+        border-bottom: 2px solid #0d6efd;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        color: #0d6efd;
+        font-weight: 600;
+    }
+    
+    .form-row {
+        margin-bottom: 1rem;
+    }
+    
+    /* Feedback visual para validação */
+    .form-control.is-invalid {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+    
+    .form-control.is-valid {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+    }
+    
+    /* Melhorias de acessibilidade */
+    .form-control:focus {
+        outline: none;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
+    /* Indicador de campo obrigatório */
+    .form-label[aria-required="true"]:after,
+    label[for*="numero_contrato"]:after,
+    label[for*="objeto"]:after,
+    label[for*="fornecedor"]:after,
+    label[for*="valor_total"]:after,
+    label[for*="data_assinatura"]:after,
+    label[for*="data_inicio"]:after,
+    label[for*="data_fim"]:after {
+        content: ' *';
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    /* Loading state para submit */
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    /* Melhor aparência das abas */
+    .nav-tabs .nav-link:focus {
+        outline: 2px solid #0d6efd;
+        outline-offset: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>
+        Voltar
+    </a>
+    {% if contrato %}
+    <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" class="btn btn-outline-primary">
+        <i class="bi bi-eye me-1"></i>
+        Ver Detalhes
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-{{ 'pencil' if contrato else 'plus-circle' }} me-2"></i>
+                    {{ 'Editar' if contrato else 'Criar Novo' }} Contrato
+                </h5>
+            </div>
+            <div class="card-body">
+                {% with msgs = get_flashed_messages(with_categories=true) %}
+                    {% if msgs %}
+                        {% for cat, msg in msgs %}
+                            <div class="alert alert-{{ 'danger' if cat == 'error' else cat }} alert-dismissible fade show" role="alert">
+                                {{ msg }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" 
+                      id="formContrato" 
+                      enctype="multipart/form-data"
+                      action="{{ url_for('contratos.atualizar', id=contrato.id) if contrato else url_for('contratos.criar') }}">
+                    {% if csrf_token %}{{ csrf_token() }}{% endif %}
+                    <!-- Navegacao por Abas -->
+                    <ul class="nav nav-tabs" id="contratoTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="identificacao-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#identificacao" type="button" role="tab">
+                                <i class="bi bi-card-heading me-1"></i>
+                                Identificação
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="fornecedor-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#fornecedor" type="button" role="tab">
+                                <i class="bi bi-building me-1"></i>
+                                Fornecedor & CNPJ
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="financeiro-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#financeiro" type="button" role="tab">
+                                <i class="bi bi-cash-stack me-1"></i>
+                                Financeiro & Prazos
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="anexos-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#anexos" type="button" role="tab">
+                                <i class="bi bi-paperclip me-1"></i>
+                                Anexos & Observações
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="contratoTabsContent">
+                        <!-- Aba 1: Identificacao -->
+                        <div class="tab-pane fade show active" id="identificacao" role="tabpanel">
+                            <div class="row form-row">
+                                <div class="col-md-4">
+                                    <label for="numero_pregao" class="form-label">Número do Pregão *</label>
+                                    <input type="text" class="form-control" id="numero_pregao" name="numero_pregao" 
+                                           autocomplete="off" aria-required="true" required
+                                           value="{{ (contrato.numero_pregao or '') if contrato else '' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="numero_contrato" class="form-label">Número do Contrato *</label>
+                                    <input type="text" class="form-control" id="numero_contrato" name="numero_contrato" 
+                                           autocomplete="off" aria-required="true" required
+                                           value="{{ (contrato.numero_contrato or '') if contrato else '' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="numero_processo" class="form-label">Número do Processo</label>
+                                    <input type="text" class="form-control" id="numero_processo" name="numero_processo" 
+                                           autocomplete="off"
+                                           value="{{ (contrato.numero_processo or '') if contrato else '' }}">
+                                </div>
+                            </div>
+
+                            <div class="row form-row">
+                                <div class="col-md-4">
+                                    <label for="ano_pregao" class="form-label">Ano do Pregão</label>
+                                    <input type="number" class="form-control" id="ano_pregao" name="ano_pregao" 
+                                           min="2020" max="2030" autocomplete="off"
+                                           value="{{ (contrato.ano_pregao or '') if contrato else '' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="ano_contrato" class="form-label">Ano do Contrato</label>
+                                    <input type="number" class="form-control" id="ano_contrato" name="ano_contrato" 
+                                           min="2020" max="2030" autocomplete="off"
+                                           value="{{ (contrato.ano_contrato or '') if contrato else '' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="ano_processo" class="form-label">Ano do Processo</label>
+                                    <input type="number" class="form-control" id="ano_processo" name="ano_processo" 
+                                           min="2020" max="2030" autocomplete="off"
+                                           value="{{ (contrato.ano_processo or '') if contrato else '' }}">
+                                </div>
+                            </div>
+
+                            <div class="row form-row">
+                                <div class="col-12">
+                                    <label for="objeto" class="form-label">Objeto do Contrato *</label>
+                                    <textarea class="form-control" id="objeto" name="objeto" rows="3" 
+                                              aria-required="true" required>{{ (contrato.objeto or '') if contrato else '' }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="row form-row">
+                                <div class="col-12">
+                                    <label for="lei_base" class="form-label">Fundamentação Legal</label>
+                                    <textarea class="form-control" id="lei_base" name="lei_base" rows="2" 
+                                              placeholder="Ex: Lei 14.133/2021, Lei 8.666/93, etc.">{{ (contrato.lei_base or '') if contrato else '' }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="row form-row">
+                                <div class="col-md-4">
+                                    <label for="modalidade_licitacao" class="form-label">Modalidade de Licitação</label>
+                                    <select class="form-select" id="modalidade_licitacao" name="modalidade_licitacao">
+                                        <option value="">Selecione...</option>
+                                        <option value="PREGAO" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'PREGAO' else '' }}>Pregão</option>
+                                        <option value="TOMADA_PRECOS" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'TOMADA_PRECOS' else '' }}>Tomada de Preços</option>
+                                        <option value="CONCORRENCIA" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'CONCORRENCIA' else '' }}>Concorrência</option>
+                                        <option value="CONVITE" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'CONVITE' else '' }}>Convite</option>
+                                        <option value="DISPENSA" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'DISPENSA' else '' }}>Dispensa</option>
+                                        <option value="INEXIGIBILIDADE" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'INEXIGIBILIDADE' else '' }}>Inexigibilidade</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="orgao_contratante" class="form-label">Órgão Contratante</label>
+                                    <input type="text" class="form-control" id="orgao_contratante" name="orgao_contratante" 
+                                           value="{{ contrato.orgao_contratante if contrato else '' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="secretaria" class="form-label">Secretaria</label>
+                                    <input type="text" class="form-control" id="secretaria" name="secretaria" 
+                                           value="{{ contrato.secretaria if contrato else '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba 2: Fornecedor & CNPJ -->
+                        <div class="tab-pane fade" id="fornecedor" role="tabpanel">
+                            <div class="row form-row">
+                                <div class="col-md-8">
+                                    <label for="fornecedor" class="form-label">Nome do Fornecedor *</label>
+                                    <input type="text" class="form-control" id="fornecedor" name="fornecedor" 
+                                           autocomplete="organization" aria-required="true" required
+                                           value="{{ (contrato.fornecedor or '') if contrato else '' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="cnpj_fornecedor" class="form-label">CNPJ do Fornecedor</label>
+                                    <input type="text" class="form-control" id="cnpj_fornecedor" name="cnpj_fornecedor" 
+                                           autocomplete="off" placeholder="00.000.000/0000-00"
+                                           value="{{ (contrato.cnpj_fornecedor or '') if contrato else '' }}">
+                                </div>
+                            </div>
+
+                            <h6 class="section-header">
+                                <i class="bi bi-person-vcard me-1"></i>
+                                Dados do Responsável
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-xl-3 col-lg-4">
+                                    <label for="responsavel_nome" class="form-label">Nome do Responsável</label>
+                                    <input type="text" class="form-control" id="responsavel_nome" name="responsavel_nome" 
+                                           autocomplete="name"
+                                           value="{{ (contrato.responsavel_nome or '') if contrato else '' }}">
+                                </div>
+                                <div class="col-xl-3 col-lg-4">
+                                    <label for="responsavel_cargo" class="form-label">Cargo do Responsável</label>
+                                    <input type="text" class="form-control" id="responsavel_cargo" name="responsavel_cargo" 
+                                           autocomplete="organization-title"
+                                           value="{{ (contrato.responsavel_cargo or '') if contrato else '' }}">
+                                </div>
+                                <div class="col-xl-3 col-lg-4">
+                                    <label for="responsavel_email" class="form-label">Email do Responsável</label>
+                                    <input type="email" class="form-control" id="responsavel_email" name="responsavel_email" 
+                                           autocomplete="email"
+                                           value="{{ (contrato.responsavel_email or '') if contrato else '' }}">
+                                </div>
+                                <div class="col-xl-3 col-lg-4">
+                                    <label for="responsavel_telefone" class="form-label">Telefone do Responsável</label>
+                                    <input type="tel" class="form-control" id="responsavel_telefone" name="responsavel_telefone" 
+                                           autocomplete="tel" placeholder="(00) 00000-0000"
+                                           value="{{ (contrato.responsavel_telefone or '') if contrato else '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba 3: Financeiro & Prazos -->
+                        <div class="tab-pane fade" id="financeiro" role="tabpanel">
+                            <h6 class="section-header">
+                                <i class="bi bi-currency-dollar me-1"></i>
+                                Valores
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-xl-3 col-lg-6">
+                                    <label for="valor_total" class="form-label">Valor Total do Contrato *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R$</span>
+                                        <input type="number" class="form-control" id="valor_total" name="valor_total" 
+                                               step="0.01" min="0" aria-required="true" required
+                                               value="{{ (contrato.valor_total or '') if contrato else '' }}">
+                                    </div>
+                                </div>
+                                <div class="col-xl-3 col-lg-6">
+                                    <label for="valor_inicial" class="form-label">Valor Inicial (antes de aditivos)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R$</span>
+                                        <input type="number" class="form-control" id="valor_inicial" name="valor_inicial" 
+                                               step="0.01" min="0"
+                                               value="{{ (contrato.valor_inicial or '') if contrato else '' }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="section-header">
+                                <i class="bi bi-calendar me-1"></i>
+                                Prazos
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-md-3">
+                                    <label for="data_assinatura" class="form-label">Data de Assinatura *</label>
+                                    <input type="date" class="form-control" id="data_assinatura" name="data_assinatura" 
+                                           aria-required="true" required
+                                           value="{{ contrato.data_assinatura.strftime('%Y-%m-%d') if contrato and contrato.data_assinatura else '' }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="data_inicio" class="form-label">Data de Início *</label>
+                                    <input type="date" class="form-control" id="data_inicio" name="data_inicio" 
+                                           aria-required="true" required
+                                           value="{{ contrato.data_inicio.strftime('%Y-%m-%d') if contrato and contrato.data_inicio else '' }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="data_fim" class="form-label">Data de Fim *</label>
+                                    <input type="date" class="form-control" id="data_fim" name="data_fim" 
+                                           aria-required="true" required
+                                           value="{{ contrato.data_fim.strftime('%Y-%m-%d') if contrato and contrato.data_fim else '' }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="data_fim_original" class="form-label">Data de Fim Original</label>
+                                    <input type="date" class="form-control" id="data_fim_original" name="data_fim_original" 
+                                           value="{{ contrato.data_fim_original.strftime('%Y-%m-%d') if contrato and contrato.data_fim_original else '' }}">
+                                </div>
+                            </div>
+
+                            <div class="row form-row">
+                                <div class="col-xl-6 col-lg-6">
+                                    <label for="gestor_fiscal" class="form-label">Gestor Fiscal</label>
+                                    <input type="text" class="form-control" id="gestor_fiscal" name="gestor_fiscal" 
+                                           value="{{ contrato.gestor_fiscal if contrato else '' }}">
+                                </div>
+                                <div class="col-xl-6 col-lg-6">
+                                    <label for="gestor_superior" class="form-label">Gestor Superior</label>
+                                    <input type="text" class="form-control" id="gestor_superior" name="gestor_superior" 
+                                           value="{{ contrato.gestor_superior if contrato else '' }}">
+                                </div>
+                            </div>
+
+                            <h6 class="section-header">
+                                <i class="bi bi-shield-check me-1"></i>
+                                Garantias e Seguros
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-md-4">
+                                    <label for="tipo_garantia" class="form-label">Tipo de Garantia</label>
+                                    <select class="form-select" id="tipo_garantia" name="tipo_garantia">
+                                        <option value="">Sem Garantia</option>
+                                        <option value="CAUCAO" {{ 'selected' if contrato and contrato.tipo_garantia == 'CAUCAO' else '' }}>Caução em Dinheiro</option>
+                                        <option value="SEGURO_GARANTIA" {{ 'selected' if contrato and contrato.tipo_garantia == 'SEGURO_GARANTIA' else '' }}>Seguro-Garantia</option>
+                                        <option value="FIANCA_BANCARIA" {{ 'selected' if contrato and contrato.tipo_garantia == 'FIANCA_BANCARIA' else '' }}>Fiança Bancária</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="valor_garantia" class="form-label">Valor da Garantia</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R$</span>
+                                        <input type="number" class="form-control" id="valor_garantia" name="valor_garantia" 
+                                               step="0.01" min="0" value="{{ contrato.valor_garantia if contrato else '' }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="validade_garantia" class="form-label">Validade da Garantia</label>
+                                    <input type="date" class="form-control" id="validade_garantia" name="validade_garantia" 
+                                           value="{{ contrato.validade_garantia.strftime('%Y-%m-%d') if contrato and contrato.validade_garantia else '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba 4: Anexos & Observações -->
+                        <div class="tab-pane fade" id="anexos" role="tabpanel">
+                            <h6 class="section-header">
+                                <i class="bi bi-paperclip me-1"></i>
+                                Anexar Contrato
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-12">
+                                    <label for="arquivo_contrato" class="form-label">Arquivo do Contrato (PDF)</label>
+                                    <input type="file" class="form-control" id="arquivo_contrato" name="arquivo_contrato" 
+                                           accept=".pdf,.doc,.docx">
+                                    {% if contrato and contrato.arquivo_contrato %}
+                                    <small class="text-success mt-1">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Arquivo atual: {{ contrato.arquivo_contrato }}
+                                        <a href="{{ url_for('contratos.download_arquivo', id=contrato.id) }}" target="_blank" class="ms-2">
+                                            <i class="bi bi-download"></i> Baixar
+                                        </a>
+                                    </small>
+                                    {% else %}
+                                    <small class="text-muted">Formatos aceitos: PDF, DOC, DOCX (máx. 10MB)</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <h6 class="section-header">
+                                <i class="bi bi-journal-text me-1"></i>
+                                Observações e Notas
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-12">
+                                    <label for="observacoes" class="form-label">Observações Gerais</label>
+                                    <textarea class="form-control" id="observacoes" name="observacoes" rows="5" 
+                                              placeholder="Observações, anotações importantes, cláusulas especiais, etc.">{{ contrato.observacoes if contrato else '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botoes de Acao -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    {{ 'Atualizar' if contrato else 'Salvar' }} Contrato
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Validacao e mascara do formulario -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const formEl = document.getElementById('formContrato');
+    const TABS_ID = 'contratoTabsActive';
+    
+    // ========= PERSISTÊNCIA DA ABA ATIVA =========
+    const tabElList = [].slice.call(document.querySelectorAll('#contratoTabs button[data-bs-toggle="tab"]'));
+
+    // Restaurar aba salva
+    const savedTab = localStorage.getItem(TABS_ID);
+    if (savedTab) {
+        const btnEl = document.querySelector(`#contratoTabs button[data-bs-target="${savedTab}"]`);
+        if (btnEl && window.bootstrap) {
+            new bootstrap.Tab(btnEl).show();
+        }
+    }
+
+    // Salvar aba quando mudada
+    tabElList.forEach(btnEl => {
+        btnEl.addEventListener('shown.bs.tab', e => {
+            const target = e.target.getAttribute('data-bs-target');
+            localStorage.setItem(TABS_ID, target);
+        });
+    });
+    
+    // ========= MÁSCARAS DE ENTRADA =========
+    
+    // Mascara para CNPJ
+    const cnpjEl = document.getElementById('cnpj_fornecedor');
+    if (cnpjEl) {
+        cnpjEl.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            value = value.replace(/(\d{2})(\d)/, '$1.$2')
+                         .replace(/(\d{3})(\d)/, '$1.$2')
+                         .replace(/(\d{3})(\d)/, '$1/$2')
+                         .replace(/(\d{4})(\d)/, '$1-$2');
+            this.value = value;
+        });
+    }
+    
+    // Mascara para telefone
+    const telEl = document.getElementById('responsavel_telefone');
+    if (telEl) {
+        telEl.addEventListener('input', function() {
+            let v = this.value.replace(/\D/g, '');
+            if (v.length <= 11) {
+                v = v.replace(/(\d{2})(\d)/, '($1) $2')
+                     .replace(/(\d{4,5})(\d{4})/, '$1-$2');
+            }
+            this.value = v;
+        });
+    }
+    
+    // ========= AUTO-PREENCHIMENTO =========
+    
+    // Auto-preenchimento do valor inicial com valor total (uma vez)
+    const valorTotalEl = document.getElementById('valor_total');
+    const valorInicialEl = document.getElementById('valor_inicial');
+    
+    if (valorTotalEl && valorInicialEl) {
+        valorTotalEl.addEventListener('blur', function() {
+            if (this.value && !valorInicialEl.value) {
+                valorInicialEl.value = this.value;
+            }
+        });
+    }
+    
+    // ========= VALIDAÇÃO DO FORMULÁRIO =========
+    
+    if (formEl) {
+        // Normalizar valores monetários antes do submit (vírgula para ponto)
+        formEl.addEventListener('submit', function(e) {
+            // Normalizar valores monetários
+            ['valor_total', 'valor_inicial', 'valor_garantia'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.value) {
+                    el.value = el.value.replace('.', '').replace(',', '.');
+                }
+            });
+            
+            // Validações obrigatórias
+            const numeroContrato = (document.getElementById('numero_contrato')?.value || '').trim();
+            const objeto = (document.getElementById('objeto')?.value || '').trim();
+            const fornecedor = (document.getElementById('fornecedor')?.value || '').trim();
+            const valorTotal = (document.getElementById('valor_total')?.value || '').trim();
+            
+            if (!numeroContrato || !objeto || !fornecedor || !valorTotal) {
+                e.preventDefault();
+                alert('Por favor, preencha todos os campos obrigatórios marcados com *');
+                
+                // Ir para a primeira aba com erro
+                if (!numeroContrato || !objeto) {
+                    const identificacaoTab = document.querySelector('#identificacao-tab');
+                    if (identificacaoTab && window.bootstrap) {
+                        new bootstrap.Tab(identificacaoTab).show();
+                    }
+                } else if (!fornecedor) {
+                    const fornecedorTab = document.querySelector('#fornecedor-tab');
+                    if (fornecedorTab && window.bootstrap) {
+                        new bootstrap.Tab(fornecedorTab).show();
+                    }
+                } else if (!valorTotal) {
+                    const financeiroTab = document.querySelector('#financeiro-tab');
+                    if (financeiroTab && window.bootstrap) {
+                        new bootstrap.Tab(financeiroTab).show();
+                    }
+                }
+                return false;
+            }
+            
+            // Validar datas
+            const diStr = document.getElementById('data_inicio')?.value;
+            const dfStr = document.getElementById('data_fim')?.value;
+            if (diStr && dfStr) {
+                const di = new Date(diStr + 'T00:00:00');
+                const df = new Date(dfStr + 'T00:00:00');
+                if (df <= di) {
+                    e.preventDefault();
+                    alert('A data de fim deve ser posterior à data de início.');
+                    
+                    // Ir para aba de datas
+                    const financeiroTab = document.querySelector('#financeiro-tab');
+                    if (financeiroTab && window.bootstrap) {
+                        new bootstrap.Tab(financeiroTab).show();
+                    }
+                    return false;
+                }
+            }
+            
+            // Validar CNPJ se preenchido
+            const cnpjDigits = (cnpjEl?.value || '').replace(/\D/g, '');
+            if (cnpjDigits && cnpjDigits.length !== 14) {
+                e.preventDefault();
+                alert('CNPJ deve ter exatamente 14 dígitos.');
+                
+                // Ir para aba do fornecedor
+                const fornecedorTab = document.querySelector('#fornecedor-tab');
+                if (fornecedorTab && window.bootstrap) {
+                    new bootstrap.Tab(fornecedorTab).show();
+                }
+                
+                // Focar no campo CNPJ
+                if (cnpjEl) {
+                    cnpjEl.focus();
+                    cnpjEl.select();
+                }
+                return false;
+            }
+            
+            // Validar email se preenchido
+            const emailEl = document.getElementById('responsavel_email');
+            if (emailEl && emailEl.value) {
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailPattern.test(emailEl.value)) {
+                    e.preventDefault();
+                    alert('Por favor, insira um email válido.');
+                    
+                    const fornecedorTab = document.querySelector('#fornecedor-tab');
+                    if (fornecedorTab && window.bootstrap) {
+                        new bootstrap.Tab(fornecedorTab).show();
+                    }
+                    emailEl.focus();
+                    return false;
+                }
+            }
+        });
+    }
+    
+    // ========= MELHORIAS DE UX =========
+    
+    // Auto-completar ano atual se não preenchido
+    const anoAtual = new Date().getFullYear();
+    const anosFields = ['ano_pregao', 'ano_contrato', 'ano_processo'];
+    
+    anosFields.forEach(fieldId => {
+        const fieldEl = document.getElementById(fieldId);
+        if (fieldEl) {
+            fieldEl.addEventListener('focus', function() {
+                if (!this.value) {
+                    this.value = anoAtual;
+                }
+            });
+        }
+    });
+    
+    // Feedback visual para campos obrigatórios
+    const requiredFields = document.querySelectorAll('input[required], textarea[required], select[required]');
+    requiredFields.forEach(fieldEl => {
+        fieldEl.addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+        
+        fieldEl.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
