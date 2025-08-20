@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}Demonstração - Sistema de Relatórios{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relatorios.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<style>
+    .demo-section {
+        margin-bottom: 3rem;
+    }
+    
+    .demo-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .feature-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 3rem 0 rgba(58, 59, 69, 0.3);
+    }
+    
+    .feature-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 2rem;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header de Demonstração -->
+    <div class="demo-header">
+        <h1 class="mb-3">
+            <i class="fas fa-chart-line"></i> Sistema de Relatórios Avançado
+        </h1>
+        <p class="lead mb-0">
+            Sistema completo de Business Intelligence para gestão de empenhos e notas fiscais
+        </p>
+    </div>
+
+    <!-- Funcionalidades Principais -->
+    <div class="demo-section">
+        <h2 class="mb-4"><i class="fas fa-star text-orange"></i> Funcionalidades Principais</h2>
+        <div class="row">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-orange">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <h5 class="card-title">Dashboard Executivo</h5>
+                        <p class="card-text">
+                            Visão consolidada com KPIs principais, gráficos interativos e alertas em tempo real.
+                        </p>
+                        <a href="{{ url_for('relatorios.index') }}" class="btn btn-orange">
+                            <i class="fas fa-eye"></i> Ver Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-success">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h5 class="card-title">Analytics Avançado</h5>
+                        <p class="card-text">
+                            Análises de tendências, performance mensal e indicadores de produtividade.
+                        </p>
+                        <a href="{{ url_for('relatorios.analytics') }}" class="btn btn-success">
+                            <i class="fas fa-chart-area"></i> Ver Analytics
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-info">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <h5 class="card-title">Relatório Financeiro</h5>
+                        <p class="card-text">
+                            Controle financeiro completo com fluxo de caixa e comparativos anuais.
+                        </p>
+                        <a href="{{ url_for('relatorios.financeiro') }}" class="btn btn-info">
+                            <i class="fas fa-dollar-sign"></i> Ver Financeiro
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-warning">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <h5 class="card-title">Relatório Operacional</h5>
+                        <p class="card-text">
+                            Análise de produtividade, controle de prazos e distribuição de status.
+                        </p>
+                        <a href="{{ url_for('relatorios.operacional') }}" class="btn btn-warning">
+                            <i class="fas fa-tasks"></i> Ver Operacional
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-purple" style="background: #6f42c1;">
+                            <i class="fas fa-filter"></i>
+                        </div>
+                        <h5 class="card-title">Relatórios Personalizados</h5>
+                        <p class="card-text">
+                            Filtros avançados por período, status, fornecedor e muito mais.
+                        </p>
+                        <a href="{{ url_for('relatorios.filtrado') }}" class="btn" style="background: #6f42c1; color: white;">
+                            <i class="fas fa-search"></i> Ver Filtros
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-dark">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <h5 class="card-title">Exportação</h5>
+                        <p class="card-text">
+                            Exporte relatórios em Excel, PDF e outros formatos para análise externa.
+                        </p>
+                        <div class="btn-group">
+                            <a href="{{ url_for('relatorios.exportar_excel') }}" class="btn btn-success btn-sm">
+                                <i class="fas fa-file-excel"></i> Excel
+                            </a>
+                            <a href="{{ url_for('relatorios.exportar_pdf') }}" class="btn btn-danger btn-sm">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exemplo de Métricas -->
+    <div class="demo-section">
+        <h2 class="mb-4"><i class="fas fa-chart-bar text-success"></i> Exemplo de Métricas</h2>
+        <div class="kpi-grid">
+            <div class="metric-card metric-card-primary">
+                <div class="metric-value">1,247</div>
+                <div class="metric-label">Total Empenhos</div>
+                <i class="fas fa-file-invoice fa-2x position-absolute" style="top: 1rem; right: 1rem; opacity: 0.3;"></i>
+            </div>
+            
+            <div class="metric-card metric-card-success">
+                <div class="metric-value">R$ 2.8M</div>
+                <div class="metric-label">Valor Empenhado</div>
+                <i class="fas fa-dollar-sign fa-2x position-absolute" style="top: 1rem; right: 1rem; opacity: 0.3;"></i>
+            </div>
+            
+            <div class="metric-card metric-card-info">
+                <div class="metric-value">854</div>
+                <div class="metric-label">Notas Fiscais</div>
+                <i class="fas fa-receipt fa-2x position-absolute" style="top: 1rem; right: 1rem; opacity: 0.3;"></i>
+            </div>
+            
+            <div class="metric-card metric-card-warning">
+                <div class="metric-value">94.2%</div>
+                <div class="metric-label">Taxa Execução</div>
+                <i class="fas fa-check-circle fa-2x position-absolute" style="top: 1rem; right: 1rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exemplo de Gráfico -->
+    <div class="demo-section">
+        <h2 class="mb-4"><i class="fas fa-chart-area text-info"></i> Exemplo de Gráfico</h2>
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="dashboard-card">
+                    <div class="table-header">
+                        <i class="fas fa-chart-line"></i> Evolução dos Empenhos (Exemplo)
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="demoChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="dashboard-card">
+                    <div class="table-header">
+                        <i class="fas fa-info-circle"></i> Características
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                <strong>Responsivo</strong> - Funciona em todos os dispositivos
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                <strong>Interativo</strong> - Gráficos com hover e zoom
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                <strong>Tempo Real</strong> - Dados atualizados automaticamente
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                <strong>Exportável</strong> - Salve em diversos formatos
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                <strong>Personalizável</strong> - Filtros avançados
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert-panel text-center">
+                <h3 class="mb-3">
+                    <i class="fas fa-rocket"></i> Comece Agora!
+                </h3>
+                <p class="lead mb-4">
+                    Explore todos os recursos do sistema de relatórios avançado
+                </p>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('relatorios.index') }}" class="btn btn-orange btn-lg">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard Principal
+                    </a>
+                    <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-file-invoice"></i> Gerenciar Empenhos
+                    </a>
+                    <a href="{{ url_for('notas.index') }}" class="btn btn-outline-success btn-lg">
+                        <i class="fas fa-receipt"></i> Notas Fiscais
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Gráfico de demonstração
+const ctx = document.getElementById('demoChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+        datasets: [{
+            label: 'Empenhos',
+            data: [65, 78, 90, 81, 96, 102],
+            borderColor: 'rgb(255, 143, 0)',
+            backgroundColor: 'rgba(255, 143, 0, 0.1)',
+            tension: 0.4,
+            fill: true
+        }, {
+            label: 'Notas Fiscais',
+            data: [45, 52, 68, 71, 84, 89],
+            borderColor: 'rgb(102, 126, 234)',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: 'Exemplo de Evolução Mensal'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Animações
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.metric-card, .feature-card');
+    cards.forEach((card, index) => {
+        setTimeout(() => {
+            card.classList.add('fade-in-up');
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

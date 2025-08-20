@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Nota {{ nota.numero_nota }} - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}Detalhes da Nota Fiscal{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('notas.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>
+        Voltar
+    </a>
+    <a href="{{ url_for('notas.editar', id=nota.id) }}" class="btn btn-outline-primary">
+        <i class="bi bi-pencil me-1"></i>
+        Editar
+    </a>
+    {% if nota.status == 'EM_ABERTO' %}
+    <button type="button" class="btn btn-success" onclick="marcarComoPago()">
+        <i class="bi bi-check-circle me-1"></i>
+        Marcar como Pago
+    </button>
+    {% endif %}
+    {% if nota.status != 'CANCELADO' %}
+    <button type="button" class="btn btn-warning" onclick="cancelarNota()">
+        <i class="bi bi-x-circle me-1"></i>
+        Cancelar
+    </button>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Informações Principais -->
+    <div class="col-lg-8">
+        <!-- Cabeçalho da Nota -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-receipt me-2"></i>
+                        Nota Fiscal {{ nota.numero_nota }}
+                        {% if nota.serie %}
+                        - Série {{ nota.serie }}
+                        {% endif %}
+                    </h5>
+                    <span class="badge bg-{{ nota.get_status_color() }} fs-6">
+                        {{ nota.get_status_display() }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Dados da Nota</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td><strong>Número:</strong></td>
+                                <td>{{ nota.numero_nota }}</td>
+                            </tr>
+                            {% if nota.serie %}
+                            <tr>
+                                <td><strong>Série:</strong></td>
+                                <td>{{ nota.serie }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if nota.chave_acesso %}
+                            <tr>
+                                <td><strong>Chave:</strong></td>
+                                <td><small>{{ nota.chave_acesso }}</small></td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td><strong>Data Emissão:</strong></td>
+                                <td>{{ nota.data_emissao.strftime('%d/%m/%Y') }}</td>
+                            </tr>
+                            {% if nota.data_vencimento %}
+                            <tr>
+                                <td><strong>Vencimento:</strong></td>
+                                <td>
+                                    {{ nota.data_vencimento.strftime('%d/%m/%Y') }}
+                                    {% set dias = nota.dias_para_vencimento() %}
+                                    {% if dias is not none %}
+                                        {% if dias < 0 %}
+                                            <span class="badge bg-danger ms-2">Vencida há {{ -dias }} dias</span>
+                                        {% elif dias <= 7 %}
+                                            <span class="badge bg-warning ms-2">Vence em {{ dias }} dias</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if nota.data_recebimento %}
+                            <tr>
+                                <td><strong>Recebimento:</strong></td>
+                                <td>{{ nota.data_recebimento.strftime('%d/%m/%Y') }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Valores</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td><strong>Valor Bruto:</strong></td>
+                                <td>R$ {{ "{:,.2f}".format(nota.valor_bruto) }}</td>
+                            </tr>
+                            {% if nota.valor_desconto > 0 %}
+                            <tr>
+                                <td>(-) Desconto:</td>
+                                <td>R$ {{ "{:,.2f}".format(nota.valor_desconto) }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if nota.valor_ir > 0 %}
+                            <tr>
+                                <td>(-) IR:</td>
+                                <td>R$ {{ "{:,.2f}".format(nota.valor_ir) }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if nota.valor_inss > 0 %}
+                            <tr>
+                                <td>(-) INSS:</td>
+                                <td>R$ {{ "{:,.2f}".format(nota.valor_inss) }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if nota.valor_iss > 0 %}
+                            <tr>
+                                <td>(-) ISS:</td>
+                                <td>R$ {{ "{:,.2f}".format(nota.valor_iss) }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if nota.valor_outros_impostos > 0 %}
+                            <tr>
+                                <td>(-) Outros:</td>
+                                <td>R$ {{ "{:,.2f}".format(nota.valor_outros_impostos) }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr class="border-top">
+                                <td><strong>Valor Líquido:</strong></td>
+                                <td><strong class="text-success">R$ {{ "{:,.2f}".format(nota.valor_liquido) }}</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dados do Fornecedor -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-building me-1"></i>
+                    Dados do Fornecedor
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6>{{ nota.fornecedor_nome }}</h6>
+                        <p class="text-muted mb-0">CNPJ: {{ nota.fornecedor_cnpj }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dados do Empenho -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-file-earmark-text me-1"></i>
+                    Empenho Vinculado
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td><strong>Número:</strong></td>
+                                <td>
+                                    <a href="{{ url_for('empenhos.detalhes', id=nota.empenho.id) }}" class="text-decoration-none">
+                                        {{ nota.empenho.numero_empenho }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Contrato:</strong></td>
+                                <td>{{ nota.empenho.numero_contrato }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Data Empenho:</strong></td>
+                                <td>{{ nota.empenho.data_empenho.strftime('%d/%m/%Y') }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td><strong>Valor Empenhado:</strong></td>
+                                <td>R$ {{ "{:,.2f}".format(nota.empenho.valor_empenhado) }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ nota.empenho.status }}</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações de Pagamento -->
+        {% if nota.status == 'PAGO' %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-credit-card me-1"></i>
+                    Informações de Pagamento
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td><strong>Data Pagamento:</strong></td>
+                                <td>{{ nota.data_pagamento.strftime('%d/%m/%Y') if nota.data_pagamento else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Forma:</strong></td>
+                                <td>{{ nota.forma_pagamento or '-' }}</td>
+                            </tr>
+                            {% if nota.banco_pagamento %}
+                            <tr>
+                                <td><strong>Banco:</strong></td>
+                                <td>{{ nota.banco_pagamento }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        {% if nota.agencia_pagamento or nota.conta_pagamento %}
+                        <table class="table table-sm table-borderless">
+                            {% if nota.agencia_pagamento %}
+                            <tr>
+                                <td><strong>Agência:</strong></td>
+                                <td>{{ nota.agencia_pagamento }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if nota.conta_pagamento %}
+                            <tr>
+                                <td><strong>Conta:</strong></td>
+                                <td>{{ nota.conta_pagamento }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if nota.documento_pagamento %}
+                            <tr>
+                                <td><strong>Documento:</strong></td>
+                                <td>{{ nota.documento_pagamento }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Observações -->
+        {% if nota.observacoes %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-chat-left-text me-1"></i>
+                    Observações
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ nota.observacoes }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Resumo -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Resumo
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Status:</span>
+                    <span class="badge bg-{{ nota.get_status_color() }}">{{ nota.get_status_display() }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Valor Total:</span>
+                    <strong>R$ {{ "{:,.2f}".format(nota.valor_liquido) }}</strong>
+                </div>
+
+                {% if nota.data_vencimento %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Vencimento:</span>
+                    <span>{{ nota.data_vencimento.strftime('%d/%m/%Y') }}</span>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Criado em:</span>
+                    <span>{{ nota.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-tools me-1"></i>
+                    Ações
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if nota.status == 'EM_ABERTO' %}
+                    <button type="button" class="btn btn-success" onclick="marcarComoPago()">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Marcar como Pago
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('notas.editar', id=nota.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-1"></i>
+                        Editar Nota
+                    </a>
+                    
+                    {% if nota.status != 'CANCELADO' %}
+                    <button type="button" class="btn btn-outline-warning" onclick="cancelarNota()">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Cancelar Nota
+                    </button>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <button type="button" class="btn btn-outline-danger" onclick="excluirNota()">
+                        <i class="bi bi-trash me-1"></i>
+                        Excluir Nota
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Pagamento -->
+<div class="modal fade" id="pagamentoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registrar Pagamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('notas.pagar', id=nota.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Forma de Pagamento</label>
+                        <select name="forma_pagamento" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option value="PIX">PIX</option>
+                            <option value="TED">TED</option>
+                            <option value="DOC">DOC</option>
+                            <option value="CHEQUE">Cheque</option>
+                            <option value="BOLETO">Boleto</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Banco</label>
+                        <input type="text" name="banco_pagamento" class="form-control">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Agência</label>
+                            <input type="text" name="agencia_pagamento" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Conta</label>
+                            <input type="text" name="conta_pagamento" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Documento/Comprovante</label>
+                        <input type="text" name="documento_pagamento" class="form-control" 
+                               placeholder="Número do comprovante, TED, etc.">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar Pagamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function marcarComoPago() {
+    new bootstrap.Modal(document.getElementById('pagamentoModal')).show();
+}
+
+function cancelarNota() {
+    if (confirm('Tem certeza que deseja cancelar esta nota fiscal?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("notas.cancelar", id=nota.id) }}';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function excluirNota() {
+    if (confirm('Tem certeza que deseja excluir esta nota fiscal? Esta ação não pode ser desfeita.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("notas.excluir", id=nota.id) }}';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+{% endblock %}

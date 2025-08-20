@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Contratos</title>
+</head>
+<body>
+    <h1>Teste da Página de Contratos</h1>
+    <p>Total de contratos: {{ contratos|length if contratos else 0 }}</p>
+    
+    {% if contratos %}
+        <h2>Lista de Contratos:</h2>
+        <ul>
+        {% for contrato in contratos %}
+            <li>{{ contrato.numero_contrato }} - {{ contrato.fornecedor }} - R$ {{ contrato.valor_total }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p><strong>Nenhum contrato encontrado!</strong></p>
+    {% endif %}
+</body>
+</html>

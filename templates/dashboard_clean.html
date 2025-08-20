@@ -1,0 +1,869 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Executivo - Sistema de Empenhos{% endblock %}
+
+{% block page_title %}Dashboard Executivo{% endblock %}
+
+{% block extra_head %}
+<style>
+/* DASHBOARD EXECUTIVO - CLEAN & MODERN */
+html, body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 100vh !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.main-content, .content-wrapper, .container-fluid {
+    background: transparent !important;
+    min-height: 100vh !important;
+    padding: 0 !important;
+}
+
+.dashboard-executive {
+    padding: 30px !important;
+    background: transparent !important;
+    min-height: calc(100vh - 60px) !important;
+}
+
+/* HEADER EXECUTIVO */
+.executive-header {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-radius: 20px !important;
+    padding: 40px !important;
+    margin-bottom: 40px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.dashboard-title {
+    font-size: 3rem !important;
+    font-weight: 900 !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    margin-bottom: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.icon-wrapper {
+    width: 60px !important;
+    height: 60px !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-radius: 16px !important;
+    margin-right: 20px !important;
+    color: white !important;
+    font-size: 1.8rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* METRIC CARDS */
+.metrics-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    gap: 25px !important;
+    margin-bottom: 40px !important;
+}
+
+.metric-card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 20px !important;
+    padding: 30px !important;
+    text-align: center !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08) !important;
+}
+
+.metric-card::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.metric-card:hover {
+    transform: translateY(-10px) !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15) !important;
+}
+
+.metric-icon {
+    width: 70px !important;
+    height: 70px !important;
+    margin: 0 auto 20px !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: 1.8rem !important;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3) !important;
+}
+
+.metric-number {
+    font-size: 3rem !important;
+    font-weight: 800 !important;
+    color: #2c3e50 !important;
+    margin: 15px 0 5px !important;
+    display: block !important;
+}
+
+.metric-label {
+    font-size: 1rem !important;
+    color: #7f8c8d !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    font-weight: 600 !important;
+}
+
+/* ANALYSIS CARDS */
+.analysis-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+    gap: 30px !important;
+    margin-bottom: 40px !important;
+}
+
+.analysis-card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 20px !important;
+    padding: 30px !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08) !important;
+}
+
+.analysis-card:hover {
+    transform: translateY(-8px) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12) !important;
+}
+
+.card-header-modern {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 25px !important;
+    padding-bottom: 15px !important;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.1) !important;
+}
+
+.card-title-modern {
+    font-size: 1.3rem !important;
+    font-weight: 700 !important;
+    color: #2c3e50 !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.card-icon-modern {
+    width: 40px !important;
+    height: 40px !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: 1.2rem !important;
+}
+
+.status-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 20px !important;
+}
+
+.status-item {
+    padding: 20px !important;
+    border-radius: 15px !important;
+    text-align: center !important;
+    transition: all 0.3s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.status-item.status-green {
+    background: linear-gradient(135deg, #a8e6cf 0%, #88d8c0 100%) !important;
+    color: #2d6a4f !important;
+}
+
+.status-item.status-yellow {
+    background: linear-gradient(135deg, #ffd93d 0%, #f39c12 100%) !important;
+    color: #d68910 !important;
+}
+
+.status-item.status-red {
+    background: linear-gradient(135deg, #ff6b6b 0%, #e74c3c 100%) !important;
+    color: #c0392b !important;
+}
+
+.status-item.status-blue {
+    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%) !important;
+    color: #2d3436 !important;
+}
+
+.status-item:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+}
+
+.status-value {
+    font-size: 2rem !important;
+    font-weight: 800 !important;
+    display: block !important;
+    margin-bottom: 8px !important;
+}
+
+.status-label {
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* ACTIVITY TIMELINE */
+.activity-timeline {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 20px !important;
+    padding: 30px !important;
+    margin-bottom: 30px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08) !important;
+}
+
+.timeline-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 30px !important;
+    padding-bottom: 20px !important;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.1) !important;
+}
+
+.timeline-title {
+    font-size: 1.4rem !important;
+    font-weight: 700 !important;
+    color: #2c3e50 !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+}
+
+.timeline-icon {
+    width: 45px !important;
+    height: 45px !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: 1.3rem !important;
+}
+
+.activity-list {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.activity-item {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 20px !important;
+    padding: 20px 0 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+    transition: all 0.3s ease !important;
+}
+
+.activity-item:last-child {
+    border-bottom: none !important;
+}
+
+.activity-item:hover {
+    background: rgba(102, 126, 234, 0.05) !important;
+    padding-left: 15px !important;
+    border-radius: 12px !important;
+}
+
+.activity-icon-wrapper {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.2rem !important;
+    color: white !important;
+    flex-shrink: 0 !important;
+}
+
+.activity-icon-wrapper.activity-success {
+    background: linear-gradient(135deg, #a8e6cf 0%, #88d8c0 100%) !important;
+}
+
+.activity-icon-wrapper.activity-warning {
+    background: linear-gradient(135deg, #ffd93d 0%, #f39c12 100%) !important;
+}
+
+.activity-icon-wrapper.activity-info {
+    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%) !important;
+}
+
+.activity-content {
+    flex: 1 !important;
+}
+
+.activity-title {
+    font-weight: 600 !important;
+    color: #2c3e50 !important;
+    margin: 0 0 5px 0 !important;
+    font-size: 1.1rem !important;
+}
+
+.activity-description {
+    color: #7f8c8d !important;
+    margin: 0 0 8px 0 !important;
+    font-size: 0.95rem !important;
+    line-height: 1.5 !important;
+}
+
+.activity-time {
+    color: #bdc3c7 !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+}
+
+/* ACTION LINKS */
+.action-links {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+    gap: 20px !important;
+    margin-top: 30px !important;
+}
+
+.action-link {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 20px 25px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 15px !important;
+    color: #2c3e50 !important;
+    text-decoration: none !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.action-link:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15) !important;
+    color: #667eea !important;
+    text-decoration: none !important;
+}
+
+.action-link-content {
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+}
+
+.action-link-icon {
+    width: 40px !important;
+    height: 40px !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: 1.1rem !important;
+}
+
+.action-link-text {
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+}
+
+.action-link-arrow {
+    font-size: 1.2rem !important;
+    transition: transform 0.3s ease !important;
+}
+
+.action-link:hover .action-link-arrow {
+    transform: translateX(5px) !important;
+}
+
+/* ANIMAÇÕES */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.metric-card {
+    animation: fadeInUp 0.6s ease-out !important;
+}
+
+.metric-card:nth-child(1) { animation-delay: 0.1s !important; }
+.metric-card:nth-child(2) { animation-delay: 0.2s !important; }
+.metric-card:nth-child(3) { animation-delay: 0.3s !important; }
+.metric-card:nth-child(4) { animation-delay: 0.4s !important; }
+
+.analysis-card, .activity-timeline {
+    animation: fadeInUp 0.8s ease-out !important;
+    animation-delay: 0.5s !important;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .dashboard-executive {
+        padding: 20px !important;
+    }
+    
+    .executive-header {
+        padding: 25px !important;
+        text-align: center !important;
+    }
+    
+    .dashboard-title {
+        font-size: 2rem !important;
+        flex-direction: column !important;
+    }
+    
+    .icon-wrapper {
+        margin-right: 0 !important;
+        margin-bottom: 15px !important;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+    }
+    
+    .analysis-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+    }
+    
+    .status-grid {
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+    }
+}
+
+/* FORCE CLEAN OVERRIDES */
+.container, .container-fluid, .row, .col, [class*="col-"] {
+    background: transparent !important;
+}
+
+.card, .card-body, .card-header {
+    background: transparent !important;
+    border: none !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid dashboard-executive">
+    <!-- Header Executivo -->
+    <div class="executive-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <div class="header-content">
+                    <h1 class="dashboard-title">
+                        <span class="icon-wrapper">
+                            <i class="bi bi-grid-1x2-fill"></i>
+                        </span>
+                        Dashboard Executivo
+                    </h1>
+                    <div class="dashboard-subtitle">
+                        <i class="bi bi-calendar3 me-2"></i>
+                        15 de Agosto de 2025 • Sistema de Gestão Municipal
+                        <span class="ms-3">
+                            <i class="bi bi-clock me-1"></i>
+                            {{ "14:08" }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 text-end">
+                <div class="action-buttons">
+                    <a href="/empenhos/novo" class="btn btn-gradient-primary">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Novo Empenho
+                    </a>
+                    <a href="/contratos/novo" class="btn btn-gradient-success ms-2">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Novo Contrato
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métricas Principais -->
+    <div class="metrics-grid mb-5">
+        <div class="row g-4">
+            <!-- Total de Empenhos -->
+            <div class="col-xl-3 col-lg-6">
+                <div class="metric-card primary-card">
+                    <div class="metric-icon">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h3 class="metric-number">{{ total_empenhos if total_empenhos is defined else 0 }}</h3>
+                        <p class="metric-label">Total de Empenhos</p>
+                        <div class="metric-trend positive">
+                            <i class="bi bi-arrow-up"></i>
+                            <span>Sistema Ativo</span>
+                        </div>
+                    </div>
+                    <div class="metric-chart">
+                        <div class="progress-ring primary-ring">
+                            <svg width="60" height="60">
+                                <circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+                                <circle cx="30" cy="30" r="25" fill="none" stroke="white" stroke-width="3" 
+                                        stroke-dasharray="157" stroke-dashoffset="39" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total de Contratos -->
+            <div class="col-xl-3 col-lg-6">
+                <div class="metric-card success-card">
+                    <div class="metric-icon">
+                        <i class="bi bi-file-contract"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h3 class="metric-number">{{ total_contratos if total_contratos is defined else 0 }}</h3>
+                        <p class="metric-label">Total de Contratos</p>
+                        <div class="metric-trend positive">
+                            <i class="bi bi-arrow-up"></i>
+                            <span>{{ contratos_ativos if contratos_ativos is defined else 0 }} Ativos</span>
+                        </div>
+                    </div>
+                    <div class="metric-chart">
+                        <div class="progress-ring success-ring">
+                            <svg width="60" height="60">
+                                <circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+                                <circle cx="30" cy="30" r="25" fill="none" stroke="white" stroke-width="3" 
+                                        stroke-dasharray="157" stroke-dashoffset="47" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Valor Total -->
+            <div class="col-xl-3 col-lg-6">
+                <div class="metric-card info-card">
+                    <div class="metric-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h3 class="metric-number">R$ {{ "{:,.0f}".format(valor_total_empenhos) if valor_total_empenhos is defined and valor_total_empenhos else "0" }}</h3>
+                        <p class="metric-label">Valor Total Empenhado</p>
+                        <div class="metric-trend neutral">
+                            <i class="bi bi-currency-dollar"></i>
+                            <span>Empenhado</span>
+                        </div>
+                    </div>
+                    <div class="metric-chart">
+                        <div class="progress-ring info-ring">
+                            <svg width="60" height="60">
+                                <circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+                                <circle cx="30" cy="30" r="25" fill="none" stroke="white" stroke-width="3" 
+                                        stroke-dasharray="157" stroke-dashoffset="31" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status do Sistema -->
+            <div class="col-xl-3 col-lg-6">
+                <div class="metric-card warning-card">
+                    <div class="metric-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h3 class="metric-number">100%</h3>
+                        <p class="metric-label">Sistema Online</p>
+                        <div class="metric-trend positive">
+                            <i class="bi bi-check-circle"></i>
+                            <span>Operacional</span>
+                        </div>
+                    </div>
+                    <div class="metric-chart">
+                        <div class="progress-ring warning-ring">
+                            <svg width="60" height="60">
+                                <circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+                                <circle cx="30" cy="30" r="25" fill="none" stroke="white" stroke-width="3" 
+                                        stroke-dasharray="157" stroke-dashoffset="0" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção de Análises -->
+    <div class="row g-4 mb-5">
+        <!-- Status dos Empenhos -->
+        <div class="col-xl-8">
+            <div class="analysis-card">
+                <div class="card-header-custom">
+                    <h5 class="card-title">
+                        <i class="bi bi-bar-chart-fill me-2"></i>
+                        Análise de Empenhos
+                    </h5>
+                    <div class="header-actions">
+                        <div class="dropdown">
+                            <button class="btn btn-link dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/empenhos/">Ver Todos</a></li>
+                                <li><a class="dropdown-item" href="/relatorios/">Relatórios</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="status-grid">
+                        <div class="status-item approved">
+                            <div class="status-icon">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="status-content">
+                                <h4>{{ empenhos_aprovados if empenhos_aprovados is defined else 0 }}</h4>
+                                <p>Aprovados</p>
+                                <div class="status-bar">
+                                    <div class="bar-fill" style="width: 75%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="status-item pending">
+                            <div class="status-icon">
+                                <i class="bi bi-clock-fill"></i>
+                            </div>
+                            <div class="status-content">
+                                <h4>{{ empenhos_pendentes if empenhos_pendentes is defined else 0 }}</h4>
+                                <p>Pendentes</p>
+                                <div class="status-bar">
+                                    <div class="bar-fill" style="width: 45%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="status-item paid">
+                            <div class="status-icon">
+                                <i class="bi bi-credit-card-fill"></i>
+                            </div>
+                            <div class="status-content">
+                                <h4>{{ empenhos_pagos if empenhos_pagos is defined else 0 }}</h4>
+                                <p>Pagos</p>
+                                <div class="status-bar">
+                                    <div class="bar-fill" style="width: 60%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="status-item rejected">
+                            <div class="status-icon">
+                                <i class="bi bi-x-circle-fill"></i>
+                            </div>
+                            <div class="status-content">
+                                <h4>{{ empenhos_rejeitados if empenhos_rejeitados is defined else 0 }}</h4>
+                                <p>Rejeitados</p>
+                                <div class="status-bar">
+                                    <div class="bar-fill" style="width: 15%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Atividades Recentes -->
+        <div class="col-xl-4">
+            <div class="activity-card">
+                <div class="card-header-custom">
+                    <h5 class="card-title">
+                        <i class="bi bi-activity me-2"></i>
+                        Atividades Recentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="activity-timeline">
+                        {% if ultimos_empenhos is defined and ultimos_empenhos %}
+                            {% for empenho in ultimos_empenhos[:5] %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker {{ 'success' if empenho.status == 'APROVADO' else 'warning' if empenho.status == 'PENDENTE' else 'primary' if empenho.status == 'PAGO' else 'danger' }}"></div>
+                                <div class="timeline-content">
+                                    <h6>Empenho {{ empenho.numero_empenho if empenho.numero_empenho else empenho.id }}</h6>
+                                    <p>{{ empenho.fornecedor if empenho.fornecedor else 'Sem fornecedor' }}</p>
+                                    <span class="badge badge-{{ 'success' if empenho.status == 'APROVADO' else 'warning' if empenho.status == 'PENDENTE' else 'primary' if empenho.status == 'PAGO' else 'danger' }}">
+                                        {{ empenho.status }}
+                                    </span>
+                                    <small class="time-ago">Há {{ loop.index }} dia{{ 's' if loop.index > 1 else '' }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="bi bi-inbox"></i>
+                                <p>Nenhuma atividade recente</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Centro de Controle Avançado -->
+    <div class="control-center">
+        <div class="section-header">
+            <h3>
+                <i class="bi bi-command me-2"></i>
+                Centro de Controle Avançado
+            </h3>
+            <p>Acesso rápido a todas as funcionalidades do sistema</p>
+        </div>
+
+        <div class="control-grid">
+            <div class="row g-4">
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="control-item primary-control">
+                        <div class="control-background"></div>
+                        <a href="/empenhos/" class="control-link">
+                            <div class="control-icon">
+                                <i class="bi bi-file-earmark-text"></i>
+                            </div>
+                            <h5>Empenhos</h5>
+                            <p>Gestão completa de empenhos</p>
+                            <div class="control-arrow">
+                                <i class="bi bi-arrow-right"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="control-item success-control">
+                        <div class="control-background"></div>
+                        <a href="/contratos/" class="control-link">
+                            <div class="control-icon">
+                                <i class="bi bi-file-contract"></i>
+                            </div>
+                            <h5>Contratos</h5>
+                            <p>Controle de contratos</p>
+                            <div class="control-arrow">
+                                <i class="bi bi-arrow-right"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="control-item info-control">
+                        <div class="control-background"></div>
+                        <a href="/notas/" class="control-link">
+                            <div class="control-icon">
+                                <i class="bi bi-receipt"></i>
+                            </div>
+                            <h5>Notas Fiscais</h5>
+                            <p>Gestão de NF-e</p>
+                            <div class="control-arrow">
+                                <i class="bi bi-arrow-right"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="control-item warning-control">
+                        <div class="control-background"></div>
+                        <a href="/relatorios/" class="control-link">
+                            <div class="control-icon">
+                                <i class="bi bi-graph-up"></i>
+                            </div>
+                            <h5>Relatórios</h5>
+                            <p>Análises e dashboards</p>
+                            <div class="control-arrow">
+                                <i class="bi bi-arrow-right"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="control-item secondary-control">
+                        <div class="control-background"></div>
+                        <a href="/auth/users" class="control-link">
+                            <div class="control-icon">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <h5>Usuários</h5>
+                            <p>Gestão de acessos</p>
+                            <div class="control-arrow">
+                                <i class="bi bi-arrow-right"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="control-item dark-control">
+                        <div class="control-background"></div>
+                        <a href="/relatorios/importar" class="control-link">
+                            <div class="control-icon">
+                                <i class="bi bi-cloud-arrow-up"></i>
+                            </div>
+                            <h5>Importar</h5>
+                            <p>Dados externos</p>
+                            <div class="control-arrow">
+                                <i class="bi bi-arrow-right"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

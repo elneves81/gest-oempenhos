@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestão de Empenhos e Contratos{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+    <link rel="alternate icon" href="{{ url_for('static', filename='img/favicon.svg') }}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom Orange Theme -->
+    <link href="{{ url_for('static', filename='css/orange-theme.css') }}" rel="stylesheet">
+    <!-- Logo Styles -->
+    <link href="{{ url_for('static', filename='css/logo-styles.css') }}" rel="stylesheet">
+    <!-- Accessibility Fixes -->
+    <link href="{{ url_for('static', filename='css/accessibility-fixes.css') }}" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Orange Theme JS -->
+    <script src="{{ url_for('static', filename='js/orange-theme.js') }}"></script>
+    
+    <!-- Extra head block for custom styles -->
+    {% block extra_head %}{% endblock %}
+    
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 0.5rem;
+            width: 20px;
+        }
+        
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 0.5rem 1.5rem;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #e55a2e 0%, #ff6b35 100%);
+            transform: translateY(-1px);
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .badge {
+            font-size: 0.75em;
+            padding: 0.5em 0.75em;
+        }
+        
+        .status-pendente { background-color: #ffc107; }
+        .status-aprovado { background-color: #28a745; }
+        .status-rejeitado { background-color: #dc3545; }
+        .status-pago { background-color: #17a2b8; }
+        
+        /* Cards estatísticas com estilo original */
+        .stat-card {
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+            border-left: 4px solid #ff6b35;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+        
+        /* Contratos por vencimento - estilo conservador */
+        .contrato-critico {
+            border-left: 4px solid #dc3545;
+            background-color: #fff5f5;
+        }
+        
+        .contrato-atencao {
+            border-left: 4px solid #ffc107;
+            background-color: #fffef0;
+        }
+        
+        .contrato-normal {
+            border-left: 4px solid #28a745;
+            background-color: #f0fff4;
+        }
+    </style>
+</head>
+<body>
+    <!-- Layout com sidebar original -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <!-- Logo -->
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='img/logo_guarapuava.svg') }}" 
+                             alt="Logo" class="logo-img" style="height: 60px;">
+                        <h6 class="text-white mt-2">Sistema de Empenhos</h6>
+                    </div>
+                    
+                    <!-- Menu -->
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/" aria-label="Ir para dashboard">
+                                <i class="bi bi-speedometer2"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/empenhos/" aria-label="Gerenciar empenhos">
+                                <i class="bi bi-receipt"></i>
+                                Empenhos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/contratos/" aria-label="Gerenciar contratos">
+                                <i class="bi bi-file-earmark-text"></i>
+                                Contratos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/relatorios/" aria-label="Visualizar relatórios">
+                                <i class="bi bi-graph-up"></i>
+                                Relatórios
+                            </a>
+                        </li>
+                        
+                        {% if current_user and current_user.is_authenticated and current_user.is_admin %}
+                        <li class="nav-item mt-3">
+                            <h6 class="sidebar-heading text-white-50 text-uppercase">
+                                <span>Administração</span>
+                            </h6>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/auth/users" aria-label="Gerenciar usuários">
+                                <i class="bi bi-people"></i>
+                                Usuários
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    
+                    <!-- User Info -->
+                    {% if current_user and current_user.is_authenticated %}
+                    <div class="mt-auto pt-3 border-top border-light">
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-white" href="#" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu do usuário">
+                                <i class="bi bi-person-circle"></i>
+                                {{ current_user.nome.split()[0] if current_user.nome else 'Usuário' }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/auth/profile">
+                                    <i class="bi bi-person"></i> Meu Perfil
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/auth/logout">
+                                    <i class="bi bi-box-arrow-right"></i> Sair
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-10 ms-sm-auto px-md-4 main-content">
+                <!-- Header com título da página -->
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
+                    {% block page_actions %}{% endblock %}
+                </div>
+
+                <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Content -->
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Verificar Standards Mode
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.compatMode === 'CSS1Compat') {
+                console.log('✅ Standards Mode ativo');
+            } else {
+                console.warn('⚠️ Quirks Mode detectado');
+            }
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

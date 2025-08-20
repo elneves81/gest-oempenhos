@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Relatório de Contratos{% endblock %}
+{% block page_title %}Relatório de Contratos{% endblock %}
+
+{% block extra_css %}
+<style>
+:root{
+  --primary:#667eea;
+  --primary-2:#764ba2;
+}
+.contract-card {
+  background:#fff;
+  border-radius:10px;
+  padding:1.5rem;
+  box-shadow:0 2px 10px rgba(0,0,0,0.08);
+  margin-bottom:1rem;
+  border-left:4px solid var(--primary);
+}
+.contract-header {
+  display:flex;
+  justify-content:space-between; /* FIX: 'between' -> 'space-between' */
+  align-items:center;
+  margin-bottom:1rem;
+}
+.contract-status {
+  padding:0.25rem 0.75rem;
+  border-radius:20px;
+  font-size:0.85rem;
+  font-weight:600;
+  white-space:nowrap;
+}
+.status-ativo{ background:#d4edda; color:#155724; }
+.status-finalizado{ background:#d1ecf1; color:#0c5460; }
+.status-cancelado{ background:#f8d7da; color:#721c24; }
+.status-suspenso{ background:#fff3cd; color:#856404; }
+.status-indefinido{ background:#e2e3e5; color:#383d41; }
+
+.metric-summary{
+  background:linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+  color:#fff; border-radius:15px; padding:2rem; margin-bottom:2rem;
+}
+.summary-item{ text-align:center; }
+.summary-value{ font-size:2rem; font-weight:800; margin-bottom:0.25rem; line-height:1; }
+.summary-label{ font-size:0.9rem; opacity:0.9; }
+
+.table-responsive{
+  border-radius:10px; overflow:hidden;
+  box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+.btn-export{
+  background:linear-gradient(135deg,#28a745 0%,#20c997 100%);
+  color:#fff; border:none; border-radius:8px; padding:0.5rem 1rem;
+}
+
+.chart-container{
+  background:#fff; border-radius:10px; padding:1.5rem;
+  box-shadow:0 2px 10px rgba(0,0,0,0.08); margin-bottom:2rem;
+  height:340px; /* garante altura p/ Chart.js */
+}
+.chart-container canvas{ width:100%!important; height:260px!important; }
+
+@media print{
+  .btn, .btn-export, .btn-outline-primary { display:none !important; }
+  .metric-summary, .chart-container, .card { box-shadow:none !important; }
+  .table { font-size:12px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2>
+        <i class="bi bi-file-text me-2 text-primary" aria-hidden="true"></i>
+        Relatório de Contratos
+      </h2>
+      <p class="text-muted mb-0">Análise completa dos contratos do sistema</p>
+    </div>
+    <div class="d-print-none">
+      <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-primary me-2">
+        <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Voltar
+      </a>
+      <button class="btn btn-export" onclick="window.print()">
+        <i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir
+      </button>
+    </div>
+  </div>
+
+  <!-- Resumo Executivo -->
+  <div class="metric-summary">
+    <div class="row g-3">
+      <div class="col-6 col-md-3 summary-item">
+        <div class="summary-value">{{ total_contratos or 0 }}</div>
+        <div class="summary-label">Total de Contratos</div>
+      </div>
+      <div class="col-6 col-md-3 summary-item">
+        <div class="summary-value">R$ {{ (valor_total or 0)|round(0)|int }}</div>
+        <div class="summary-label">Valor Total</div>
+      </div>
+      <div class="col-6 col-md-3 summary-item">
+        <div class="summary-value">{{ (contratos_por_status.get('ATIVO') or 0) }}</div>
+        <div class="summary-label">Contratos Ativos</div>
+      </div>
+      <div class="col-6 col-md-3 summary-item">
+        <div class="summary-value">{{ (contratos_por_status|length) if contratos_por_status else 0 }}</div>
+        <div class="summary-label">Status Diferentes</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Gráfico: Contratos por Status -->
+    <div class="col-lg-6 mb-4">
+      <div class="chart-container">
+        <h5 class="fw-bold mb-3">Contratos por Status</h5>
+        <canvas id="statusChart" role="img" aria-label="Gráfico de contratos por status"></canvas>
+      </div>
+    </div>
+
+    <!-- Top 5 Fornecedores -->
+    <div class="col-lg-6 mb-4">
+      <div class="chart-container">
+        <h5 class="fw-bold mb-3">Top 5 Fornecedores</h5>
+        {% if top_fornecedores %}
+          {% set total_ref = (valor_total or 0) %}
+          {% for fornecedor, dados in top_fornecedores[:5] %}
+            {% set qtd = dados.quantidade or 0 %}
+            {% set val = (dados.valor_total or 0.0) %}
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <div class="me-3">
+                <strong>{{ (fornecedor or '—')[:42] }}{% if (fornecedor or '')|length > 42 %}...{% endif %}</strong><br>
+                <small class="text-muted">{{ qtd }} contrato(s)</small>
+              </div>
+              <div class="text-end">
+                <strong>R$ {{ "%.0f"|format(val) }}</strong>
+              </div>
+            </div>
+            <div class="progress mb-3" style="height:8px;">
+              <div class="progress-bar bg-primary"
+                   style="width: {{ (val / total_ref * 100) if total_ref > 0 else 0 }}%">
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted mb-0">Nenhum fornecedor encontrado</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Contratos -->
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-list me-2" aria-hidden="true"></i>Lista Completa de Contratos
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th>Número</th>
+              <th>Fornecedor</th>
+              <th>Objeto</th>
+              <th class="text-end">Valor</th>
+              <th>Data Assinatura</th>
+              <th>Data Fim</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for contrato in contratos %}
+            {% set st = (contrato.status or 'INDEFINIDO') %}
+            <tr>
+              <td>
+                <strong>{{ contrato.numero_contrato or '—' }}</strong>
+                {% if contrato.numero_pregao %}
+                  <br><small class="text-muted">Pregão: {{ contrato.numero_pregao }}</small>
+                {% endif %}
+              </td>
+              <td>
+                <strong>{{ contrato.fornecedor or '—' }}</strong>
+                {% if contrato.cnpj_fornecedor %}
+                  <br><small class="text-muted">{{ contrato.cnpj_fornecedor }}</small>
+                {% endif %}
+              </td>
+              <td>
+                {% set obj = contrato.objeto or '—' %}
+                {{ obj[:80] }}{% if obj|length > 80 %}...{% endif %}
+              </td>
+              <td class="text-end">
+                <strong>R$ {{ "%.2f"|format(contrato.valor_total or 0) }}</strong>
+              </td>
+              <td>{{ contrato.data_assinatura.strftime('%d/%m/%Y') if contrato.data_assinatura else '-' }}</td>
+              <td>{{ contrato.data_fim.strftime('%d/%m/%Y') if contrato.data_fim else '-' }}</td>
+              <td>
+                <span class="contract-status status-{{ st.lower().replace(' ', '-') }}">
+                  {{ st }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if not contratos %}
+    <div class="text-center py-5">
+      <i class="bi bi-inbox display-1 text-muted" aria-hidden="true"></i>
+      <h4 class="text-muted mt-3">Nenhum contrato encontrado</h4>
+      <p class="text-muted">Não há contratos cadastrados no sistema.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<script>
+// ------ Gráfico de Status ------
+(() => {
+  const raw = {{ (contratos_por_status or {})|tojson|safe }};
+  // Garante ordem fixa de status e cores correspondentes
+  const order = ['ATIVO','FINALIZADO','CANCELADO','SUSPENSO','OUTROS'];
+  const labels = [];
+  const data = [];
+  order.forEach(s => {
+    if (raw[s] !== undefined) {
+      labels.push(s);
+      data.push(raw[s]);
+    }
+  });
+  // Se houver status fora do conjunto conhecido, adiciona no final
+  Object.keys(raw).forEach(k => {
+    if (!order.includes(k)) { labels.push(k); data.push(raw[k]); }
+  });
+
+  const palette = {
+    'ATIVO':'#28a745',
+    'FINALIZADO':'#6c757d',
+    'CANCELADO':'#dc3545',
+    'SUSPENSO':'#ffc107',
+    'OUTROS':'#17a2b8'
+  };
+  const bg = labels.map(l => palette[l] || '#9ca3af');
+
+  const ctx = document.getElementById('statusChart').getContext('2d');
+  new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels,
+      datasets:[{
+        data,
+        backgroundColor:bg,
+        borderWidth:2,
+        borderColor:'#fff'
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'bottom' },
+        tooltip:{
+          callbacks:{
+            label:(ctx) => {
+              const total = data.reduce((a,b)=>a+b,0) || 1;
+              const v = ctx.parsed || 0;
+              const p = (v/total*100).toFixed(1);
+              return `${ctx.label}: ${v} (${p}%)`;
+            }
+          }
+        }
+      },
+      animation:{ animateScale:true }
+    }
+  });
+})();
+</script>
+{% endblock %}

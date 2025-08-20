@@ -1,345 +1,217 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Gestão de Empenhos e Contratos{% endblock %}
+{% block title %}Dashboard - Sistema de Empenhos{% endblock %}
 
 {% block page_title %}Dashboard{% endblock %}
 
-{% block page_actions %}
-<div class="btn-group" role="group">
-    <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-1"></i>
-        Novo Empenho
-    </a>
-    <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-primary">
-        <i class="bi bi-graph-up me-1"></i>
-        Relatorios
-    </a>
-</div>
-{% endblock %}
-
 {% block content %}
-<!-- Cards de estatisticas -->
-<div class="row mb-4">
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3>{{ total_empenhos }}</h3>
-                        <p>Total de Empenhos</p>
-                    </div>
-                    <div>
-                        <i class="bi bi-file-earmark-text" style="font-size: 2rem; opacity: 0.7;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 text-gray-800">
+            <i class="bi bi-speedometer2 me-2"></i>
+            Dashboard Executivo
+        </h1>
+        <p class="text-muted mb-0">Sistema de Gestão de Empenhos e Contratos</p>
     </div>
-    
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3>{{ format_currency(valor_total_empenhos) }}</h3>
-                        <p>Valor Total</p>
-                    </div>
-                    <div>
-                        <i class="bi bi-currency-dollar" style="font-size: 2rem; opacity: 0.7;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3>{{ empenhos_recentes|length }}</h3>
-                        <p>Empenhos Recentes</p>
-                    </div>
-                    <div>
-                        <i class="bi bi-clock-history" style="font-size: 2rem; opacity: 0.7;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3>{{ current_user.nome.split()[0] }}</h3>
-                        <p>Bem-vindo!</p>
-                    </div>
-                    <div>
-                        <i class="bi bi-person-circle" style="font-size: 2rem; opacity: 0.7;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div>
+        <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>
+            Novo Empenho
+        </a>
+        <a href="{{ url_for('contratos.novo') }}" class="btn btn-success ms-2">
+            <i class="bi bi-file-earmark-plus me-1"></i>
+            Novo Contrato
+        </a>
     </div>
 </div>
 
-<div class="row">
-    <!-- Empenhos Recentes -->
-    <div class="col-lg-8 mb-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-clock-history me-2"></i>
-                    Empenhos Recentes
-                </h5>
-                <a href="{{ url_for('empenhos.index') }}" class="btn btn-sm btn-outline-primary">
-                    Ver Todos
-                </a>
-            </div>
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <!-- Total de Empenhos -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
             <div class="card-body">
-                {% if empenhos_recentes %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Empenho</th>
-                                <th>Pregao</th>
-                                <th>Contrato</th>
-                                <th>Valor</th>
-                                <th>Status</th>
-                                <th>Data</th>
-                                <th>Acoes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for empenho in empenhos_recentes %}
-                            <tr>
-                                <td>
-                                    <strong>{{ empenho.numero_empenho }}</strong>
-                                </td>
-                                <td>{{ empenho.numero_pregao }}</td>
-                                <td>{{ empenho.numero_contrato }}</td>
-                                <td>{{ format_currency(empenho.valor_empenhado) }}</td>
-                                <td>
-                                    <span class="badge status-{{ empenho.status.lower() }}">
-                                        {{ empenho.status }}
-                                    </span>
-                                </td>
-                                <td>{{ format_date(empenho.data_empenho) }}</td>
-                                <td>
-                                    <a href="{{ url_for('empenhos.detalhes', id=empenho.id) }}" 
-                                       class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center py-4">
-                    <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
-                    <p class="text-muted mt-2">Nenhum empenho encontrado</p>
-                    <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-1"></i>
-                        Criar Primeiro Empenho
-                    </a>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    <!-- Acoes Rapidas -->
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-lightning me-2"></i>
-                    Acoes Rapidas
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-2"></i>
-                        Novo Empenho
-                    </a>
-                    
-                    <a href="{{ url_for('empenhos.contratos') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-file-earmark-ruled me-2"></i>
-                        Gerenciar Contratos
-                    </a>
-                    
-                    <a href="{{ url_for('relatorios.importar') }}" class="btn btn-outline-success">
-                        <i class="bi bi-cloud-arrow-up me-2"></i>
-                        Importar Dados
-                    </a>
-                    
-                    <a href="{{ url_for('relatorios.filtrado') }}" class="btn btn-outline-info">
-                        <i class="bi bi-funnel me-2"></i>
-                        Relatorio Filtrado
-                    </a>
-                    
-                    {% if current_user.is_admin %}
-                    <hr>
-                    <a href="{{ url_for('auth.users') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-people me-2"></i>
-                        Gerenciar Usuarios
-                    </a>
-                    
-                    <a href="{{ url_for('relatorios.backup') }}" class="btn btn-outline-warning">
-                        <i class="bi bi-download me-2"></i>
-                        Backup do Sistema
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <!-- Status do Sistema -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Status do Sistema
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6">
-                        <div class="border-end">
-                            <h4 class="text-success">
-                                <i class="bi bi-check-circle"></i>
-                            </h4>
-                            <small class="text-muted">Sistema Online</small>
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total de Empenhos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ total_empenhos if total_empenhos is defined else 0 }}
                         </div>
                     </div>
-                    <div class="col-6">
-                        <h4 class="text-primary">
-                            <i class="bi bi-database"></i>
-                        </h4>
-                        <small class="text-muted">Banco Ativo</small>
+                    <div class="col-auto">
+                        <i class="bi bi-file-earmark-text" style="font-size: 2em; color: #dddfeb;"></i>
                     </div>
                 </div>
-                
-                <hr>
-                
-                <div class="small text-muted">
-                    <p class="mb-1">
-                        <i class="bi bi-person me-1"></i>
-                        Logado como: <strong>{{ current_user.nome }}</strong>
-                    </p>
-                    <p class="mb-1">
-                        <i class="bi bi-clock me-1"></i>
-                        Ultimo login: {{ format_date(current_user.ultimo_login) if current_user.ultimo_login else 'Primeiro acesso' }}
-                    </p>
-                    <p class="mb-0">
-                        <i class="bi bi-shield-check me-1"></i>
-                        Nivel: {{ 'Administrador' if current_user.is_admin else 'Usuario' }}
-                    </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total de Contratos -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Total de Contratos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ total_contratos if total_contratos is defined else 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-file-contract" style="font-size: 2em; color: #dddfeb;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Valor Total -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Valor Total
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            R$ {{ "{:,.2f}".format(valor_total_empenhos) if valor_total_empenhos is defined else "0,00" }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-currency-dollar" style="font-size: 2em; color: #dddfeb;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contratos Ativos -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Contratos Ativos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ contratos_ativos if contratos_ativos is defined else 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-check-circle" style="font-size: 2em; color: #dddfeb;"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Grafico de Empenhos por Status (se houver dados) -->
-{% if total_empenhos > 0 %}
-<div class="row mt-4">
+<!-- Acesso Rápido -->
+<div class="row">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-pie-chart me-2"></i>
-                    Visao Geral dos Empenhos
-                </h5>
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    Acesso Rápido
+                </h6>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6">
-                        <canvas id="statusChart" width="400" height="200"></canvas>
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                        <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-primary w-100 py-3">
+                            <i class="bi bi-file-earmark-text d-block mb-2" style="font-size: 2rem;"></i>
+                            <small>Empenhos</small>
+                        </a>
                     </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center h-100">
-                            <div class="w-100">
-                                <h6>Resumo Financeiro</h6>
-                                <div class="row">
-                                    <div class="col-6">
-                                        <div class="text-center p-3 bg-light rounded">
-                                            <h5 class="text-primary mb-1">{{ format_currency(valor_total_empenhos) }}</h5>
-                                            <small class="text-muted">Valor Total</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="text-center p-3 bg-light rounded">
-                                            <h5 class="text-success mb-1">{{ total_empenhos }}</h5>
-                                            <small class="text-muted">Total Empenhos</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                        <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-success w-100 py-3">
+                            <i class="bi bi-file-contract d-block mb-2" style="font-size: 2rem;"></i>
+                            <small>Contratos</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                        <a href="{{ url_for('notas.index') }}" class="btn btn-outline-info w-100 py-3">
+                            <i class="bi bi-receipt d-block mb-2" style="font-size: 2rem;"></i>
+                            <small>Notas Fiscais</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                        <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-warning w-100 py-3">
+                            <i class="bi bi-graph-up d-block mb-2" style="font-size: 2rem;"></i>
+                            <small>Relatórios</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                        <a href="{{ url_for('auth.users') }}" class="btn btn-outline-secondary w-100 py-3">
+                            <i class="bi bi-people d-block mb-2" style="font-size: 2rem;"></i>
+                            <small>Usuários</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                        <a href="{{ url_for('relatorios.importar') }}" class="btn btn-outline-dark w-100 py-3">
+                            <i class="bi bi-cloud-arrow-up d-block mb-2" style="font-size: 2rem;"></i>
+                            <small>Importar</small>
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endif %}
 {% endblock %}
 
-{% block extra_js %}
-{% if total_empenhos > 0 %}
-<script>
-// Grafico de status dos empenhos
-fetch('/relatorios/api/dados-grafico?tipo=status')
-    .then(response => response.json())
-    .then(data => {
-        const ctx = document.getElementById('statusChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: data.map(item => item.label),
-                datasets: [{
-                    data: data.map(item => item.quantidade),
-                    backgroundColor: [
-                        '#ffc107',
-                        '#28a745',
-                        '#dc3545',
-                        '#17a2b8',
-                        '#ff6b35'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.parsed;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    })
-    .catch(error => console.error('Erro ao carregar dados do grafico:', error));
-</script>
-{% endif %}
+{% block extra_css %}
+<style>
+/* Bordas coloridas dos cards */
+.border-left-primary {
+    border-left: 0.25rem solid #007bff !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #28a745 !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #17a2b8 !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #ffc107 !important;
+}
+
+/* Utilitários de texto */
+.text-gray-300 {
+    color: #dddfeb !important;
+}
+
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+
+.font-weight-bold {
+    font-weight: 700 !important;
+}
+
+.text-xs {
+    font-size: 0.75rem;
+}
+
+/* Efeitos hover */
+.btn:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+</style>
 {% endblock %}

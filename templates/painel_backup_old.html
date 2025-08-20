@@ -1,0 +1,471 @@
+{% extends "base.html" %}
+
+{% block title %}Painel Principal - Sistema Municipal{% endblock %}
+
+{% block page_title %}Painel Principal{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .grid-stack { min-height: 70vh; }
+    .grid-stack-item { min-width: 200px; min-height: 120px; }
+    .grid-stack-item-content {
+      background: #fff; border-radius: 14px; padding: 16px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.08); border: 1px solid rgba(0,0,0,.06);
+      height: 100%; display: flex; flex-direction: column;
+    }
+    .widget-head {
+      display: flex; align-items: center; justify-content: space-between; 
+      margin-bottom: .5rem; border-bottom: 1px solid #eee; padding-bottom: .5rem;
+    }
+    .widget-actions .btn { --bs-btn-padding-y: .2rem; --bs-btn-padding-x: .45rem; }
+    .widget-content { flex: 1; overflow: auto; }
+    .kpi-value { font-size: 2rem; font-weight: bold; color: var(--turquoise-primary); }
+    .apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+    .app-card { 
+      text-align: center; padding: 1rem; border-radius: 8px; 
+      background: #f8f9fa; border: 1px solid #dee2e6; text-decoration: none; 
+      transition: all 0.2s ease;
+    }
+    .app-card:hover { background: #e9ecef; transform: translateY(-2px); text-decoration: none; }
+    .table-responsive { max-height: 300px; overflow-y: auto; }
+    .action-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .action-buttons .btn { flex: 1; min-width: 120px; }
+  </style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3"><i class="bi bi-speedometer2 me-2"></i>Painel Principal</h1>
+  <div class="btn-group">
+    <button id="btnToggleEdit" class="btn btn-outline-primary">
+      <i class="bi bi-pencil"></i> Editar Layout
+    </button>
+    <button id="btnSaveLayout" class="btn btn-outline-success">
+      <i class="bi bi-save"></i> Salvar
+    </button>
+    <button id="btnResetLayout" class="btn btn-outline-warning">
+      <i class="bi bi-arrow-clockwise"></i> Reset
+    </button>
+  </div>
+</div>
+
+<div class="grid-stack" id="home-grid">
+  <!-- KPI: Total de Empenhos -->
+  <div class="grid-stack-item" gs-id="kpi-empenhos" gs-w="3" gs-h="2">
+    <div class="grid-stack-item-content">
+      <div class="widget-head">
+        <strong><i class="bi bi-file-earmark-text me-1"></i>Total de Empenhos</strong>
+        <div class="widget-actions">
+          <button class="btn btn-sm btn-outline-danger gs-remove">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="widget-content text-center">
+        <div class="kpi-value">{{ total_empenhos or 0 }}</div>
+        <small class="text-muted">Empenhos registrados</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI: Valor Total Empenhos -->
+  <div class="grid-stack-item" gs-id="kpi-valor-empenhos" gs-w="3" gs-h="2">
+    <div class="grid-stack-item-content">
+      <div class="widget-head">
+        <strong><i class="bi bi-cash-stack me-1"></i>Valor Total Empenhos</strong>
+        <div class="widget-actions">
+          <button class="btn btn-sm btn-outline-danger gs-remove">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="widget-content text-center">
+        <div class="kpi-value">
+          {{ "R$ {:,.2f}".format(valor_total_empenhos or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+        </div>
+        <small class="text-muted">Valor empenhado</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI: Total de Contratos -->
+  <div class="grid-stack-item" gs-id="kpi-contratos" gs-w="3" gs-h="2">
+    <div class="grid-stack-item-content">
+      <div class="widget-head">
+        <strong><i class="bi bi-file-contract me-1"></i>Total de Contratos</strong>
+        <div class="widget-actions">
+          <button class="btn btn-sm btn-outline-danger gs-remove">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="widget-content text-center">
+        <div class="kpi-value">{{ total_contratos or 0 }}</div>
+        <small class="text-muted">Contratos ativos</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI: Valor Total Contratos -->
+  <div class="grid-stack-item" gs-id="kpi-valor-contratos" gs-w="3" gs-h="2">
+    <div class="grid-stack-item-content">
+      <div class="widget-head">
+        <strong><i class="bi bi-currency-dollar me-1"></i>Valor Total Contratos</strong>
+        <div class="widget-actions">
+          <button class="btn btn-sm btn-outline-danger gs-remove">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="widget-content text-center">
+        <div class="kpi-value">
+          {{ "R$ {:,.2f}".format(valor_total_contratos or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+        </div>
+        <small class="text-muted">Valor contratado</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget: Aplicações do Sistema -->
+  <div class="grid-stack-item" gs-id="apps-sistema" gs-w="6" gs-h="4">
+    <div class="grid-stack-item-content">
+      <div class="widget-head">
+        <strong><i class="bi bi-grid-3x3-gap me-1"></i>Aplicações do Sistema</strong>
+        <div class="widget-actions">
+          <button class="btn btn-sm btn-outline-danger gs-remove">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="widget-content">
+        <div class="apps-grid">
+          <a href="/empenhos/" class="app-card">
+            <i class="bi bi-file-earmark-text fa-2x text-primary mb-2"></i>
+            <div class="fw-bold">Empenhos</div>
+            <small class="text-muted">Gestão orçamentária</small>
+          </a>
+          <a href="/contratos/" class="app-card">
+            <i class="bi bi-file-contract fa-2x text-success mb-2"></i>
+            <div class="fw-bold">Contratos</div>
+            <small class="text-muted">Gestão de contratos</small>
+          </a>
+          <a href="/relatorios/" class="app-card">
+            <i class="bi bi-graph-up fa-2x text-info mb-2"></i>
+            <div class="fw-bold">Relatórios</div>
+            <small class="text-muted">Análises e dados</small>
+          </a>
+          <a href="/auth/users" class="app-card">
+            <i class="bi bi-people fa-2x text-warning mb-2"></i>
+            <div class="fw-bold">Usuários</div>
+            <small class="text-muted">Gestão de acesso</small>
+          </a>
+          <a href="/chat/" class="app-card">
+            <i class="bi bi-robot fa-2x text-primary mb-2"></i>
+            <div class="fw-bold">Chat IA</div>
+            <small class="text-muted">Assistente virtual</small>
+          </a>
+          <a href="/workflow/" class="app-card">
+            <i class="bi bi-diagram-3 fa-2x text-dark mb-2"></i>
+            <div class="fw-bold">Workflow</div>
+            <small class="text-muted">Fluxo de trabalho</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget: Ações Rápidas -->
+  <div class="grid-stack-item" gs-id="acoes-rapidas" gs-w="6" gs-h="4">
+    <div class="grid-stack-item-content">
+      <div class="widget-head">
+        <strong><i class="bi bi-lightning me-1"></i>Ações Rápidas</strong>
+        <div class="widget-actions">
+          <button class="btn btn-sm btn-outline-danger gs-remove">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="widget-content">
+        <div class="action-buttons">
+          <a href="/empenhos/novo" class="btn btn-outline-primary">
+            <i class="bi bi-plus-circle me-1"></i>Novo Empenho
+          </a>
+          <a href="/contratos/novo" class="btn btn-outline-success">
+            <i class="bi bi-file-plus me-1"></i>Novo Contrato
+          </a>
+          <a href="/relatorios/" class="btn btn-outline-info">
+            <i class="bi bi-bar-chart me-1"></i>Ver Relatórios
+          </a>
+          <a href="/chat/" class="btn btn-outline-primary">
+            <i class="bi bi-robot me-1"></i>Chat IA
+          </a>
+          <a href="/workflow/" class="btn btn-outline-dark">
+            <i class="bi bi-diagram-3 me-1"></i>Workflow
+          </a>
+          <a href="/auth/logout" class="btn btn-outline-danger">
+            <i class="bi bi-box-arrow-right me-1"></i>Sair
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget: Empenhos Recentes -->
+  <div class="grid-stack-item" gs-id="empenhos-recentes" gs-w="6" gs-h="4">
+    <div class="grid-stack-item-content">
+      <div class="widget-head">
+        <strong><i class="bi bi-clock-history me-1"></i>Empenhos Recentes</strong>
+        <div class="widget-actions">
+          <button class="btn btn-sm btn-outline-danger gs-remove">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="widget-content">
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Número</th>
+                <th>Data</th>
+                <th>Valor</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if empenhos_recentes %}
+                {% for empenho in empenhos_recentes[:5] %}
+                <tr>
+                  <td>{{ empenho.numero_empenho or '-' }}</td>
+                  <td>{{ empenho.data_empenho.strftime('%d/%m/%Y') if empenho.data_empenho else '-' }}</td>
+                  <td>{{ "R$ {:,.2f}".format(empenho.valor_empenhado or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                  <td>
+                    <span class="badge bg-success">Ativo</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+              <tr>
+                <td colspan="4" class="text-center text-muted">Nenhum empenho encontrado</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget: Contratos Recentes -->
+  <div class="grid-stack-item" gs-id="contratos-recentes" gs-w="6" gs-h="4">
+    <div class="grid-stack-item-content">
+      <div class="widget-head">
+        <strong><i class="bi bi-file-contract me-1"></i>Contratos Recentes</strong>
+        <div class="widget-actions">
+          <button class="btn btn-sm btn-outline-danger gs-remove">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="widget-content">
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Número</th>
+                <th>Objeto</th>
+                <th>Valor</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if contratos_recentes %}
+                {% for contrato in contratos_recentes[:5] %}
+                <tr>
+                  <td>{{ contrato.numero_contrato or '-' }}</td>
+                  <td>{{ (contrato.objeto[:30] + '...') if contrato.objeto and contrato.objeto|length > 30 else (contrato.objeto or '-') }}</td>
+                  <td>{{ "R$ {:,.2f}".format(contrato.valor_contrato or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                  <td>
+                    <span class="badge bg-primary">Vigente</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+              <tr>
+                <td colspan="4" class="text-center text-muted">Nenhum contrato encontrado</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget: Alertas e Notificações -->
+  <div class="grid-stack-item" gs-id="alertas" gs-w="4" gs-h="3">
+    <div class="grid-stack-item-content">
+      <div class="widget-head">
+        <strong><i class="bi bi-bell me-1"></i>Alertas</strong>
+        <div class="widget-actions">
+          <button class="btn btn-sm btn-outline-danger gs-remove">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="widget-content">
+        <div class="list-group list-group-flush">
+          <div class="list-group-item d-flex align-items-center">
+            <i class="bi bi-info-circle text-info me-2"></i>
+            <div>
+              <div class="fw-bold">Sistema operacional</div>
+              <small class="text-muted">Todos os serviços funcionando</small>
+            </div>
+          </div>
+          <div class="list-group-item d-flex align-items-center">
+            <i class="bi bi-clock text-warning me-2"></i>
+            <div>
+              <div class="fw-bold">Backup automático</div>
+              <small class="text-muted">Último: {{ 'Hoje às 03:00' }}</small>
+            </div>
+          </div>
+          <div class="list-group-item d-flex align-items-center">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            <div>
+              <div class="fw-bold">Conectividade</div>
+              <small class="text-muted">Conexão estável</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget: Informações do Sistema -->
+  <div class="grid-stack-item" gs-id="info-sistema" gs-w="4" gs-h="3">
+    <div class="grid-stack-item-content">
+      <div class="widget-head">
+        <strong><i class="bi bi-cpu me-1"></i>Sistema</strong>
+        <div class="widget-actions">
+          <button class="btn btn-sm btn-outline-danger gs-remove">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="widget-content">
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="text-center">
+              <div class="fw-bold text-primary">{{ session.get('user', {}).get('nome', 'Usuário') }}</div>
+              <small class="text-muted">Usuário logado</small>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="text-center">
+              <div class="fw-bold text-success">Online</div>
+              <small class="text-muted">Status</small>
+            </div>
+          </div>
+          <div class="col-12">
+            <hr class="my-2">
+            <div class="text-center">
+              <small class="text-muted">
+                <i class="bi bi-calendar3 me-1"></i>
+                Última atualização: {{ moment().format('DD/MM/YYYY HH:mm') if moment else 'Agora' }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+  <!-- GridStack CSS no head -->
+  <link href="https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack.min.css" rel="stylesheet">
+  
+  <!-- GridStack JS -->
+  <script src="https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack-h5.js"></script>
+  <script>
+    // Inicialização segura do GridStack
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.GridStack) {
+        console.warn('⚠️ GridStack não carregado nesta página.');
+        return;
+      }
+      
+      const LS_KEY = 'home-layout-v1';
+
+      // Inicializa o grid
+      const grid = GridStack.init({
+        column: 12,
+        cellHeight: 90,
+        margin: 8,
+        float: false,
+        animate: true,
+        staticGrid: true, // Começa em modo somente leitura
+        resizable: { handles: 'all' }
+      }, '#home-grid');
+
+      // Remover widget (botão .gs-remove no cabeçalho)
+      document.querySelector('#home-grid')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.gs-remove');
+        if (!btn) return;
+        const item = btn.closest('.grid-stack-item');
+        if (item) {
+          grid.removeWidget(item);
+          localStorage.setItem(LS_KEY, JSON.stringify(grid.save()));
+        }
+      });
+
+      // Botão de alternar edição
+      const btnEdit = document.getElementById('btnToggleEdit');
+      btnEdit?.addEventListener('click', () => {
+        const isStatic = grid.opts.staticGrid;
+        grid.setStatic(!isStatic);
+        btnEdit.classList.toggle('btn-success', !isStatic);
+        btnEdit.classList.toggle('btn-outline-primary', isStatic);
+        btnEdit.innerHTML = isStatic ? 
+          '<i class="bi bi-check-lg"></i> Finalizar Edição' : 
+          '<i class="bi bi-pencil"></i> Editar Layout';
+      });
+
+      // Salvar layout
+      document.getElementById('btnSaveLayout')?.addEventListener('click', () => {
+        localStorage.setItem(LS_KEY, JSON.stringify(grid.save()));
+        // Feedback visual
+        const btn = document.getElementById('btnSaveLayout');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> Salvo!';
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+        }, 1500);
+      });
+
+      // Resetar layout
+      document.getElementById('btnResetLayout')?.addEventListener('click', () => {
+        if (!confirm('Resetar layout para o padrão?')) return;
+        localStorage.removeItem(LS_KEY);
+        location.reload();
+      });
+
+      // Carregar layout salvo (se houver)
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (raw) {
+          const layout = JSON.parse(raw);
+          if (Array.isArray(layout) && layout.length) {
+            grid.load(layout);
+          }
+        }
+      } catch (e) { 
+        console.warn('Layout inválido no localStorage:', e); 
+      }
+    });
+  </script>
+{% endblock %}

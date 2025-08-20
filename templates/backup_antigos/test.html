@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste DOCTYPE</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="success">✅ DOCTYPE Funcionando!</h1>
+        <p>Se você está vendo este conteúdo estilizado, o DOCTYPE está funcionando corretamente.</p>
+        <p><strong>Teste realizado:</strong> {{ now }}</p>
+        <p><strong>Modo esperado:</strong> Standards Mode (não Quirks Mode)</p>
+        
+        <hr>
+        
+        <h2>Informações do Sistema</h2>
+        <ul>
+            <li><strong>Servidor:</strong> Waitress</li>
+            <li><strong>Framework:</strong> Flask</li>
+            <li><strong>Content-Type:</strong> text/html; charset=utf-8</li>
+            <li><strong>DOCTYPE:</strong> HTML5 (&lt;!DOCTYPE html&gt;)</li>
+        </ul>
+        
+        <hr>
+        
+        <p><a href="{{ url_for('index') }}">← Voltar ao Dashboard</a></p>
+    </div>
+    
+    <script>
+        // Verificar modo do documento
+        console.log('Modo do documento:', document.compatMode);
+        if (document.compatMode === 'CSS1Compat') {
+            console.log('✅ Standards Mode ativo');
+        } else {
+            console.log('❌ Quirks Mode detectado');
+        }
+    </script>
+</body>
+</html>

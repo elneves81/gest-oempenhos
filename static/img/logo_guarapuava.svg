@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Círculo externo -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="#2C5530" stroke-width="8"/>
+  
+  <!-- Círculo interno -->
+  <circle cx="100" cy="100" r="75" fill="white" stroke="#2C5530" stroke-width="2"/>
+  
+  <!-- Brasão central -->
+  <g transform="translate(100, 100)">
+    <!-- Coroa -->
+    <path d="M-20,-25 L-15,-35 L-5,-30 L5,-35 L15,-35 L20,-25 Z" fill="#8B4513" stroke="#654321" stroke-width="1"/>
+    <!-- Torres da coroa -->
+    <rect x="-18" y="-35" width="6" height="8" fill="#8B4513"/>
+    <rect x="-6" y="-35" width="6" height="8" fill="#8B4513"/>
+    <rect x="6" y="-35" width="6" height="8" fill="#8B4513"/>
+    <rect x="12" y="-35" width="6" height="8" fill="#8B4513"/>
+    
+    <!-- Escudo principal -->
+    <path d="M-25,-20 L25,-20 L25,15 L0,30 L-25,15 Z" fill="#DC143C" stroke="#8B0000" stroke-width="2"/>
+    
+    <!-- Parte verde inferior -->
+    <path d="M-25,0 L25,0 L25,15 L0,30 L-25,15 Z" fill="#228B22" stroke="#006400" stroke-width="1"/>
+    
+    <!-- Castelo no vermelho -->
+    <rect x="-15" y="-15" width="30" height="12" fill="#FFD700"/>
+    <rect x="-12" y="-15" width="4" height="8" fill="#8B4513"/>
+    <rect x="-4" y="-15" width="4" height="8" fill="#8B4513"/>
+    <rect x="4" y="-15" width="4" height="8" fill="#8B4513"/>
+    <rect x="12" y="-15" width="4" height="8" fill="#8B4513"/>
+    
+    <!-- Instrumentos cruzados no verde -->
+    <g transform="translate(0, 8)">
+      <path d="M-8,-3 L8,3 M-8,3 L8,-3" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="-6" cy="0" r="2" fill="#FFD700"/>
+      <circle cx="6" cy="0" r="2" fill="#FFD700"/>
+    </g>
+  </g>
+  
+  <!-- Ramos laterais -->
+  <g transform="translate(40, 100)">
+    <path d="M0,0 Q-10,-20 -5,-35 Q5,-30 10,-25 Q5,-15 0,-10" fill="#228B22" stroke="#006400" stroke-width="1"/>
+    <path d="M0,0 Q-10,20 -5,35 Q5,30 10,25 Q5,15 0,10" fill="#228B22" stroke="#006400" stroke-width="1"/>
+  </g>
+  <g transform="translate(160, 100) scale(-1, 1)">
+    <path d="M0,0 Q-10,-20 -5,-35 Q5,-30 10,-25 Q5,-15 0,-10" fill="#228B22" stroke="#006400" stroke-width="1"/>
+    <path d="M0,0 Q-10,20 -5,35 Q5,30 10,25 Q5,15 0,10" fill="#228B22" stroke="#006400" stroke-width="1"/>
+  </g>
+  
+  <!-- Texto superior -->
+  <path id="text-circle-top" d="M 100 100 m -80 0 A 80 80 0 0 1 100 20 A 80 80 0 0 1 180 100" fill="none"/>
+  <text font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2C5530">
+    <textPath href="#text-circle-top" startOffset="25%">GESTÃO DE EMPENHOS</textPath>
+  </text>
+  
+  <!-- Texto inferior -->
+  <path id="text-circle-bottom" d="M 100 100 m -80 0 A 80 80 0 1 0 100 180 A 80 80 0 1 0 180 100" fill="none"/>
+  <text font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2C5530">
+    <textPath href="#text-circle-bottom" startOffset="25%">E CONTRATOS</textPath>
+  </text>
+  
+  <!-- Banner central -->
+  <rect x="25" y="150" width="150" height="20" fill="white" stroke="#2C5530" stroke-width="1" rx="10"/>
+  <text x="100" y="164" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#2C5530">GUARAPUAVA</text>
+  
+  <!-- Datas -->
+  <text x="70" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#2C5530">18/D</text>
+  <text x="130" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#2C5530">1852</text>
+  <path d="M85,175 L115,175" stroke="#2C5530" stroke-width="1"/>
+</svg>

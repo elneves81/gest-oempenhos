@@ -33,8 +33,14 @@ def main():
         print("⏹️  Pressione Ctrl+C para parar")
         print("-" * 50)
         
-        # Executar aplicação
-        app.run(debug=True, host='0.0.0.0', port=5000)
+        # Executar aplicação com Waitress na porta 8001
+        from waitress import serve
+        
+        print("🎯 Servidor: Waitress WSGI")
+        print("🔌 Porta: 8001")
+        print("⚡ Performance: Produção")
+        
+        serve(app, host='0.0.0.0', port=8001, threads=6, connection_limit=100)
         
     except ImportError as e:
         print(f"❌ Erro de importação: {e}")

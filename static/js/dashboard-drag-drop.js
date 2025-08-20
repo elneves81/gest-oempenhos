@@ -44,6 +44,15 @@ class DashboardManager {
                 configurable: true
             },
             {
+                id: 'kpi-contratos',
+                name: 'KPI Contratos',
+                description: 'Estatísticas e status dos contratos',
+                icon: 'bi-file-earmark-check',
+                category: 'kpi',
+                defaultSize: { w: 3, h: 3 },
+                configurable: true
+            },
+            {
                 id: 'grafico-evolucao',
                 name: 'Evolução Temporal',
                 description: 'Gráfico de evolução dos dados',
@@ -117,6 +126,19 @@ class DashboardManager {
     }
 
     initializeGridStack() {
+        // Verifica se o elemento grid existe na página
+        const gridElement = document.querySelector('.grid-stack');
+        if (!gridElement) {
+            console.log('Grid stack element not found, skipping initialization');
+            return;
+        }
+
+        // Verifica se GridStack está disponível
+        if (typeof GridStack === 'undefined') {
+            console.error('GridStack não encontrado. Certifique-se de incluir a biblioteca.');
+            return;
+        }
+
         // card inteiro arrastável (sem handleClass)
         this.gridStack = GridStack.init({
             cellHeight: 80,
@@ -126,16 +148,26 @@ class DashboardManager {
             acceptWidgets: true,
             removable: '.trash',
             dragIn: '.widget-library-card',
-            dragInOptions: { revert: 'invalid', scroll: false, appendTo: 'body', helper: 'clone' }
+            dragInOptions: { revert: 'invalid', scroll: false, appendTo: 'body', helper: 'clone' },
+            handle: '.card-header'        // <<< arrasta só pelo cabeçalho
         });
 
         // Salva layout ao mover/redimensionar
         this.gridStack.on('change', (event, items) => this.onLayoutChange(items));
-        this.gridStack.on('removed', (event, items) => items.forEach(i => this.removeWidget(i.id)));
+        this.gridStack.on('removed', (event, items) => {
+            // opcional: se você mantiver Map de instâncias por el.id, limpe aqui
+            // items.forEach(i => this.widgets.delete(i.el?.id));
+        });
 
         // Re-renderiza gráficos ao terminar resize/move
         this.gridStack.on('resizestop', (e, el) => this.redrawChartsInside(el));
         this.gridStack.on('dragstop', (e, el) => this.redrawChartsInside(el));
+    }
+
+    removeWidgetElement(el) {
+        if (!el) return;
+        this.gridStack.removeWidget(el, true);   // true = remove do DOM + engine
+        this.showSuccessMessage('Widget removido com sucesso!');
     }
 
     bindEvents() {
@@ -303,6 +335,11 @@ class DashboardManager {
         widgetEl.className = 'grid-stack-item';
         widgetEl.setAttribute('data-widget-id', config.id);
 
+        // id único para o grid item
+        const uniqueItemId = `w-${config.id}-${Date.now()}`;
+        widgetEl.id = uniqueItemId;
+        widgetEl.setAttribute('gs-id', uniqueItemId);
+
         const content = document.createElement('div');
         content.className = 'grid-stack-item-content widget-container';
 
@@ -339,7 +376,11 @@ class DashboardManager {
 
         // eventos
         content.querySelector('.widget-config-btn')?.addEventListener('click', () => this.configureWidget(config.id));
-        content.querySelector('.widget-remove-btn').addEventListener('click', () => this.removeWidget(config.id));
+        content.querySelector('.widget-remove-btn').addEventListener('click', (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            this.removeWidgetElement(widgetEl);   // <<< passa o elemento
+        });
 
         widgetEl.appendChild(content);
         return widgetEl;
@@ -368,11 +409,25 @@ class DashboardManager {
     }
 
     async fetchWidgetData(widgetId) {
-        const response = await fetch(`/relatorios/api/widget-data/${widgetId}`);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+        try {
+            const response = await fetch(`/relatorios/api/widget-data/${widgetId}`);
+            if (!response.ok) {
+                // Para widgets estáticos como 'acoes-rapidas', retorna sucesso
+                if (response.status === 404 && widgetId === 'acoes-rapidas') {
+                    return { success: true, message: 'Widget estático' };
+                }
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.warn(`Erro ao carregar dados do widget ${widgetId}:`, error);
+            // Retorna dados default para evitar quebrar o widget
+            return { 
+                error: true, 
+                message: error.message,
+                fallback: true 
+            };
         }
-        return await response.json();
     }
 
     renderWidgetContent(widgetId, data) {
@@ -381,6 +436,7 @@ class DashboardManager {
         switch (widgetId) {
             case 'kpi-empenhos': return this.renderKPIEmpenhos(data);
             case 'kpi-financeiro': return this.renderKPIFinanceiro(data);
+            case 'kpi-contratos': return this.renderKPIContratos(data, uniqueId);
             case 'grafico-evolucao': return this.renderGraficoEvolucao(data, uniqueId);
             case 'grafico-pizza': return this.renderGraficoPizza(data, uniqueId);
             case 'tabela-top-fornecedores': return this.renderTabelaFornecedores(data);
@@ -428,6 +484,56 @@ class DashboardManager {
                         <i class="bi bi-arrow-up text-success"></i>
                         ${data.variacao || 0}% vs mês anterior
                     </small>
+                </div>
+            </div>
+        `;
+    }
+
+    renderKPIContratos(data, uniqueId) {
+        const total = data.total_contratos || 0;
+        const ativos = data.ativos || 0;
+        const vencendo = data.vencendo || 0;
+        const vencidos = data.vencidos || 0;
+        
+        return `
+            <div class="h-100">
+                <div class="row g-2 h-100">
+                    <div class="col-12">
+                        <div class="text-center">
+                            <div class="kpi-value text-primary mb-1">${total}</div>
+                            <div class="kpi-label text-muted">Total de Contratos</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="kpi-mini-card bg-success">
+                            <div class="kpi-mini-value">${ativos}</div>
+                            <div class="kpi-mini-label">Ativos</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="kpi-mini-card bg-warning">
+                            <div class="kpi-mini-value">${vencendo}</div>
+                            <div class="kpi-mini-label">Vencendo</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="kpi-mini-card bg-danger">
+                            <div class="kpi-mini-value">${vencidos}</div>
+                            <div class="kpi-mini-label">Vencidos</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mt-2">
+                            <div class="text-center">
+                                <canvas id="chart-contratos-${uniqueId}" width="100" height="100"></canvas>
+                            </div>
+                            <div class="text-center mt-2">
+                                <small class="text-muted">
+                                    <strong>${data.valor_total || 'R$ 0,00'}</strong> valor total
+                                </small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -581,7 +687,7 @@ class DashboardManager {
 
     loadWidgets() {
         // Carregar widgets salvos ou padrão
-        const defaultWidgets = ['kpi-empenhos', 'kpi-financeiro', 'grafico-evolucao', 'alertas-sistema'];
+        const defaultWidgets = ['kpi-empenhos', 'kpi-financeiro', 'kpi-contratos', 'grafico-evolucao', 'alertas-sistema'];
         
         defaultWidgets.forEach(widgetId => {
             this.addWidget(widgetId);
@@ -696,6 +802,44 @@ class DashboardManager {
                 }
             });
             this._charts.set(pieCanvas.id, chart);
+        }
+
+        // GRAFICO PIZZA DOS CONTRATOS
+        const contractCanvas = document.getElementById(`chart-contratos-${uniqueId}`);
+        if (contractCanvas) {
+            // destrói anterior se existir
+            const prev = this._charts.get(contractCanvas.id);
+            prev?.destroy();
+
+            const dadosGrafico = data?.dados_grafico || [];
+            const labels = dadosGrafico.map(d => d.label);
+            const valores = dadosGrafico.map(d => d.value);
+
+            const chart = new Chart(contractCanvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: valores,
+                        backgroundColor: [
+                            '#28a745', // verde para ativos
+                            '#ffc107', // amarelo para vencendo
+                            '#dc3545'  // vermelho para vencidos
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            this._charts.set(contractCanvas.id, chart);
         }
     }
 

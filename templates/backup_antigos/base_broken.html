@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestão de Empenhos e Contratos{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+    <link rel="alternate icon" href="{{ url_for('static', filename='img/favicon.svg') }}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom Turquoise Theme -->
+    <link href="{{ url_for('static', filename='css/turquoise-theme.css') }}" rel="stylesheet">
+    <!-- Logo Styles -->
+    <link href="{{ url_for('static', filename='css/logo-styles.css') }}" rel="stylesheet">
+    <!-- Accessibility Fixes -->
+    <link href="{{ url_for('static', filename='css/accessibility-fixes.css') }}" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Turquoise Theme JS -->
+    <script src="{{ url_for('static', filename='js/turquoise-theme.js') }}"></script>
+    
+    <!-- Extra head block for custom styles -->
+    {% block extra_head %}{% endblock %}
+    
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--turquoise-primary) 0%, var(--turquoise-light) 100%);
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 0.5rem;
+            width: 20px;
+        }
+        
+        /* Garantir que Chat e Workflow estejam sempre visíveis */
+        .sidebar .nav-item {
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--turquoise-primary) 0%, var(--turquoise-light) 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 0.5rem 1.5rem;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--turquoise-dark) 0%, var(--turquoise-primary) 100%);
+            transform: translateY(-1px);
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .badge {
+            font-size: 0.75em;
+            padding: 0.5em 0.75em;
+        }
+        
+        .status-pendente { background-color: #ffc107; }
+        .status-aprovado { background-color: #28a745; }
+        .status-rejeitado { background-color: #dc3545; }
+        .status-pago { background-color: #17a2b8; }
+        
+        /* Stats Cards Styles */
+        .stats-card {
+            border: none;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stats-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Contract Status Cards */
+        .contract-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .contract-card.critical {
+            border-left-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .contract-card.attention {
+            border-left-color: #ffc107;
+            background-color: #fffbf0;
+        }
+
+        .contract-card.ok {
+            border-left-color: #28a745;
+            background-color: #f8fff8;
+        }
+
+        .contract-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .badge-critical {
+            background-color: #dc3545;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .badge-attention {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .badge-ok {
+            background-color: #28a745;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .dashboard-section {
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-section h4 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .no-contracts {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+
+        .contract-status {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .days-remaining {
+            font-weight: 700;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .alert {
+            border: none;
+            border-radius: 10px;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--turquoise-primary);
+            box-shadow: 0 0 0 0.2rem rgba(32, 178, 170, 0.25);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, var(--turquoise-primary) 0%, var(--turquoise-light) 100%);
+            color: white;
+            border-radius: 15px;
+        }
+        
+        .stats-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .stats-card h3 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stats-card p {
+            margin-bottom: 0;
+            opacity: 0.9;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='img/logo_guarapuava.svg') }}" 
+                             alt="Logo Guarapuava" 
+                             class="report-logo"
+                             style="width: 60px; height: 60px; margin-bottom: 0.5rem; filter: brightness(0) invert(1);">
+                        <h4 class="text-white">
+                            Gestão de Empenhos e Contratos
+                        </h4>
+                        <small class="text-white-50">Prefeitura Municipal de Guarapuava</small>
+                        <small class="text-white-50 d-block">Bem-vindo, {{ current_user.nome }}</small>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
+                                <i class="bi bi-house-door"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint.startswith('empenhos') %}active{% endif %}" href="{{ url_for('empenhos.index') }}">
+                                <i class="bi bi-file-earmark-text"></i>
+                                Empenhos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint.startswith('contratos') %}active{% endif %}" href="{{ url_for('contratos.index') }}">
+                                <i class="bi bi-file-earmark-ruled"></i>
+                                Contratos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint.startswith('notas') %}active{% endif %}" href="{{ url_for('notas.index') }}">
+                                <i class="bi bi-receipt"></i>
+                                Notas Fiscais
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint.startswith('relatorios') %}active{% endif %}" href="{{ url_for('relatorios.index') }}">
+                                <i class="bi bi-graph-up"></i>
+                                Relatorios
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint.startswith('workflow') %}active{% endif %}" href="{{ url_for('workflow.dashboard') }}">
+                                <i class="bi bi-diagram-3"></i>
+                                Workflow
+                            </a>
+                        </li>
+                        <!-- Chat e Workflow links sempre visíveis -->
+                        
+                        <hr class="text-white-50">
+                        
+                        {% if current_user.is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.users') }}">
+                                <i class="bi bi-people"></i>
+                                Usuarios
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.profile') }}">
+                                <i class="bi bi-person-circle"></i>
+                                Meu Perfil
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                                <i class="bi bi-box-arrow-right"></i>
+                                Sair
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        {% block page_actions %}{% endblock %}
+                    </div>
+                </div>
+                
+                <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar alerta"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        // Funcao para formatar moeda
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
+        }
+        
+        // Funcao para calcular valores automaticamente
+        function calcularValores() {
+            const valorEmpenhado = parseFloat(document.getElementById('valor_empenhado')?.value || 0);
+            const percentualRetencao = parseFloat(document.getElementById('percentual_retencao')?.value || 0);
+            
+            const valorRetencao = valorEmpenhado * (percentualRetencao / 100);
+            const valorLiquido = valorEmpenhado - valorRetencao;
+            
+            if (document.getElementById('valor_retencao')) {
+                document.getElementById('valor_retencao').value = valorRetencao.toFixed(2);
+            }
+            
+            if (document.getElementById('valor_liquido')) {
+                document.getElementById('valor_liquido').value = valorLiquido.toFixed(2);
+            }
+        }
+        
+        // Auto-calcular quando valores mudarem
+        document.addEventListener('DOMContentLoaded', function() {
+            const valorEmpenhado = document.getElementById('valor_empenhado');
+            const percentualRetencao = document.getElementById('percentual_retencao');
+            
+            if (valorEmpenhado) {
+                valorEmpenhado.addEventListener('input', calcularValores);
+            }
+            
+            if (percentualRetencao) {
+                percentualRetencao.addEventListener('input', calcularValores);
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

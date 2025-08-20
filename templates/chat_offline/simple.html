@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Chat do Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar com usuários online -->
+        <div class="col-md-2 bg-light border-end" style="height: 80vh;">
+            <div class="p-3 border-bottom">
+                <h5 class="mb-0">
+                    <i class="bi bi-chat-dots me-2"></i>
+                    Chat Interno
+                </h5>
+                <small class="text-muted">Sistema de mensagens</small>
+            </div>
+            
+            <!-- Usuários Online -->
+            <div class="p-3">
+                <h6 class="text-muted mb-3">
+                    <i class="bi bi-people me-1"></i>
+                    Usuários Online (<span id="user-count">{{ online_users|length }}</span>)
+                </h6>
+                <div id="users-list">
+                    {% for user in online_users %}
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="bg-success rounded-circle me-2" style="width: 8px; height: 8px;"></div>
+                        <span class="{% if user.id == current_user.id %}fw-bold text-primary{% endif %}">
+                            {{ user.username }}
+                            {% if user.id == current_user.id %}(você){% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Ações -->
+            <div class="p-3 border-top mt-auto">
+                {% if current_user.is_admin %}
+                <button class="btn btn-outline-danger btn-sm w-100" onclick="clearRoom()">
+                    <i class="bi bi-trash me-1"></i>
+                    Limpar Chat
+                </button>
+                {% else %}
+                <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Chat interno
+                </small>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Área principal do chat -->
+        <div class="col-md-10">
+            <!-- Cabeçalho -->
+            <div class="p-3 border-bottom bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">Chat Geral</h5>
+                        <small class="text-muted">Conversas internas do sistema</small>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="refreshChat()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>
+                        Atualizar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mensagens -->
+            <div class="overflow-auto p-3 bg-light" id="messages-container" style="height: 60vh;">
+                <div id="messages-list">
+                    {% for message in messages %}
+                    <div class="mb-3" data-message-id="{{ message.id }}">
+                        <div class="d-flex">
+                            <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center text-white" style="width: 36px; height: 36px;">
+                                {{ message.username[0].upper() }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    <strong class="me-2 {% if message.user_id == current_user.id %}text-primary{% endif %}">
+                                        {{ message.username }}
+                                    </strong>
+                                    <small class="text-muted">{{ message.timestamp }}</small>
+                                </div>
+                                <div>{{ message.message }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Envio de mensagem -->
+            <div class="p-3 border-top bg-white">
+                <form id="message-form" class="d-flex">
+                    <input type="text" 
+                           id="message-input" 
+                           class="form-control me-2" 
+                           placeholder="Digite sua mensagem..." 
+                           maxlength="500">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Configuração segura do usuário atual
+const currentUserId = parseInt('{{ current_user.id }}');
+let lastMessageId = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar envio
+    document.getElementById('message-form').addEventListener('submit', sendMessage);
+    
+    // Auto-refresh a cada 3 segundos
+    setInterval(refreshChat, 3000);
+    
+    // Focar input
+    document.getElementById('message-input').focus();
+    
+    // Pegar ID da última mensagem
+    const messages = document.querySelectorAll('[data-message-id]');
+    if (messages.length > 0) {
+        lastMessageId = parseInt(messages[messages.length - 1].dataset.messageId) || 0;
+    }
+    
+    // Scroll inicial para baixo
+    scrollToBottom();
+});
+
+function sendMessage(e) {
+    e.preventDefault();
+    
+    const input = document.getElementById('message-input');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Desabilitar botão temporariamente
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    
+    fetch('/chat-offline/send_message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message, room: 'geral' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            input.value = '';
+            addMessage(data.message);
+        } else {
+            alert('Erro ao enviar mensagem: ' + (data.message || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro de conexão ao enviar mensagem');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+    });
+}
+
+function addMessage(message) {
+    const messagesList = document.getElementById('messages-list');
+    const isMe = message.user_id === currentUserId;
+    
+    const div = document.createElement('div');
+    div.className = 'mb-3';
+    div.dataset.messageId = message.id;
+    div.innerHTML = `
+        <div class="d-flex">
+            <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center text-white" style="width: 36px; height: 36px;">
+                ${message.username[0].toUpperCase()}
+            </div>
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-1">
+                    <strong class="me-2 ${isMe ? 'text-primary' : ''}">
+                        ${message.username}
+                    </strong>
+                    <small class="text-muted">${message.timestamp}</small>
+                </div>
+                <div>${escapeHtml(message.message)}</div>
+            </div>
+        </div>
+    `;
+    
+    messagesList.appendChild(div);
+    lastMessageId = Math.max(lastMessageId, parseInt(message.id) || 0);
+    
+    scrollToBottom();
+}
+
+function refreshChat() {
+    fetch(`/chat-offline/get_messages?room=geral&last_id=${lastMessageId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.messages && data.messages.length > 0) {
+            data.messages.forEach(addMessage);
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao atualizar chat:', error);
+    });
+}
+
+function clearRoom() {
+    if (!confirm('Tem certeza que deseja limpar todas as mensagens do chat?')) return;
+    
+    fetch('/chat-offline/clear_room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ room: 'geral' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('messages-list').innerHTML = '';
+            lastMessageId = 0;
+            alert('Chat limpo com sucesso!');
+        } else {
+            alert('Erro ao limpar chat: ' + (data.message || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro de conexão ao limpar chat');
+    });
+}
+
+function scrollToBottom() {
+    const container = document.getElementById('messages-container');
+    container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

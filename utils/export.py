@@ -7,9 +7,10 @@ except ImportError:
 try:
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter, A4
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import inch
+    from reportlab.platypus.flowables import HRFlowable
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
@@ -109,33 +110,123 @@ class ExportUtils:
     @staticmethod
     def export_to_pdf(empenhos, filtros=None, filename=None):
         """Exporta lista de empenhos para PDF"""
+        if not REPORTLAB_AVAILABLE:
+            raise ImportError("ReportLab não está instalado. Execute: pip install reportlab")
+            
         if filename is None:
             filename = os.path.join(tempfile.gettempdir(), f'empenhos_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf')
         
-        doc = SimpleDocTemplate(filename, pagesize=A4)
+        doc = SimpleDocTemplate(filename, pagesize=A4, 
+                              rightMargin=72, leftMargin=72, 
+                              topMargin=72, bottomMargin=18)
         styles = getSampleStyleSheet()
         story = []
         
-        # Título
+        # Cabeçalho com logo e nome do sistema
+        logo_added = False
+        try:
+            # Tentar carregar a logo PNG se existir
+            logo_png_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'img', 'logo_guarapuava.png')
+            if os.path.exists(logo_png_path):
+                logo_img = Image(logo_png_path, width=60, height=60)
+                # Criar uma tabela para colocar logo e texto lado a lado
+                logo_data = [
+                    [logo_img, Paragraph("🏛️ PREFEITURA MUNICIPAL DE GUARAPUAVA<br/>SISTEMA DE GESTÃO DE EMPENHOS E CONTRATOS", 
+                                        ParagraphStyle('LogoHeader', parent=styles['Heading1'], fontSize=14, 
+                                                     alignment=0, textColor=colors.HexColor('#2C5530'), 
+                                                     fontName='Helvetica-Bold'))]
+                ]
+                logo_table = Table(logo_data, colWidths=[80, 4*inch])
+                logo_table.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+                    ('ALIGN', (1, 0), (1, 0), 'LEFT'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                ]))
+                story.append(logo_table)
+                logo_added = True
+        except Exception as e:
+            print(f"Erro ao carregar logo: {e}")
+            pass
+        
+        if not logo_added:
+            # Cabeçalho textual com elementos visuais representando o brasão municipal
+            # Criar um cabeçalho visual com símbolos municipais
+            brasao_data = [
+                ["🏛️", "PREFEITURA MUNICIPAL DE GUARAPUAVA"],
+                ["👑", "SISTEMA DE GESTÃO DE EMPENHOS E CONTRATOS"]
+            ]
+            
+            brasao_table = Table(brasao_data, colWidths=[0.5*inch, 5*inch])
+            brasao_table.setStyle(TableStyle([
+                ('FONTSIZE', (0, 0), (0, -1), 20),  # Emojis grandes
+                ('FONTSIZE', (1, 0), (1, 0), 16),   # Título principal
+                ('FONTSIZE', (1, 1), (1, 1), 12),   # Subtítulo
+                ('FONTNAME', (1, 0), (1, -1), 'Helvetica-Bold'),
+                ('TEXTCOLOR', (1, 0), (1, 0), colors.HexColor('#2C5530')),  # Verde municipal
+                ('TEXTCOLOR', (1, 1), (1, 1), colors.HexColor('#FF6B35')),  # Laranja municipal
+                ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+                ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 5),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+                ('TOPPADDING', (0, 0), (-1, -1), 3),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+            ]))
+            story.append(brasao_table)
+        
+        # Linha separadora
+        story.append(Spacer(1, 10))
+        story.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#2C5530')))
+        story.append(Spacer(1, 20))
+        
+        # Título do relatório
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
-            fontSize=16,
-            spaceAfter=30,
-            alignment=1  # Centralizado
+            fontSize=18,
+            spaceAfter=20,
+            alignment=1,
+            textColor=colors.HexColor('#FF6B35'),
+            fontName='Helvetica-Bold'
         )
-        story.append(Paragraph("Relatório de Empenhos", title_style))
+        story.append(Paragraph("RELATÓRIO DE EMPENHOS", title_style))
         
-        # Informações do relatório
-        info_style = styles['Normal']
-        story.append(Paragraph(f"Data do Relatório: {datetime.now().strftime('%d/%m/%Y %H:%M')}", info_style))
-        story.append(Paragraph(f"Total de Empenhos: {len(empenhos)}", info_style))
+        # Informações do relatório em formato de tabela
+        info_style = ParagraphStyle(
+            'Info',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=5,
+            textColor=colors.HexColor('#333333')
+        )
+        
+        # Criar tabela de informações
+        info_data = [
+            ['Data do Relatório:', datetime.now().strftime('%d/%m/%Y %H:%M')],
+            ['Total de Empenhos:', str(len(empenhos))],
+        ]
         
         if filtros:
-            story.append(Paragraph("<b>Filtros Aplicados:</b>", info_style))
+            info_data.append(['Filtros Aplicados:', ''])
             for key, value in filtros.items():
                 if value:
-                    story.append(Paragraph(f"• {key.replace('_', ' ').title()}: {value}", info_style))
+                    info_data.append(['', f"• {key.replace('_', ' ').title()}: {value}"])
+        
+        info_table = Table(info_data, colWidths=[3*inch, 3*inch])
+        info_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#2C5530')),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        story.append(info_table)
         
         story.append(Spacer(1, 20))
         
@@ -143,6 +234,17 @@ class ExportUtils:
         valor_total_empenhado = sum([float(e.valor_empenhado) if e.valor_empenhado else 0 for e in empenhos])
         valor_total_liquido = sum([float(e.valor_liquido) if e.valor_liquido else 0 for e in empenhos])
         valor_total_retencao = sum([float(e.valor_retencao) if e.valor_retencao else 0 for e in empenhos])
+        
+        # Título da seção financeira
+        financial_title = ParagraphStyle(
+            'FinancialTitle',
+            parent=styles['Heading2'],
+            fontSize=12,
+            spaceAfter=10,
+            textColor=colors.HexColor('#2C5530'),
+            fontName='Helvetica-Bold'
+        )
+        story.append(Paragraph("RESUMO FINANCEIRO", financial_title))
         
         resumo_data = [
             ['Métrica', 'Valor'],
@@ -153,20 +255,39 @@ class ExportUtils:
         
         resumo_table = Table(resumo_data, colWidths=[3*inch, 2*inch])
         resumo_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2C5530')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 12),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ('TOPPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F5F5F5')),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#2C5530')),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
         ]))
         
         story.append(resumo_table)
         story.append(Spacer(1, 30))
         
         # Tabela de empenhos (apenas os principais campos para caber na página)
+        # Título da seção de detalhes
+        details_title = ParagraphStyle(
+            'DetailsTitle',
+            parent=styles['Heading2'],
+            fontSize=12,
+            spaceAfter=10,
+            textColor=colors.HexColor('#2C5530'),
+            fontName='Helvetica-Bold'
+        )
+        story.append(Paragraph("DETALHES DOS EMPENHOS:", details_title))
+        
         if empenhos:
             data = [['Empenho', 'Pregão', 'Contrato', 'Data', 'Valor Empenhado', 'Status']]
             
@@ -182,23 +303,50 @@ class ExportUtils:
             
             table = Table(data, colWidths=[1.2*inch, 0.8*inch, 0.8*inch, 0.8*inch, 1.2*inch, 0.8*inch])
             table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2C5530')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, 0), 8),
                 ('FONTSIZE', (0, 1), (-1, -1), 7),
                 ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                ('TOPPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F9F9F9')),
+                ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#2C5530')),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+                ('TOPPADDING', (0, 1), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
             ]))
             
-            story.append(Paragraph("<b>Detalhes dos Empenhos:</b>", styles['Heading2']))
             story.append(table)
             
             if len(empenhos) > 50:
                 story.append(Spacer(1, 12))
-                story.append(Paragraph(f"<i>Mostrando apenas os primeiros 50 empenhos de {len(empenhos)} total.</i>", styles['Normal']))
+                note_style = ParagraphStyle(
+                    'Note',
+                    parent=styles['Normal'],
+                    fontSize=9,
+                    textColor=colors.HexColor('#666666'),
+                    fontName='Helvetica-Oblique',
+                    alignment=1
+                )
+                story.append(Paragraph(f"Mostrando apenas os primeiros 50 empenhos de {len(empenhos)} total.", note_style))
+        
+        # Rodapé
+        story.append(Spacer(1, 30))
+        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#2C5530')))
+        
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.HexColor('#666666'),
+            alignment=1
+        )
+        story.append(Paragraph("Sistema de Gestão de Empenhos e Contratos - Prefeitura Municipal de Guarapuava", footer_style))
+        story.append(Paragraph(f"Documento gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}", footer_style))
         
         doc.build(story)
         return filename

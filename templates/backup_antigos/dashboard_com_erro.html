@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>
+        Novo Empenho
+    </a>
+    <a href="{{ url_for('contratos.novo') }}" class="btn btn-success">
+        <i class="bi bi-file-earmark-plus me-1"></i>
+        Novo Contrato
+    </a>
+    <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-primary">
+        <i class="bi bi-graph-up me-1"></i>
+        Relatórios
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Cards de estatísticas gerais -->
+<div class="row mb-4">
+    <!-- Total de Empenhos -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="text-white">{{ total_empenhos }}</h3>
+                        <p class="text-white-50 mb-0">Total de Empenhos</p>
+                    </div>
+                    <div>
+                        <i class="bi bi-file-earmark-text text-white-50" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Total de Contratos -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="text-white">{{ total_contratos }}</h3>
+                        <p class="text-white-50 mb-0">Total de Contratos</p>
+                    </div>
+                    <div>
+                        <i class="bi bi-file-contract text-white-50" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Valor Total Empenhos -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #20b2aa 0%, #48d1cc 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="text-white">R$ {{ "{:,.0f}".format(valor_total_empenhos) }}</h3>
+                        <p class="text-white-50 mb-0">Valor Total Empenhos</p>
+                    </div>
+                    <div>
+                        <i class="bi bi-currency-dollar text-white-50" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Valor Total Contratos -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="text-white">R$ {{ "{:,.0f}".format(valor_total_contratos) }}</h3>
+                        <p class="text-white-50 mb-0">Valor Total Contratos</p>
+                    </div>
+                    <div>
+                        <i class="bi bi-cash-stack text-white-50" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status dos Empenhos -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-clock-history text-warning" style="font-size: 2rem;"></i>
+                <h4 class="mt-2">{{ empenhos_pendentes }}</h4>
+                <p class="text-muted mb-0">Empenhos Pendentes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                <h4 class="mt-2">{{ empenhos_aprovados }}</h4>
+                <p class="text-muted mb-0">Empenhos Aprovados</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-cash text-primary" style="font-size: 2rem;"></i>
+                <h4 class="mt-2">{{ empenhos_pagos }}</h4>
+                <p class="text-muted mb-0">Empenhos Pagos</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contratos Próximos ao Vencimento -->
+<div class="row mb-4">
+    <!-- Contratos Críticos (≤ 30 dias) -->
+    <div class="col-lg-4 mb-4">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Crítico (≤ 30 dias)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if contratos_criticos %}
+                    <div class="list-group list-group-flush">
+                        {% for contrato in contratos_criticos[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ contrato.numero_contrato }}</strong><br>
+                                <small class="text-muted">{{ contrato.fornecedor[:30] }}{% if contrato.fornecedor|length > 30 %}...{% endif %}</small>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">{{ contrato.dias_restantes }} dias</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-3 text-center text-muted">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Nenhum contrato crítico
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Contratos de Atenção (31-60 dias) -->
+    <div class="col-lg-4 mb-4">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    Atenção (31-60 dias)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if contratos_atencao %}
+                    <div class="list-group list-group-flush">
+                        {% for contrato in contratos_atencao[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ contrato.numero_contrato }}</strong><br>
+                                <small class="text-muted">{{ contrato.fornecedor[:30] }}{% if contrato.fornecedor|length > 30 %}...{% endif %}</small>
+                            </div>
+                            <span class="badge bg-warning rounded-pill">{{ contrato.dias_restantes }} dias</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-3 text-center text-muted">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Nenhum contrato requer atenção
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Contratos Normais (> 60 dias) -->
+    <div class="col-lg-4 mb-4">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Normal (> 60 dias)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if contratos_normais %}
+                    <div class="list-group list-group-flush">
+                        {% for contrato in contratos_normais[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ contrato.numero_contrato }}</strong><br>
+                                <small class="text-muted">{{ contrato.fornecedor[:30] }}{% if contrato.fornecedor|length > 30 %}...{% endif %}</small>
+                            </div>
+                            <span class="badge bg-success rounded-pill">{{ contrato.dias_restantes }} dias</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-3 text-center text-muted">
+                        <i class="bi bi-info-circle-fill text-info me-2"></i>
+                        Nenhum contrato normal encontrado
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos e Estatísticas -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bar-chart-fill me-2"></i>
+                    Empenhos por Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="empenhosChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart-fill me-2"></i>
+                    Contratos por Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="contratosChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Últimos Empenhos -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Últimos Empenhos Cadastrados
+                </h5>
+                <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-primary btn-sm">
+                    Ver Todos
+                </a>
+            </div>
+            <div class="card-body">
+                {% if ultimos_empenhos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Data</th>
+                                <th>Credor</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for empenho in ultimos_empenhos %}
+                            <tr>
+                                <td><strong>{{ empenho.numero_empenho }}</strong></td>
+                                <td>{{ empenho.data_empenho.strftime('%d/%m/%Y') if empenho.data_empenho else '-' }}</td>
+                                <td>{{ empenho.credor[:40] }}{% if empenho.credor|length > 40 %}...{% endif %}</td>
+                                <td>R$ {{ "{:,.2f}".format(empenho.valor_empenhado).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                                <td>
+                                    {% if empenho.status == 'PENDENTE' %}
+                                        <span class="badge bg-warning">{{ empenho.status }}</span>
+                                    {% elif empenho.status == 'APROVADO' %}
+                                        <span class="badge bg-success">{{ empenho.status }}</span>
+                                    {% elif empenho.status == 'PAGO' %}
+                                        <span class="badge bg-info">{{ empenho.status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ empenho.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('empenhos.detalhes', id=empenho.id) }}" 
+                                           class="btn btn-outline-primary" title="Ver detalhes">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('empenhos.editar', id=empenho.id) }}" 
+                                           class="btn btn-outline-warning" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">Nenhum empenho cadastrado ainda.</p>
+                    <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Cadastrar Primeiro Empenho
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações Rápidas -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning-fill me-2"></i>
+                    Ações Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-file-earmark-text d-block mb-2" style="font-size: 2rem;"></i>
+                            Gerenciar Empenhos
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-success w-100">
+                            <i class="bi bi-file-contract d-block mb-2" style="font-size: 2rem;"></i>
+                            Gerenciar Contratos
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-info w-100">
+                            <i class="bi bi-graph-up d-block mb-2" style="font-size: 2rem;"></i>
+                            Relatórios
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('relatorios.exportar_excel') }}" class="btn btn-outline-warning w-100">
+                            <i class="bi bi-download d-block mb-2" style="font-size: 2rem;"></i>
+                            Backup Sistema
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts dos Gráficos -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Dados para os gráficos (serão fornecidos pelo backend)
+    const empenhosData = {
+        labels: ['Pendentes', 'Aprovados', 'Pagos', 'Rejeitados'],
+        datasets: [{
+            data: [{{ empenhos_pendentes }}, {{ empenhos_aprovados }}, {{ empenhos_pagos }}, {{ empenhos_rejeitados or 0 }}],
+            backgroundColor: [
+                '#ffc107',
+                '#28a745',
+                '#007bff',
+                '#dc3545'
+            ]
+        }]
+    };
+
+    const contratosData = {
+        labels: ['Ativos', 'Vencidos', 'Renovados'],
+        datasets: [{
+            data: [{{ contratos_ativos or 0 }}, {{ contratos_vencidos or 0 }}, {{ contratos_renovados or 0 }}],
+            backgroundColor: [
+                '#28a745',
+                '#dc3545',
+                '#6f42c1'
+            ]
+        }]
+    };
+
+    // Configuração dos gráficos
+    const config = {
+        type: 'doughnut',
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    };
+
+    // Criar gráfico de empenhos
+    const empenhosCtx = document.getElementById('empenhosChart').getContext('2d');
+    new Chart(empenhosCtx, {
+        ...config,
+        data: empenhosData
+    });
+
+    // Criar gráfico de contratos
+    const contratosCtx = document.getElementById('contratosChart').getContext('2d');
+    new Chart(contratosCtx, {
+        ...config,
+        data: contratosData
+    });
+});
+</script>
+{% endblock %}

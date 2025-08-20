@@ -1,0 +1,544 @@
+{% extends "base.html" %}
+
+{% block title %}Painel Principal - Sistema Municipal{% endblock %}
+{% block page_title %}Painel Principal{% endblock %}
+
+{% block extra_head %}
+  <!-- GridStack CSS (CDN com fallback local) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack.min.css">
+  <script>
+    // Se o CSS do CDN não carregar, injeta o local
+    (function ensureGridstackCSS(){
+      const test = document.createElement('div');
+      test.className = 'grid-stack';
+      document.head.appendChild(test);
+      // Dá um tempo para stylesheet anexar
+      setTimeout(function(){
+        const ok = [...document.styleSheets].some(s => (s.href||'').includes('gridstack'));
+        if (!ok) {
+          var l = document.createElement('link');
+          l.rel = 'stylesheet';
+          l.href = "{{ url_for('static', filename='vendor/gridstack/gridstack.min.css') }}";
+          document.head.appendChild(l);
+          console.warn('GridStack CSS local injetado (fallback).');
+        }
+        test.remove();
+      }, 50);
+    })();
+  </script>
+  <style>
+    .grid-stack { background: transparent; min-height: 70vh; }
+    .grid-stack-item { min-width: 200px; min-height: 120px; }
+    .grid-stack-item-content {
+      background: #fff; border-radius: 12px; height: 100%; padding: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.06); border: 1px solid rgba(0,0,0,.06);
+      display:flex; flex-direction: column; overflow: hidden;
+    }
+    .widget-header{ 
+      display:flex; align-items:center; justify-content:space-between; 
+      border-bottom:1px solid #eee; padding-bottom:8px; margin-bottom:10px; 
+    }
+    .widget-title{ 
+      font-weight:600; color:#333; display:flex; align-items:center; gap:8px; 
+    }
+    .no-drag, .no-drag * { pointer-events: auto; }
+    .gs-no-move { pointer-events: auto !important; }
+    .kpi-card{ 
+      text-align:center; display:flex; flex:1; flex-direction:column; justify-content:center; 
+    }
+    .kpi-value{ 
+      font-size:2.1rem; font-weight:700; line-height:1.1; 
+    }
+    .chart-container{ 
+      flex:1; min-height:240px; position:relative; 
+    }
+    .widget-actions .btn { 
+      padding: .15rem .4rem; 
+    }
+    .apps-grid { 
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; 
+    }
+    .app-card { 
+      text-align: center; padding: 1rem; border-radius: 8px; 
+      background: #f8f9fa; border: 1px solid #dee2e6; text-decoration: none; 
+      transition: all 0.2s ease;
+    }
+    .app-card:hover { 
+      background: #e9ecef; transform: translateY(-2px); text-decoration: none; 
+    }
+    .action-buttons { 
+      display: flex; gap: 0.5rem; flex-wrap: wrap; 
+    }
+    .action-buttons .btn { 
+      flex: 1; min-width: 120px; 
+    }
+  </style>
+{% endblock %}
+
+{% block page_actions %}
+  <div class="btn-group">
+    <button id="btnAdd" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-plus-lg me-1"></i>Adicionar
+    </button>
+    <button id="btnSave" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-save me-1"></i>Salvar
+    </button>
+    <button id="btnReset" class="btn btn-outline-danger btn-sm">
+      <i class="bi bi-arrow-clockwise me-1"></i>Reset
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <!-- Grid principal -->
+  <div class="grid-stack" id="dashboard-grid"></div>
+
+  <!-- Modal para escolher widget -->
+  <div class="modal fade" id="widgetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title">
+            <i class="bi bi-grid-3x3-gap me-2"></i>Novo Widget
+          </h6>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-grid gap-2">
+            <button class="btn btn-outline-primary" data-widget="kpi-total-empenhos">
+              <i class="bi bi-file-earmark-text me-2"></i>Total de Empenhos
+            </button>
+            <button class="btn btn-outline-success" data-widget="kpi-total-contratos">
+              <i class="bi bi-file-earmark-check me-2"></i>Total de Contratos
+            </button>
+            <button class="btn btn-outline-info" data-widget="kpi-valor-empenhos">
+              <i class="bi bi-cash-coin me-2"></i>Valor Total Empenhos (R$)
+            </button>
+            <button class="btn btn-outline-info" data-widget="kpi-valor-contratos">
+              <i class="bi bi-currency-dollar me-2"></i>Valor Total Contratos (R$)
+            </button>
+            <button class="btn btn-outline-secondary" data-widget="apps-sistema">
+              <i class="bi bi-grid-3x3-gap me-2"></i>Apps do Sistema
+            </button>
+            <button class="btn btn-outline-warning" data-widget="acoes-rapidas">
+              <i class="bi bi-lightning me-2"></i>Ações Rápidas
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <!-- GridStack JS: CDN -> CDN 2 -> Local (robusto) -->
+  <script>
+    (function loadGridstack(){
+      function add(src, done){
+        var s=document.createElement('script'); s.src=src;
+        s.onload=function(){ done(true); }; s.onerror=function(){ done(false); };
+        document.head.appendChild(s);
+      }
+      function fire(){ document.dispatchEvent(new Event('gridstack-ready')); }
+
+      add('https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack-all.js', function(ok){
+        if (ok && window.GridStack) return fire();
+        console.warn('Falha jsDelivr, tentando unpkg…');
+        add('https://unpkg.com/gridstack@9.2.2/dist/gridstack-all.js', function(ok2){
+          if (ok2 && window.GridStack) return fire();
+          console.warn('Falha unpkg, usando local…');
+          add('{{ url_for("static", filename="vendor/gridstack/gridstack-all.js") }}', function(ok3){
+            if (!ok3 || !window.GridStack) console.error('GridStack não carregou de nenhum lugar.');
+            fire();
+          });
+        });
+      });
+    })();
+  </script>
+
+  <script>
+document.addEventListener('gridstack-ready', function () {
+  console.log('GridStack version:', window.GridStack?.Engine ? 'OK' : 'desconhecida');
+
+  if (!window.GridStack){
+    console.warn('GridStack indisponível. Verifique a aba Network.');
+    return;
+  }
+
+  const LS_KEY = 'painel-grid-layout-v2';
+
+  // limpar layouts antigos (uma vez)
+  localStorage.removeItem('painel-grid-layout-v1');
+  localStorage.removeItem('painel-grid-layout');
+
+  // Helpers de formatação
+  const fmtBRL = v => new Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'}).format(Number(v||0));
+  const fmtInt = v => new Intl.NumberFormat('pt-BR').format(Number(v||0));
+
+  // Busca endpoint e preenche o KPI pelo nome do campo
+  async function fillKpi(endpoint, field, targetId, formatFn, fallback=0) {
+    try {
+      const r = await fetch(endpoint, {cache:'no-store'});
+      const j = await r.json();
+      const value =
+        (field in j) ? j[field] :
+        ('valor' in j ? j.valor :
+        ('total' in j ? j.total :
+        ('valor_total' in j ? j.valor_total : fallback)));
+      const el = document.getElementById(targetId);
+      if (el) el.textContent = formatFn(value);
+    } catch (e) {
+      console.warn('Erro ao carregar dados:', e);
+      const el = document.getElementById(targetId);
+      if (el) el.textContent = formatFn(fallback);
+    }
+  }
+
+  // Inicializa Grid
+  const grid = GridStack.init({
+    column: 12,
+    cellHeight: 90,
+    margin: 8,
+    float: false,
+    animate: true,
+    disableOneColumnMode: false,
+    minRow: 6,
+    handle: '.widget-header' // <<< arrasta só pelo cabeçalho
+  }, '#dashboard-grid');
+
+  grid.enableMove(true);
+  grid.enableResize(true);
+
+  // Persistência de layout
+  function saveLayout() {
+    const layout = grid.save();
+    localStorage.setItem(LS_KEY, JSON.stringify(layout));
+    const btn = document.getElementById('btnSave');
+    if (btn) {
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="bi bi-check"></i> Salvo!';
+      btn.classList.add('btn-success');
+      btn.classList.remove('btn-outline-success');
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-success');
+      }, 1500);
+    }
+  }
+
+  function loadLayout() {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    try {
+      const layout = JSON.parse(raw);
+      if (Array.isArray(layout) && layout.length) {
+        grid.load(layout);
+        return true;
+      }
+    } catch(e) {
+      console.warn('Layout inválido', e);
+    }
+    return false;
+  }
+
+  function resetLayout() {
+    localStorage.removeItem(LS_KEY);
+    grid.removeAll();
+    buildWelcome();
+  }
+
+  // Fábrica de widgets
+  function addWidgetHTML(id, w, h, title, icon, innerHTML) {
+    // evita duplicidades
+    if (document.querySelector(`[gs-id="${id}"]`)) return null;
+
+    const el = document.createElement('div');
+    el.className = 'grid-stack-item';
+    el.setAttribute('gs-id', id);
+    el.setAttribute('gs-w', String(w));
+    el.setAttribute('gs-h', String(h));
+    el.id = id; // facilita pegar o elemento depois
+
+    el.innerHTML = `
+      <div class="grid-stack-item-content">
+        <div class="widget-header">
+          <div class="widget-title">
+            <i class="bi ${icon} me-1"></i><span>${title}</span>
+          </div>
+          <div class="widget-actions">
+            <button class="btn btn-outline-secondary btn-sm gs-no-move" title="Diminuir" data-action="shrink">
+              <i class="bi bi-arrows-angle-contract"></i>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm gs-no-move" title="Aumentar" data-action="grow">
+              <i class="bi bi-arrows-angle-expand"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm gs-no-move" title="Remover" data-action="remove">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+        <div style="flex: 1; overflow: auto;">
+          ${innerHTML}
+        </div>
+      </div>
+    `;
+
+    grid.addWidget(el, {autoPosition: true});
+    bindWidgetActions(el);
+    return el;
+  }
+
+  function bindWidgetActions(el) {
+    el.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const action = btn.getAttribute('data-action');
+        const node = el.gridstackNode;
+        if (!node) return;
+
+        if (action === 'remove') {
+          grid.removeWidget(el, true);
+          saveLayout();
+
+          // Se removeu tudo, mostra boas-vindas
+          setTimeout(() => {
+            if (grid.getGridItems().length === 0) {
+              buildWelcome();
+            }
+          }, 100);
+          return;
+        }
+        if (action === 'grow') {
+          grid.update(el, {
+            w: Math.min(12, (node.w || 3) + 1),
+            h: Math.min(12, (node.h || 2) + 1)
+          });
+          saveLayout();
+          return;
+        }
+        if (action === 'shrink') {
+          grid.update(el, {
+            w: Math.max(2, (node.w || 3) - 1),
+            h: Math.max(2, (node.h || 2) - 1)
+          });
+          saveLayout();
+          return;
+        }
+      });
+    });
+  }
+
+  // Widgets de KPI
+  function wKpiCount(id, label, icon, color, initial=0, endpoint=null, field=null) {
+    const targetId = `${id}-value`;
+    const el = addWidgetHTML(
+      id, 3, 3, label, icon,
+      `
+      <div class="kpi-card">
+        <div class="text-${color}" style="font-size:2.2rem">
+          <i class="bi ${icon}"></i>
+        </div>
+        <div class="kpi-value text-${color}" id="${targetId}">${fmtInt(initial)}</div>
+        <div class="text-muted">${label}</div>
+      </div>
+      `
+    );
+    if (el && endpoint && field) {
+      fillKpi(endpoint, field, targetId, fmtInt, initial);
+    }
+    return el;
+  }
+
+  function wKpiMoney(id, label, icon, color, initial=0, endpoint=null, field=null) {
+    const targetId = `${id}-value`;
+    const el = addWidgetHTML(
+      id, 3, 3, label, icon,
+      `
+      <div class="kpi-card">
+        <div class="text-${color}" style="font-size:2.2rem">
+          <i class="bi ${icon}"></i>
+        </div>
+        <div class="kpi-value text-${color}" id="${targetId}">${fmtBRL(initial)}</div>
+        <div class="text-muted">${label}</div>
+      </div>
+      `
+    );
+    if (el && endpoint && field) {
+      fillKpi(endpoint, field, targetId, fmtBRL, initial);
+    }
+    return el;
+  }
+
+  function widgetKPI(id, label, icon, color, value = 0) {
+    return addWidgetHTML(
+      id, 3, 3, label, icon,
+      `
+      <div class="kpi-card">
+        <div class="text-${color}" style="font-size:2.2rem">
+          <i class="bi ${icon}"></i>
+        </div>
+        <div class="kpi-value text-${color}">${value}</div>
+        <div class="text-muted">${label}</div>
+      </div>
+      `
+    );
+  }
+
+  function widgetApps() {
+    return addWidgetHTML(
+      'apps-sistema', 6, 4, 'Aplicações do Sistema', 'bi-grid-3x3-gap',
+      `
+      <div class="apps-grid">
+        <a href="/empenhos/" class="app-card">
+          <i class="bi bi-file-earmark-text fa-2x text-primary mb-2"></i>
+          <div class="fw-bold">Empenhos</div>
+          <small class="text-muted">Gestão orçamentária</small>
+        </a>
+        <a href="/contratos/" class="app-card">
+          <i class="bi bi-file-contract fa-2x text-success mb-2"></i>
+          <div class="fw-bold">Contratos</div>
+          <small class="text-muted">Gestão de contratos</small>
+        </a>
+        <a href="/relatorios/" class="app-card">
+          <i class="bi bi-graph-up fa-2x text-info mb-2"></i>
+          <div class="fw-bold">Relatórios</div>
+          <small class="text-muted">Análises e dados</small>
+        </a>
+        <a href="/auth/users" class="app-card">
+          <i class="bi bi-people fa-2x text-warning mb-2"></i>
+          <div class="fw-bold">Usuários</div>
+          <small class="text-muted">Gestão de acesso</small>
+        </a>
+      </div>
+      `
+    );
+  }
+
+  function widgetAcoes() {
+    return addWidgetHTML(
+      'acoes-rapidas', 6, 4, 'Ações Rápidas', 'bi-lightning',
+      `
+      <div class="action-buttons">
+        <a href="/empenhos/novo" class="btn btn-outline-primary">
+          <i class="bi bi-plus-circle me-1"></i>Novo Empenho
+        </a>
+        <a href="/contratos/novo" class="btn btn-outline-success">
+          <i class="bi bi-file-plus me-1"></i>Novo Contrato
+        </a>
+        <a href="/relatorios/" class="btn btn-outline-info">
+          <i class="bi bi-bar-chart me-1"></i>Ver Relatórios
+        </a>
+        <a href="/chat/" class="btn btn-outline-primary">
+          <i class="bi bi-robot me-1"></i>Chat IA
+        </a>
+        <a href="/workflow/" class="btn btn-outline-dark">
+          <i class="bi bi-diagram-3 me-1"></i>Workflow
+        </a>
+        <a href="/auth/logout" class="btn btn-outline-danger">
+          <i class="bi bi-box-arrow-right me-1"></i>Sair
+        </a>
+      </div>
+      `
+    );
+  }
+
+  function buildWelcome() {
+    addWidgetHTML(
+      'welcome', 12, 4, 'Bem-vindo ao seu painel', 'bi-plus-circle-fill',
+      `
+      <div class="text-center p-4">
+        <i class="bi bi-grid-3x3-gap text-muted" style="font-size: 3rem;"></i>
+        <h5 class="mt-3 text-muted">Seu painel está vazio</h5>
+        <p class="text-muted">Clique no botão "Adicionar" para começar a personalizar seu dashboard.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('btnAdd').click()">
+          <i class="bi bi-plus"></i> Adicionar Widget
+        </button>
+      </div>
+      `
+    );
+  }
+
+  // Eventos do Grid
+  grid.on('change', saveLayout);
+
+  // Carregar layout salvo ou boas-vindas
+  if (!loadLayout()) {
+    if (grid.getGridItems().length === 0) {
+      buildWelcome();
+    }
+  }
+
+  // Botões principais
+  document.getElementById('btnSave')?.addEventListener('click', saveLayout);
+
+  document.getElementById('btnReset')?.addEventListener('click', () => {
+    if (confirm('Resetar layout para o padrão?')) {
+      resetLayout();
+    }
+  });
+
+  // Modal adicionar widgets
+  const modal = new bootstrap.Modal(document.getElementById('widgetModal'));
+
+  document.getElementById('btnAdd')?.addEventListener('click', () => {
+    modal.show();
+  });
+
+  // IMPORTANTE: os valores de data-widget agora batem com o switch
+  document.querySelectorAll('#widgetModal [data-widget]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.getAttribute('data-widget');
+      const ts = Date.now();
+
+      // remove welcome se existir
+      const welcome = document.querySelector('[gs-id="welcome"]');
+      if (welcome) grid.removeWidget(welcome, true);
+
+      switch(type) {
+        case 'kpi-total-empenhos':
+          wKpiCount(`kpi-total-empenhos-${ts}`, 'Total de Empenhos', 'bi-file-earmark-text', 'primary', 0, '/api/stats/empenhos', 'total');
+          break;
+
+        case 'kpi-total-contratos':
+          wKpiCount(`kpi-total-contratos-${ts}`, 'Total de Contratos', 'bi-file-earmark-check', 'success', 0, '/api/stats/contratos', 'total');
+          break;
+
+        case 'kpi-valor-empenhos':
+          wKpiMoney(`kpi-valor-empenhos-${ts}`, 'Valor Total Empenhos (R$)', 'bi-cash-coin', 'warning', 0, '/api/stats/empenhos', 'valor_total');
+          break;
+
+        case 'kpi-valor-contratos':
+          wKpiMoney(`kpi-valor-contratos-${ts}`, 'Valor Total Contratos (R$)', 'bi-currency-dollar', 'info', 0, '/api/stats/contratos', 'valor_total');
+          break;
+
+        case 'apps-sistema':
+          widgetApps();
+          break;
+
+        case 'acoes-rapidas':
+          widgetAcoes();
+          break;
+
+        // compatibilidade
+        case 'kpi-empenhos':
+          widgetKPI(`kpi-empenhos-${ts}`, 'Total de Empenhos', 'bi-file-earmark-text', 'primary', 0);
+          break;
+
+        case 'kpi-contratos':
+          widgetKPI(`kpi-contratos-${ts}`, 'Contratos', 'bi-file-earmark-check', 'success', 0);
+          break;
+      }
+
+      saveLayout();
+      modal.hide();
+    });
+  });
+});
+  </script>
+
+  <!-- Chart.js para gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}

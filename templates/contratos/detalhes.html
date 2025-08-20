@@ -10,7 +10,7 @@
         <i class="bi bi-arrow-left me-1"></i>
         Voltar
     </a>
-    <a href="{{ url_for('contratos.editar', id=contrato.id) }}" class="btn btn-outline-warning">
+    <a href="{{ url_for('contratos_wtf.editar', id=contrato.id) }}" class="btn btn-outline-warning">
         <i class="bi bi-pencil me-1"></i>
         Editar
     </a>
@@ -125,12 +125,7 @@
                             <span class="badge bg-secondary">Data nao definida</span>
                         {% endif %}
                     </div>
-                    {% if contrato.data_fim_original %}
-                    <div class="col-md-6 mb-3">
-                        <strong>Data de Fim Original:</strong><br>
-                        <small class="text-muted">{{ contrato.data_fim_original.strftime('%d/%m/%Y') }}</small>
-                    </div>
-                    {% endif %}
+                    
                 </div>
 
                 <!-- Gestao -->

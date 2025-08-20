@@ -1,0 +1,1487 @@
+{% extends "base.html" %}
+{% from "forms/_macros.html" import render_field, render_select, render_textarea, render_file %}
+
+{% block title %}{{ 'Editar' if contrato else 'Novo' }} Contrato - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}{{ 'Editar' if contrato else 'Novo' }} Contrato{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Layout do formulário de contratos */
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    /* Corrigir sobreposição das abas */
+    .nav-tabs {
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 0;
+        z-index: 10;
+        position: relative;
+        background: white;
+        padding-left: 0;
+    }
+    
+    .nav-tabs .nav-item {
+        margin-bottom: -2px;
+    }
+    
+    .nav-tabs .nav-link {
+        border: 2px solid transparent;
+        border-top-left-radius: 0.5rem;
+        border-top-right-radius: 0.5rem;
+        background: #f8f9fa;
+        color: #6c757d;
+        margin-right: 3px;
+        padding: 0.75rem 1.25rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border-color: #e9ecef #e9ecef #dee2e6;
+        background: #e9ecef;
+        color: #0d6efd;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: #0d6efd;
+        background-color: white;
+        border-color: #0d6efd #0d6efd white;
+        border-bottom: 2px solid white;
+        z-index: 11;
+        box-shadow: 0 -2px 8px rgba(255, 107, 53, 0.1);
+    }
+    
+    .tab-content {
+        position: relative;
+        z-index: 1;
+        background: white;
+        border: 2px solid #dee2e6;
+        border-top: none;
+        padding: 1.5rem;
+        border-radius: 0 0 0.5rem 0.5rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        min-height: 400px;
+    }
+    
+    .tab-pane {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Melhorias nos campos */
+    .form-label {
+        font-weight: 600;
+        color: #0d6efd;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
+    /* Seções organizadas */
+    .section-header {
+        border-bottom: 2px solid #0d6efd;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        color: #0d6efd;
+        font-weight: 600;
+    }
+    
+    .form-row {
+        margin-bottom: 1rem;
+    }
+    
+    /* Indicador de campo obrigatório */
+    .form-label[aria-required="true"]:after,
+    label[for*="numero_contrato"]:after,
+    label[for*="objeto"]:after,
+    label[for*="fornecedor"]:after,
+    label[for*="valor_total"]:after,
+    label[for*="data_assinatura"]:after,
+    label[for*="data_inicio"]:after,
+    label[for*="data_fim"]:after {
+        content: ' *';
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    /* Loading state para submit */
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    /* Melhor aparência das abas */
+    .nav-tabs .nav-link:focus {
+        outline: 2px solid #0d6efd;
+        outline-offset: 2px;
+    }
+    
+    /* Custom styling para campos monetários */
+    input[name*="valor"] {
+        text-align: right;
+    }
+    
+    /* ========== ESTILOS PARA ANEXOS MÚLTIPLOS ========== */
+    .anexo-item {
+        transition: all 0.3s ease;
+    }
+    
+    .anexo-item .card {
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+    
+    .anexo-item .card:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 4px 15px rgba(13, 110, 253, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .anexo-file:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
+    .anexo-descricao:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+    
+    .remove-anexo {
+        transition: all 0.3s ease;
+    }
+    
+    .remove-anexo:hover {
+        transform: scale(1.1);
+    }
+    
+    /* Animação para novos anexos */
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .anexo-item.novo {
+        animation: slideInDown 0.5s ease-out;
+    }
+    
+    /* Estilos para anexos existentes */
+    .anexos-existentes .card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-left: 4px solid #28a745;
+    }
+    
+    /* Responsive para anexos */
+    @media (max-width: 768px) {
+        .anexo-item .row {
+            flex-direction: column;
+        }
+        
+        .anexo-item .col-md-1 {
+            text-align: center;
+            margin-top: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>
+        Voltar
+    </a>
+    {% if contrato %}
+    <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" class="btn btn-outline-primary">
+        <i class="bi bi-eye me-1"></i>
+        Ver Detalhes
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-{{ 'pencil' if contrato else 'plus-circle' }} me-2"></i>
+                    {{ 'Editar' if contrato else 'Criar Novo' }} Contrato
+                </h5>
+            </div>
+            <div class="card-body">
+                {% with msgs = get_flashed_messages(with_categories=true) %}
+                    {% if msgs %}
+                        {% for cat, msg in msgs %}
+                            <div class="alert alert-{{ 'danger' if cat == 'error' else cat }} alert-dismissible fade show" role="alert">
+                                {{ msg }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" 
+                      id="formContrato" 
+                      enctype="multipart/form-data"
+                      action="{{ url_for('contratos_wtf.atualizar', id=contrato.id) if contrato else url_for('contratos_wtf.criar') }}">
+                    {{ form.csrf_token }}
+                    
+                    <!-- Navegacao por Abas -->
+                    <ul class="nav nav-tabs" id="contratoTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="identificacao-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#identificacao" type="button" role="tab">
+                                <i class="bi bi-card-heading me-1"></i>
+                                Identificação
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="fornecedor-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#fornecedor" type="button" role="tab">
+                                <i class="bi bi-building me-1"></i>
+                                Fornecedor & CNPJ
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="financeiro-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#financeiro" type="button" role="tab">
+                                <i class="bi bi-cash-stack me-1"></i>
+                                Financeiro & Prazos
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="gestao-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#gestao" type="button" role="tab">
+                                <i class="bi bi-people me-1"></i>
+                                Gestão e Fiscalização
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="anexos-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#anexos" type="button" role="tab">
+                                <i class="bi bi-paperclip me-1"></i>
+                                Anexos
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="observacoes-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#observacoes" type="button" role="tab">
+                                <i class="bi bi-journal-text me-1"></i>
+                                Observações
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="contratoTabsContent">
+                        <!-- Aba 1: Identificacao -->
+                        <div class="tab-pane fade show active" id="identificacao" role="tabpanel">
+                            
+                            <!-- Seção: Dados de Identificação -->
+                            <h6 class="section-header">
+                                <i class="bi bi-card-heading me-1"></i>
+                                Dados de Identificação
+                            </h6>
+
+                            <!-- Primeira linha: Modalidade, Órgão e Tipo -->
+                            <div class="row form-row">
+                                <div class="col-md-4">
+                                    {{ render_select(form.modalidade_licitacao) }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ render_field(form.orgao_contratante) }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ render_select(form.tipo_contratacao) }}
+                                </div>
+                            </div>
+
+                            <!-- Segunda linha: Secretaria -->
+                            <div class="row form-row">
+                                <div class="col-md-12">
+                                    {{ render_field(form.secretaria) }}
+                                </div>
+                            </div>
+
+                            <!-- Terceira linha: Números dos documentos -->
+                            <div class="row form-row">
+                                <div class="col-md-4">
+                                    {{ render_field(form.numero_pregao, autocomplete="off") }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ render_field(form.numero_contrato, autocomplete="off") }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ render_field(form.numero_processo, autocomplete="off") }}
+                                </div>
+                            </div>
+
+                            <div class="row form-row">
+                                <div class="col-md-3">
+                                    {{ render_field(form.ano_pregao, type="number", min="2000", max="2100", autocomplete="off") }}
+                                </div>
+                                <div class="col-md-3">
+                                    {{ render_field(form.ano_contrato, type="number", min="2000", max="2100", autocomplete="off") }}
+                                </div>
+                                <div class="col-md-3">
+                                    {{ render_field(form.ano_processo, type="number", min="2000", max="2100", autocomplete="off") }}
+                                </div>
+                                <div class="col-md-3">
+                                    {{ render_field(form.digito_verificador, autocomplete="off") }}
+                                </div>
+                            </div>
+
+                            <div class="row form-row">
+                                <div class="col-12">
+                                    {{ render_textarea(form.objeto, rows=3) }}
+                                </div>
+                            </div>
+
+                            <div class="row form-row">
+                                <div class="col-12">
+                                    {{ render_textarea(form.lei_base, rows=2, placeholder="Ex: Lei 14.133/2021, Lei 8.666/93, etc.") }}
+                                </div>
+                            </div>
+
+                            <!-- Seção: Informações Complementares -->
+                            <h6 class="section-header mt-4">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Informações Complementares
+                            </h6>
+                            <div class="row form-row">
+                                <div class="col-md-4">
+                                    <label for="categoria_contrato" class="form-label">Categoria do Contrato</label>
+                                    <select class="form-select" id="categoria_contrato" name="categoria_contrato">
+                                        <option value="">Selecione a Categoria...</option>
+                                        <option value="ESTRATEGICO" {{ 'selected' if contrato and contrato.categoria_contrato == 'ESTRATEGICO' else '' }}>Estratégico</option>
+                                        <option value="CRITICO" {{ 'selected' if contrato and contrato.categoria_contrato == 'CRITICO' else '' }}>Crítico</option>
+                                        <option value="NORMAL" {{ 'selected' if contrato and contrato.categoria_contrato == 'NORMAL' else '' }}>Normal</option>
+                                        <option value="SIMPLES" {{ 'selected' if contrato and contrato.categoria_contrato == 'SIMPLES' else '' }}>Simples</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="prioridade" class="form-label">Prioridade</label>
+                                    <select class="form-select" id="prioridade" name="prioridade">
+                                        <option value="">Selecione a Prioridade...</option>
+                                        <option value="ALTA" {{ 'selected' if contrato and contrato.prioridade == 'ALTA' else '' }}>Alta</option>
+                                        <option value="MEDIA" {{ 'selected' if contrato and contrato.prioridade == 'MEDIA' else '' }}>Média</option>
+                                        <option value="BAIXA" {{ 'selected' if contrato and contrato.prioridade == 'BAIXA' else '' }}>Baixa</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="observacao_identificacao" class="form-label">Observação de Identificação</label>
+                                    <input type="text" class="form-control" id="observacao_identificacao" name="observacao_identificacao" 
+                                           value="{{ contrato.observacao_identificacao if contrato else '' }}" 
+                                           placeholder="Observação rápida sobre o contrato">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba 2: Fornecedor & CNPJ -->
+                        <div class="tab-pane fade" id="fornecedor" role="tabpanel">
+                            <div class="row form-row">
+                                <div class="col-md-8">
+                                    {{ render_field(form.fornecedor, autocomplete="organization") }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ render_field(form.cnpj_fornecedor, autocomplete="off", placeholder="00.000.000/0000-00") }}
+                                </div>
+                            </div>
+
+                            <h6 class="section-header">
+                                <i class="bi bi-person-vcard me-1"></i>
+                                Dados do Responsável
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-xl-3 col-lg-4">
+                                    {{ render_field(form.responsavel_nome, autocomplete="name") }}
+                                </div>
+                                <div class="col-xl-3 col-lg-4">
+                                    {{ render_field(form.responsavel_cargo, autocomplete="organization-title") }}
+                                </div>
+                                <div class="col-xl-3 col-lg-4">
+                                    <label for="{{ form.responsavel_email.id }}" class="form-label">
+                                        {{ form.responsavel_email.label.text }}
+                                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" 
+                                                onclick="adicionarCampoEmail()" title="Adicionar mais um email">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </label>
+                                    <div id="emails-container">
+                                        {{ form.responsavel_email(class="form-control", type="email", autocomplete="email") }}
+                                    </div>
+                                </div>
+                                <div class="col-xl-3 col-lg-4">
+                                    <label for="{{ form.responsavel_telefone.id }}" class="form-label">
+                                        {{ form.responsavel_telefone.label.text }}
+                                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" 
+                                                onclick="adicionarCampoTelefone()" title="Adicionar mais um telefone">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </label>
+                                    <div id="telefones-container">
+                                        {{ form.responsavel_telefone(class="form-control", autocomplete="tel", placeholder="(00) 00000-0000") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba 3: Financeiro & Prazos -->
+                        <div class="tab-pane fade" id="financeiro" role="tabpanel">
+                            <h6 class="section-header">
+                                <i class="bi bi-currency-dollar me-1"></i>
+                                Valores
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-xl-3 col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="{{ form.valor_total.id }}">{{ form.valor_total.label.text }} *</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">R$</span>
+                                            {{ form.valor_total(class_="form-control" ~ (" is-invalid" if form.valor_total.errors else ""), inputmode="decimal", placeholder="0,00") }}
+                                        </div>
+                                        {% if form.valor_total.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.valor_total.errors|join(", ") }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-xl-3 col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="{{ form.valor_inicial.id }}">{{ form.valor_inicial.label.text }}</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">R$</span>
+                                            {{ form.valor_inicial(class_="form-control" ~ (" is-invalid" if form.valor_inicial.errors else ""), inputmode="decimal", placeholder="0,00") }}
+                                        </div>
+                                        {% if form.valor_inicial.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.valor_inicial.errors|join(", ") }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Seção de Itens do Contrato -->
+                            <h6 class="section-header">
+                                <i class="bi bi-list-ul me-1"></i>
+                                Itens do Contrato
+                            </h6>
+
+                            <div class="mb-3">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <label for="arquivo_excel" class="form-label">Importar Planilha Excel (.xlsx)</label>
+                                        <input type="file" class="form-control" id="arquivo_excel" name="arquivo_excel" accept=".xlsx,.xls">
+                                        <div class="form-text">
+                                            <small>Formato esperado: LOTE | ITEM | DESCRIÇÃO | MARCA | UNIDADE | QUANTIDADE | VALOR UNITÁRIO</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button type="button" class="btn btn-outline-primary me-2" onclick="importarExcel()">
+                                            <i class="bi bi-upload"></i> Importar
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success" onclick="adicionarItem()">
+                                            <i class="bi bi-plus"></i> Adicionar Item
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="tabela-itens">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th style="width: 8%">Lote</th>
+                                            <th style="width: 10%">Item</th>
+                                            <th style="width: 30%">Descrição</th>
+                                            <th style="width: 15%">Marca</th>
+                                            <th style="width: 8%">Unidade</th>
+                                            <th style="width: 10%">Quantidade</th>
+                                            <th style="width: 12%">Valor Unitário</th>
+                                            <th style="width: 12%">Valor Total</th>
+                                            <th style="width: 5%">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="itens-tbody">
+                                        {% if contrato and contrato.itens %}
+                                            {% for item in contrato.itens %}
+                                            <tr data-index="{{ loop.index0 }}">
+                                                <td>
+                                                    <input type="text" class="form-control form-control-sm" 
+                                                           id="item_{{ loop.index0 }}_lote"
+                                                           name="itens[{{ loop.index0 }}][lote]" 
+                                                           value="{{ item.lote or '' }}" 
+                                                           placeholder="1">
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control form-control-sm" 
+                                                           id="item_{{ loop.index0 }}_item"
+                                                           name="itens[{{ loop.index0 }}][item]" 
+                                                           value="{{ item.item }}" 
+                                                           placeholder="001" required>
+                                                </td>
+                                                <td>
+                                                    <textarea class="form-control form-control-sm" 
+                                                              id="item_{{ loop.index0 }}_descricao"
+                                                              name="itens[{{ loop.index0 }}][descricao]" 
+                                                              rows="2" 
+                                                              placeholder="Descrição do produto/serviço" required>{{ item.descricao }}</textarea>
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control form-control-sm" 
+                                                           id="item_{{ loop.index0 }}_marca"
+                                                           name="itens[{{ loop.index0 }}][marca]" 
+                                                           value="{{ item.marca or '' }}" 
+                                                           placeholder="Marca">
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" 
+                                                            id="item_{{ loop.index0 }}_unidade"
+                                                            name="itens[{{ loop.index0 }}][unidade]" required>
+                                                        <option value="">Selecione</option>
+                                                        <option value="UN" {{ 'selected' if item.unidade == 'UN' else '' }}>UN (Unidade)</option>
+                                                        <option value="KG" {{ 'selected' if item.unidade == 'KG' else '' }}>KG (Quilograma)</option>
+                                                        <option value="M" {{ 'selected' if item.unidade == 'M' else '' }}>M (Metro)</option>
+                                                        <option value="L" {{ 'selected' if item.unidade == 'L' else '' }}>L (Litro)</option>
+                                                        <option value="M²" {{ 'selected' if item.unidade == 'M²' else '' }}>M² (Metro Quadrado)</option>
+                                                        <option value="M³" {{ 'selected' if item.unidade == 'M³' else '' }}>M³ (Metro Cúbico)</option>
+                                                        <option value="CX" {{ 'selected' if item.unidade == 'CX' else '' }}>CX (Caixa)</option>
+                                                        <option value="PCT" {{ 'selected' if item.unidade == 'PCT' else '' }}>PCT (Pacote)</option>
+                                                        <option value="GL" {{ 'selected' if item.unidade == 'GL' else '' }}>GL (Galão)</option>
+                                                        <option value="SC" {{ 'selected' if item.unidade == 'SC' else '' }}>SC (Saco)</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control form-control-sm quantidade" 
+                                                           id="item_{{ loop.index0 }}_quantidade"
+                                                           name="itens[{{ loop.index0 }}][quantidade]" 
+                                                           value="{{ item.quantidade }}" 
+                                                           step="0.001" min="0" 
+                                                           placeholder="1.000" required>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control form-control-sm valor-unitario" 
+                                                           id="item_{{ loop.index0 }}_valor_unitario"
+                                                           name="itens[{{ loop.index0 }}][valor_unitario]" 
+                                                           value="{{ item.valor_unitario }}" 
+                                                           step="0.01" min="0" 
+                                                           placeholder="0,00" required>
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control form-control-sm valor-total" 
+                                                           id="item_{{ loop.index0 }}_valor_total"
+                                                           readonly 
+                                                           value="R$ {{ "%.2f"|format(item.valor_total) if item.valor_total else '0,00' }}">
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                            onclick="removerItem(this)" title="Remover item">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <strong>Total de Itens: <span id="total-itens">{{ contrato.itens|length if contrato and contrato.itens else 0 }}</span></strong>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <strong>Valor Total dos Itens: <span id="valor-total-itens">R$ 0,00</span></strong>
+                                </div>
+                            </div>
+
+                            <h6 class="section-header">
+                                <i class="bi bi-calendar me-1"></i>
+                                Prazos
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-md-3">
+                                    {{ render_field(form.data_assinatura, type="date") }}
+                                </div>
+                                <div class="col-md-3">
+                                    {{ render_field(form.data_inicio, type="date") }}
+                                </div>
+                                <div class="col-md-3">
+                                    {{ render_field(form.data_fim, type="date") }}
+                                </div>
+                                <div class="col-md-3">
+                                    {{ render_select(form.status) }}
+                                </div>
+                            </div>
+
+                            <h6 class="section-header">
+                                <i class="bi bi-shield-check me-1"></i>
+                                Garantias e Seguros
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-md-4">
+                                    {{ render_select(form.tipo_garantia) }}
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="{{ form.valor_garantia.id }}">{{ form.valor_garantia.label.text }}</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">R$</span>
+                                            {{ form.valor_garantia(class_="form-control" ~ (" is-invalid" if form.valor_garantia.errors else ""), inputmode="decimal", placeholder="0,00") }}
+                                        </div>
+                                        {% if form.valor_garantia.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.valor_garantia.errors|join(", ") }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    {{ render_field(form.validade_garantia, type="date") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba 4: Gestão e Fiscalização -->
+                        <div class="tab-pane fade" id="gestao" role="tabpanel">
+                            <h6 class="section-header">
+                                <i class="bi bi-people me-1"></i>
+                                Gestão e Fiscalização
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-md-6">
+                                    {{ render_field(form.gestor) }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ render_field(form.gestor_suplente) }}
+                                </div>
+                            </div>
+
+                            <div class="row form-row">
+                                <div class="col-md-6">
+                                    {{ render_field(form.fiscal) }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ render_field(form.fiscal_suplente) }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba 5: Anexos Múltiplos -->
+                        <div class="tab-pane fade" id="anexos" role="tabpanel">
+                            <h6 class="section-header">
+                                <i class="bi bi-paperclip me-1"></i>
+                                Anexos Adicionais
+                            </h6>
+                            
+                            <!-- Container para anexos dinâmicos -->
+                            <div id="anexos-container">
+                                <div class="anexo-item" id="anexo-1">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <div class="row align-items-end">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">
+                                                        <i class="bi bi-file-earmark me-1"></i>
+                                                        Arquivo
+                                                    </label>
+                                                    <input type="file" class="form-control anexo-file" 
+                                                           name="anexos[0][arquivo]" 
+                                                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls">
+                                                    <small class="text-muted">PDF, DOC, DOCX, JPG, PNG, XLS, XLSX (máx. 10MB)</small>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <label class="form-label">
+                                                        <i class="bi bi-tag me-1"></i>
+                                                        Descrição do Anexo
+                                                    </label>
+                                                    <input type="text" class="form-control anexo-descricao" 
+                                                           name="anexos[0][descricao]" 
+                                                           placeholder="Ex: Termo de Referência, Proposta, Documentação Técnica">
+                                                </div>
+                                                <div class="col-md-1">
+                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-anexo" 
+                                                            onclick="removerAnexo(1)" style="display: none;">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Botão para adicionar mais anexos -->
+                            <div class="text-center mb-3">
+                                <button type="button" class="btn btn-outline-primary" onclick="adicionarAnexo()">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    Adicionar Outro Anexo
+                                </button>
+                            </div>
+                            
+                            <!-- Lista de anexos existentes (para edição) -->
+                            {% if contrato and contrato.anexos %}
+                            <div class="mt-4">
+                                <h6 class="section-header">
+                                    <i class="bi bi-files me-1"></i>
+                                    Anexos Existentes
+                                </h6>
+                                {% for anexo in contrato.anexos %}
+                                <div class="card mb-2">
+                                    <div class="card-body py-2">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-4">
+                                                <small class="text-muted">Arquivo:</small><br>
+                                                <strong>{{ anexo.nome_arquivo }}</strong>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <small class="text-muted">Descrição:</small><br>
+                                                <span>{{ anexo.descricao or 'Sem descrição' }}</span>
+                                            </div>
+                                            <div class="col-md-3 text-end">
+                                                <a href="{{ url_for('contratos_wtf.download_anexo', id=anexo.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary me-1" target="_blank">
+                                                    <i class="bi bi-download"></i> Baixar
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="removerAnexoExistente({{ anexo.id }})">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Aba 6: Observações -->
+                        <div class="tab-pane fade" id="observacoes" role="tabpanel">
+                            <h6 class="section-header">
+                                <i class="bi bi-journal-text me-1"></i>
+                                Observações e Notas
+                            </h6>
+
+                            <div class="row form-row">
+                                <div class="col-12">
+                                    {{ render_textarea(form.observacoes, rows=5, placeholder="Observações, anotações importantes, cláusulas especiais, etc.") }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botoes de Acao -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    {{ 'Atualizar' if contrato else 'Salvar' }} Contrato
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Validacao e mascara do formulario -->
+<script>
+// ========= FUNÇÕES PARA GERENCIAMENTO DE EMAILS E TELEFONES MÚLTIPLOS =========
+
+// Contadores para campos dinâmicos
+let emailCounter = 1;
+let telefoneCounter = 1;
+let anexoCounter = 1;
+
+// ========= FUNÇÕES PARA GERENCIAMENTO DE ANEXOS MÚLTIPLOS =========
+
+// Função para adicionar novo anexo
+function adicionarAnexo() {
+    anexoCounter++;
+    const container = document.getElementById('anexos-container');
+    const novoAnexo = document.createElement('div');
+    novoAnexo.className = 'anexo-item novo';
+    novoAnexo.id = `anexo-${anexoCounter}`;
+    
+    novoAnexo.innerHTML = `
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <i class="bi bi-file-earmark me-1"></i>
+                            Arquivo
+                        </label>
+                        <input type="file" class="form-control anexo-file" 
+                               name="anexos[${anexoCounter - 1}][arquivo]" 
+                               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls">
+                        <small class="text-muted">PDF, DOC, DOCX, JPG, PNG, XLS, XLSX (máx. 10MB)</small>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">
+                            <i class="bi bi-tag me-1"></i>
+                            Descrição do Anexo
+                        </label>
+                        <input type="text" class="form-control anexo-descricao" 
+                               name="anexos[${anexoCounter - 1}][descricao]" 
+                               placeholder="Ex: Termo de Referência, Proposta, Documentação Técnica">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-anexo" 
+                                onclick="removerAnexo(${anexoCounter})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(novoAnexo);
+    
+    // Mostrar botão de remover no primeiro anexo se houver mais de um
+    atualizarBotoesRemover();
+    
+    // Adicionar animação
+    setTimeout(() => {
+        novoAnexo.classList.remove('novo');
+    }, 500);
+}
+
+// Função para remover anexo
+function removerAnexo(anexoId) {
+    const anexoElement = document.getElementById(`anexo-${anexoId}`);
+    if (anexoElement) {
+        anexoElement.style.animation = 'slideOutUp 0.3s ease-in';
+        setTimeout(() => {
+            anexoElement.remove();
+            atualizarBotoesRemover();
+            reindexarAnexos();
+        }, 300);
+    }
+}
+
+// Função para atualizar visibilidade dos botões de remover
+function atualizarBotoesRemover() {
+    const anexos = document.querySelectorAll('.anexo-item');
+    anexos.forEach((anexo, index) => {
+        const botaoRemover = anexo.querySelector('.remove-anexo');
+        if (anexos.length > 1) {
+            botaoRemover.style.display = 'block';
+        } else {
+            botaoRemover.style.display = 'none';
+        }
+    });
+}
+
+// Função para reindexar nomes dos campos após remoção
+function reindexarAnexos() {
+    const anexos = document.querySelectorAll('.anexo-item');
+    anexos.forEach((anexo, index) => {
+        const inputFile = anexo.querySelector('.anexo-file');
+        const inputDesc = anexo.querySelector('.anexo-descricao');
+        
+        if (inputFile) inputFile.name = `anexos[${index}][arquivo]`;
+        if (inputDesc) inputDesc.name = `anexos[${index}][descricao]`;
+    });
+}
+
+// Função para remover anexo existente (via AJAX)
+function removerAnexoExistente(anexoId) {
+    if (confirm('Tem certeza que deseja remover este anexo? Esta ação não pode ser desfeita.')) {
+        // Aqui você pode implementar uma chamada AJAX para remover do servidor
+        // Por enquanto, apenas esconde o elemento
+        const anexoCard = event.target.closest('.card');
+        anexoCard.style.animation = 'slideOutUp 0.3s ease-in';
+        setTimeout(() => {
+            anexoCard.remove();
+        }, 300);
+        
+        // TODO: Implementar chamada AJAX
+        // fetch(`/contratos/anexos/${anexoId}/delete`, { method: 'DELETE' })
+    }
+}
+
+// Validação de arquivos
+function validarArquivoAnexo(input) {
+    const arquivo = input.files[0];
+    if (arquivo) {
+        const tamanhoMax = 10 * 1024 * 1024; // 10MB
+        const tiposPermitidos = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.xlsx', '.xls'];
+        
+        if (arquivo.size > tamanhoMax) {
+            alert('Arquivo muito grande! Tamanho máximo permitido: 10MB');
+            input.value = '';
+            return false;
+        }
+        
+        const extensao = '.' + arquivo.name.split('.').pop().toLowerCase();
+        if (!tiposPermitidos.includes(extensao)) {
+            alert('Tipo de arquivo não permitido! Formatos aceitos: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX');
+            input.value = '';
+            return false;
+        }
+    }
+    return true;
+}
+
+// Event listener para validação automática
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('anexo-file')) {
+        validarArquivoAnexo(e.target);
+    }
+});
+
+// Adicionar animação CSS para remoção
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideOutUp {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Função para adicionar novo campo de email
+function adicionarCampoEmail() {
+    const container = document.getElementById('emails-container');
+    const novoEmail = document.createElement('div');
+    novoEmail.className = 'input-group mt-2';
+    novoEmail.innerHTML = `
+        <input type="email" class="form-control" 
+               name="responsavel_emails_extras[]" 
+               placeholder="email${emailCounter + 1}@exemplo.com"
+               autocomplete="email">
+        <button type="button" class="btn btn-outline-danger" 
+                onclick="removerCampoEmail(this)" 
+                title="Remover este email">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(novoEmail);
+    emailCounter++;
+}
+
+// Função para remover campo de email
+function removerCampoEmail(button) {
+    const div = button.parentElement;
+    div.remove();
+}
+
+// Função para adicionar novo campo de telefone
+function adicionarCampoTelefone() {
+    const container = document.getElementById('telefones-container');
+    const novoTelefone = document.createElement('div');
+    novoTelefone.className = 'input-group mt-2';
+    novoTelefone.innerHTML = `
+        <input type="tel" class="form-control" 
+               name="responsavel_telefones_extras[]" 
+               placeholder="(00) 00000-0000"
+               autocomplete="tel">
+        <button type="button" class="btn btn-outline-danger" 
+                onclick="removerCampoTelefone(this)" 
+                title="Remover este telefone">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(novoTelefone);
+    
+    // Aplicar máscara de telefone ao novo campo
+    const novoInput = novoTelefone.querySelector('input[type="tel"]');
+    aplicarMascaraTelefone(novoInput);
+    
+    telefoneCounter++;
+}
+
+// Função para remover campo de telefone
+function removerCampoTelefone(button) {
+    const div = button.parentElement;
+    div.remove();
+}
+
+// Função para aplicar máscara de telefone
+function aplicarMascaraTelefone(input) {
+    input.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        
+        if (value.length <= 11) {
+            if (value.length <= 10) {
+                // Formato: (00) 0000-0000
+                value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+            } else {
+                // Formato: (00) 00000-0000
+                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            }
+        }
+        
+        e.target.value = value;
+    });
+}
+
+// ========= FUNÇÕES GLOBAIS PARA GERENCIAMENTO DE ITENS =========
+
+// Contador global de itens
+let itemCounter = 0;
+
+// Função para adicionar novo item na tabela
+function adicionarItem() {
+    const tbody = document.getElementById('itens-tbody');
+    const row = document.createElement('tr');
+    row.setAttribute('data-index', itemCounter);
+    
+    row.innerHTML = `
+        <td>
+            <input type="text" class="form-control form-control-sm" 
+                   id="item_${itemCounter}_lote"
+                   name="itens[${itemCounter}][lote]" 
+                   placeholder="1">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" 
+                   id="item_${itemCounter}_item"
+                   name="itens[${itemCounter}][item]" 
+                   placeholder="001" required>
+        </td>
+        <td>
+            <textarea class="form-control form-control-sm" 
+                      id="item_${itemCounter}_descricao"
+                      name="itens[${itemCounter}][descricao]" 
+                      rows="2" 
+                      placeholder="Descrição do produto/serviço" required></textarea>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" 
+                   id="item_${itemCounter}_marca"
+                   name="itens[${itemCounter}][marca]" 
+                   placeholder="Marca">
+        </td>
+        <td>
+            <select class="form-select form-select-sm" 
+                    id="item_${itemCounter}_unidade"
+                    name="itens[${itemCounter}][unidade]" required>
+                <option value="">Selecione</option>
+                <option value="UN">UN (Unidade)</option>
+                <option value="KG">KG (Quilograma)</option>
+                <option value="M">M (Metro)</option>
+                <option value="L">L (Litro)</option>
+                <option value="M²">M² (Metro Quadrado)</option>
+                <option value="M³">M³ (Metro Cúbico)</option>
+                <option value="CX">CX (Caixa)</option>
+                <option value="PCT">PCT (Pacote)</option>
+                <option value="GL">GL (Galão)</option>
+                <option value="SC">SC (Saco)</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm quantidade" 
+                   id="item_${itemCounter}_quantidade"
+                   name="itens[${itemCounter}][quantidade]" 
+                   step="0.001" min="0" 
+                   placeholder="1.000" required>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm valor-unitario" 
+                   id="item_${itemCounter}_valor_unitario"
+                   name="itens[${itemCounter}][valor_unitario]" 
+                   step="0.01" min="0" 
+                   placeholder="0,00" required>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm valor-total" 
+                   id="item_${itemCounter}_valor_total"
+                   readonly 
+                   value="R$ 0,00">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" 
+                    onclick="removerItem(this)" title="Remover item">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    itemCounter++;
+    atualizarTotais();
+    
+    // Focar no primeiro campo do novo item
+    row.querySelector('input').focus();
+}
+
+// Função para remover item da tabela
+function removerItem(button) {
+    if (confirm('Tem certeza que deseja remover este item?')) {
+        button.closest('tr').remove();
+        atualizarTotais();
+    }
+}
+
+// Função para calcular valor total de um item
+function calcularValorTotal(row) {
+    const quantidade = parseFloat(row.querySelector('.quantidade').value) || 0;
+    const valorUnitario = parseFloat(row.querySelector('.valor-unitario').value) || 0;
+    const valorTotal = quantidade * valorUnitario;
+    
+    const valorTotalInput = row.querySelector('.valor-total');
+    valorTotalInput.value = 'R$ ' + valorTotal.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+// Função para atualizar totais gerais
+function atualizarTotais() {
+    const rows = document.querySelectorAll('#itens-tbody tr');
+    let totalItens = rows.length;
+    let valorTotalGeral = 0;
+    
+    rows.forEach(row => {
+        const quantidade = parseFloat(row.querySelector('.quantidade').value) || 0;
+        const valorUnitario = parseFloat(row.querySelector('.valor-unitario').value) || 0;
+        valorTotalGeral += quantidade * valorUnitario;
+    });
+    
+    document.getElementById('total-itens').textContent = totalItens;
+    document.getElementById('valor-total-itens').textContent = 'R$ ' + valorTotalGeral.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+// Função para importar dados do Excel
+function importarExcel() {
+    const fileInput = document.getElementById('arquivo_excel');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Por favor, selecione um arquivo Excel primeiro.');
+        return;
+    }
+    
+    if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
+        alert('Por favor, selecione apenas arquivos Excel (.xlsx ou .xls).');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('arquivo_excel', file);
+    
+    // Mostrar loading
+    const btnImportar = event.target;
+    const textoOriginal = btnImportar.innerHTML;
+    btnImportar.innerHTML = '<i class="bi bi-hourglass-split"></i> Importando...';
+    btnImportar.disabled = true;
+    
+    fetch('/contratos-wtf/importar-excel', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Limpar tabela atual
+            document.getElementById('itens-tbody').innerHTML = '';
+            itemCounter = 0;
+            
+            // Adicionar itens importados
+            data.itens.forEach(item => {
+                adicionarItemImportado(item);
+            });
+            
+            atualizarTotais();
+            alert(`${data.itens.length} itens importados com sucesso!`);
+            fileInput.value = ''; // Limpar input de arquivo
+        } else {
+            alert('Erro ao importar: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao importar arquivo. Verifique o formato e tente novamente.');
+    })
+    .finally(() => {
+        // Restaurar botão
+        btnImportar.innerHTML = textoOriginal;
+        btnImportar.disabled = false;
+    });
+}
+
+// Função para adicionar item importado do Excel
+function adicionarItemImportado(item) {
+    const tbody = document.getElementById('itens-tbody');
+    const row = document.createElement('tr');
+    row.setAttribute('data-index', itemCounter);
+    
+    row.innerHTML = `
+        <td>
+            <input type="text" class="form-control form-control-sm" 
+                   id="item_${itemCounter}_lote"
+                   name="itens[${itemCounter}][lote]" 
+                   value="${item.lote || ''}" 
+                   placeholder="1">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" 
+                   id="item_${itemCounter}_item"
+                   name="itens[${itemCounter}][item]" 
+                   value="${item.item || ''}" 
+                   placeholder="001" required>
+        </td>
+        <td>
+            <textarea class="form-control form-control-sm" 
+                      id="item_${itemCounter}_descricao"
+                      name="itens[${itemCounter}][descricao]" 
+                      rows="2" 
+                      placeholder="Descrição do produto/serviço" required>${item.descricao || ''}</textarea>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" 
+                   id="item_${itemCounter}_marca"
+                   name="itens[${itemCounter}][marca]" 
+                   value="${item.marca || ''}" 
+                   placeholder="Marca">
+        </td>
+        <td>
+            <select class="form-select form-select-sm" 
+                    id="item_${itemCounter}_unidade"
+                    name="itens[${itemCounter}][unidade]" required>
+                <option value="">Selecione</option>
+                <option value="UN" ${item.unidade === 'UN' ? 'selected' : ''}>UN (Unidade)</option>
+                <option value="KG" ${item.unidade === 'KG' ? 'selected' : ''}>KG (Quilograma)</option>
+                <option value="M" ${item.unidade === 'M' ? 'selected' : ''}>M (Metro)</option>
+                <option value="L" ${item.unidade === 'L' ? 'selected' : ''}>L (Litro)</option>
+                <option value="M²" ${item.unidade === 'M²' ? 'selected' : ''}>M² (Metro Quadrado)</option>
+                <option value="M³" ${item.unidade === 'M³' ? 'selected' : ''}>M³ (Metro Cúbico)</option>
+                <option value="CX" ${item.unidade === 'CX' ? 'selected' : ''}>CX (Caixa)</option>
+                <option value="PCT" ${item.unidade === 'PCT' ? 'selected' : ''}>PCT (Pacote)</option>
+                <option value="GL" ${item.unidade === 'GL' ? 'selected' : ''}>GL (Galão)</option>
+                <option value="SC" ${item.unidade === 'SC' ? 'selected' : ''}>SC (Saco)</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm quantidade" 
+                   id="item_${itemCounter}_quantidade"
+                   name="itens[${itemCounter}][quantidade]" 
+                   value="${item.quantidade || ''}" 
+                   step="0.001" min="0" 
+                   placeholder="1.000" required>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm valor-unitario" 
+                   id="item_${itemCounter}_valor_unitario"
+                   name="itens[${itemCounter}][valor_unitario]" 
+                   value="${item.valor_unitario || ''}" 
+                   step="0.01" min="0" 
+                   placeholder="0,00" required>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm valor-total" 
+                   id="item_${itemCounter}_valor_total"
+                   readonly 
+                   value="R$ 0,00">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" 
+                    onclick="removerItem(this)" title="Remover item">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    // Calcular valor total para este item
+    calcularValorTotal(row);
+    
+    itemCounter++;
+}
+
+// ========= INICIALIZAÇÃO QUANDO DOM CARREGA =========
+document.addEventListener('DOMContentLoaded', () => {
+    const TABS_ID = 'contratoTabsActive';
+    
+    // Inicializar contador de itens baseado nos itens existentes
+    itemCounter = document.querySelectorAll('#itens-tbody tr').length;
+    
+    // Atualizar totais quando a página carrega
+    atualizarTotais();
+    
+    // Event listeners para recalculo automático
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('quantidade') || e.target.classList.contains('valor-unitario')) {
+            calcularValorTotal(e.target.closest('tr'));
+            atualizarTotais();
+        }
+    });
+    
+    // ========= PERSISTÊNCIA DA ABA ATIVA =========
+    const tabElList = [].slice.call(document.querySelectorAll('#contratoTabs button[data-bs-toggle="tab"]'));
+
+    // Restaurar aba salva
+    const savedTab = localStorage.getItem(TABS_ID);
+    if (savedTab) {
+        const btnEl = document.querySelector(`#contratoTabs button[data-bs-target="${savedTab}"]`);
+        if (btnEl && window.bootstrap) {
+            new bootstrap.Tab(btnEl).show();
+        }
+    }
+
+    // Salvar aba quando mudada
+    tabElList.forEach(btnEl => {
+        btnEl.addEventListener('shown.bs.tab', e => {
+            const target = e.target.getAttribute('data-bs-target');
+            localStorage.setItem(TABS_ID, target);
+        });
+    });
+    
+    // ========= MÁSCARAS DE ENTRADA =========
+    
+    // Mascara para CNPJ
+    const cnpjEl = document.getElementById('cnpj_fornecedor');
+    if (cnpjEl) {
+        cnpjEl.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            value = value.replace(/(\d{2})(\d)/, '$1.$2')
+                         .replace(/(\d{3})(\d)/, '$1.$2')
+                         .replace(/(\d{3})(\d)/, '$1/$2')
+                         .replace(/(\d{4})(\d)/, '$1-$2');
+            this.value = value;
+        });
+    }
+    
+    // Mascara para telefone principal
+    const telEl = document.getElementById('responsavel_telefone');
+    if (telEl) {
+        aplicarMascaraTelefone(telEl);
+    }
+    
+    // ========= AUTO-PREENCHIMENTO =========
+    
+    // Auto-preenchimento do valor inicial com valor total (uma vez)
+    const valorTotalEl = document.getElementById('valor_total');
+    const valorInicialEl = document.getElementById('valor_inicial');
+    
+    if (valorTotalEl && valorInicialEl) {
+        valorTotalEl.addEventListener('blur', function() {
+            if (this.value && !valorInicialEl.value) {
+                valorInicialEl.value = this.value;
+            }
+        });
+    }
+    
+    // ========= MELHORIAS DE UX =========
+    
+    // Auto-completar ano atual se não preenchido
+    const anoAtual = new Date().getFullYear();
+    const anosFields = ['ano_pregao', 'ano_contrato', 'ano_processo'];
+    
+    anosFields.forEach(fieldId => {
+        const fieldEl = document.getElementById(fieldId);
+        if (fieldEl) {
+            fieldEl.addEventListener('focus', function() {
+                if (!this.value) {
+                    this.value = anoAtual;
+                }
+            });
+        }
+    });
+    
+    // ========= CARREGAR CAMPOS EXTRAS EXISTENTES =========
+    {% if contrato %}
+        // Carregar emails extras existentes
+        {% if contrato.responsavel_emails_extras %}
+            const emailsExtras = {{ contrato.responsavel_emails_extras|safe }};
+            emailsExtras.forEach(email => {
+                const container = document.getElementById('emails-container');
+                const novoEmail = document.createElement('div');
+                novoEmail.className = 'input-group mt-2';
+                novoEmail.innerHTML = `
+                    <input type="email" class="form-control" 
+                           name="responsavel_emails_extras[]" 
+                           value="${email}"
+                           autocomplete="email">
+                    <button type="button" class="btn btn-outline-danger" 
+                            onclick="removerCampoEmail(this)" 
+                            title="Remover este email">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                `;
+                container.appendChild(novoEmail);
+                emailCounter++;
+            });
+        {% endif %}
+        
+        // Carregar telefones extras existentes
+        {% if contrato.responsavel_telefones_extras %}
+            const telefonesExtras = {{ contrato.responsavel_telefones_extras|safe }};
+            telefonesExtras.forEach(telefone => {
+                const container = document.getElementById('telefones-container');
+                const novoTelefone = document.createElement('div');
+                novoTelefone.className = 'input-group mt-2';
+                novoTelefone.innerHTML = `
+                    <input type="tel" class="form-control" 
+                           name="responsavel_telefones_extras[]" 
+                           value="${telefone}"
+                           autocomplete="tel">
+                    <button type="button" class="btn btn-outline-danger" 
+                            onclick="removerCampoTelefone(this)" 
+                            title="Remover este telefone">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                `;
+                container.appendChild(novoTelefone);
+                
+                // Aplicar máscara ao campo carregado
+                const novoInput = novoTelefone.querySelector('input[type="tel"]');
+                aplicarMascaraTelefone(novoInput);
+                
+                telefoneCounter++;
+            });
+        {% endif %}
+    {% endif %}
+});
+</script>
+{% endblock %}

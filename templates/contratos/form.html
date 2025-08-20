@@ -1,17 +1,262 @@
 {% extends "base.html" %}
 
-{% block title %}{{ 'Editar' if contrato else 'Novo' }} Contrato - Gestão de Empenhos e Contratos{% endblock %}
+{% block title %}{{ 'Editar' if contrato else 'Criar Novo' }} Contrato{% endblock %}
 
-{% block page_title %}{{ 'Editar' if contrato else 'Novo' }} Contrato{% endblock %}
+{% block extra_css %}
+<style>
+.section-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
 
-{% block page_actions %}
-<div class="btn-group" role="group">
-    <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>
-        Voltar
-    </a>
+.section-header {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    color: white;
+    padding: 12px 20px;
+    margin: -20px -20px 20px -20px;
+    border-radius: 8px 8px 0 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.form-row {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+}
+
+.required-field {
+    color: #dc3545;
+}
+
+/* Estilos para Anexos Múltiplos */
+.anexo-item {
+    background: #ffffff;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.anexo-item:hover {
+    border-color: #ff6b35;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.1);
+}
+
+.anexo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.anexo-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.anexo-badge.principal {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.anexo-badge.adicional {
+    background: linear-gradient(135deg, #007bff, #6610f2);
+    color: white;
+}
+
+.anexo-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-remove-anexo {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    border: none;
+    color: white;
+    border-radius: 20px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.btn-remove-anexo:hover {
+    background: linear-gradient(135deg, #c82333, #bd2130);
+    transform: scale(1.05);
+}
+
+.anexo-preview {
+    background: #f8f9fa;
+    border: 1px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.anexo-preview.has-file {
+    background: #e8f5e8;
+    border-color: #28a745;
+}
+
+.anexo-counter {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#btn-add-anexo {
+    border: 2px dashed #007bff;
+    border-radius: 10px;
+    padding: 12px 24px;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+#btn-add-anexo:hover {
+    background: #007bff;
+    border-style: solid;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.input-group-text {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    border: none;
+    font-weight: 600;
+    padding: 10px 30px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #e55a2b 0%, #e57a35 100%);
+    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-outline-secondary {
+    border-color: #6c757d;
+    color: #6c757d;
+    font-weight: 600;
+    padding: 10px 30px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.subsection-title {
+    color: #ff6b35;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 15px;
+    margin-top: 25px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #ff6b35;
+}
+
+.subsection-title:first-child {
+    margin-top: 0;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    color: white;
+    border: none;
+    padding: 20px;
+}
+
+.card-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+@media (max-width: 768px) {
+    .section-card {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .section-header {
+        margin: -15px -15px 15px -15px;
+        padding: 10px 15px;
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+    <h4>{{ 'Editar' if contrato else 'Criar Novo' }} Contrato</h4>
     {% if contrato %}
-    <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" class="btn btn-outline-primary">
+    <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" class="btn btn-outline-info btn-sm">
         <i class="bi bi-eye me-1"></i>
         Ver Detalhes
     </a>
@@ -21,7 +266,7 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-lg-10">
+    <div class="col-lg-12">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
@@ -30,257 +275,575 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" id="formContrato">
-                    <!-- Identificacao do Contrato -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="bi bi-card-heading me-1"></i>
-                                Identificacao do Contrato
-                            </h6>
-                        </div>
+                <form method="POST" id="formContrato" enctype="multipart/form-data">
+                    
+                    <!-- Seção 1: Identificação -->
+                    <div class="section-card">
+                        <h6 class="section-header">
+                            <i class="bi bi-card-heading me-2"></i>
+                            Identificação do Contrato
+                        </h6>
                         
-                        <div class="col-md-4 mb-3">
-                            <label for="numero_pregao" class="form-label">Numero do Pregao *</label>
-                            <input type="text" class="form-control" id="numero_pregao" name="numero_pregao" 
-                                   value="{{ contrato.numero_pregao if contrato else '' }}" required>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="numero_contrato" class="form-label">Numero do Contrato *</label>
-                            <input type="text" class="form-control" id="numero_contrato" name="numero_contrato" 
-                                   value="{{ contrato.numero_contrato if contrato else '' }}" required>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="numero_ctr" class="form-label">Numero CTR</label>
-                            <input type="text" class="form-control" id="numero_ctr" name="numero_ctr" 
-                                   value="{{ contrato.numero_ctr if contrato else '' }}">
-                        </div>
-                    </div>
-
-                    <!-- Objeto e Fornecedor -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="bi bi-building me-1"></i>
-                                Objeto e Fornecedor
-                            </h6>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <label for="objeto" class="form-label">Objeto do Contrato *</label>
-                            <textarea class="form-control" id="objeto" name="objeto" rows="3" required>{{ contrato.objeto if contrato else '' }}</textarea>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <label for="resumo_objeto" class="form-label">Resumo do Objeto</label>
-                            <textarea class="form-control" id="resumo_objeto" name="resumo_objeto" rows="2">{{ contrato.resumo_objeto if contrato else '' }}</textarea>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="fornecedor" class="form-label">Fornecedor *</label>
-                            <input type="text" class="form-control" id="fornecedor" name="fornecedor" 
-                                   value="{{ contrato.fornecedor if contrato else '' }}" required>
-                        </div>
-                        
-                        <div class="col-md-3 mb-3">
-                            <label for="valor_total" class="form-label">Valor Total *</label>
-                            <div class="input-group">
-                                <span class="input-group-text">R$</span>
-                                <input type="number" class="form-control" id="valor_total" name="valor_total" 
-                                       step="0.01" min="0" value="{{ contrato.valor_total if contrato else '' }}" required>
+                        <div class="row form-row">
+                            <div class="col-md-3">
+                                <label for="numero_pregao" class="form-label">
+                                    Número do Pregão <span class="required-field">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="numero_pregao" name="numero_pregao" 
+                                       value="{{ contrato.numero_pregao if contrato else '' }}" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="data_pregao" class="form-label">
+                                    Data do Pregão
+                                </label>
+                                <input type="number" class="form-control" id="data_pregao" name="data_pregao" 
+                                       min="2020" max="2030" placeholder="Ex: 2025"
+                                       value="{{ contrato.data_pregao if contrato and contrato.data_pregao is not none else '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="numero_contrato" class="form-label">
+                                    Número do Contrato <span class="required-field">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="numero_contrato" name="numero_contrato" 
+                                       value="{{ contrato.numero_contrato if contrato else '' }}" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="data_contrato" class="form-label">
+                                    Data do Contrato
+                                </label>
+                                <input type="number" class="form-control" id="data_contrato" name="data_contrato" 
+                                       min="2020" max="2030" placeholder="Ex: 2025"
+                                       value="{{ contrato.data_contrato if contrato and contrato.data_contrato is not none else '' }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="tipo_contratacao" class="form-label">Tipo</label>
+                                <select class="form-select" id="tipo_contratacao" name="tipo_contratacao">
+                                    <option value="">Selecione...</option>
+                                    <option value="SERVICO" {{ 'selected' if contrato and contrato.tipo_contratacao == 'SERVICO' else '' }}>Serviço</option>
+                                    <option value="OBRA" {{ 'selected' if contrato and contrato.tipo_contratacao == 'OBRA' else '' }}>Obra</option>
+                                    <option value="FORNECIMENTO" {{ 'selected' if contrato and contrato.tipo_contratacao == 'FORNECIMENTO' else '' }}>Fornecimento</option>
+                                </select>
                             </div>
                         </div>
-                        
-                        <div class="col-md-3 mb-3">
-                            <label for="valor_inicial" class="form-label">Valor Inicial</label>
-                            <div class="input-group">
-                                <span class="input-group-text">R$</span>
-                                <input type="number" class="form-control" id="valor_inicial" name="valor_inicial" 
-                                       step="0.01" min="0" value="{{ contrato.valor_inicial if contrato else '' }}">
+
+                        <div class="row form-row">
+                            <div class="col-md-3">
+                                <label for="numero_processo" class="form-label">Número do Processo</label>
+                                <input type="text" class="form-control" id="numero_processo" name="numero_processo" 
+                                       value="{{ contrato.numero_processo if contrato else '' }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="data_processo" class="form-label">
+                                    Data do Processo
+                                </label>
+                                <input type="number" class="form-control" id="data_processo" name="data_processo" 
+                                       min="2020" max="2030" placeholder="Ex: 2025"
+                                       value="{{ contrato.data_processo if contrato and contrato.data_processo is not none else '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="digito_verificador" class="form-label">
+                                    Dígito Verificador
+                                </label>
+                                <input type="text" class="form-control" id="digito_verificador" name="digito_verificador" 
+                                       value="{{ contrato.digito_verificador if contrato else '' }}" maxlength="10"
+                                       placeholder="Ex: DV-001">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="modalidade_licitacao" class="form-label">Modalidade de Licitação</label>
+                                <select class="form-select" id="modalidade_licitacao" name="modalidade_licitacao">
+                                    <option value="">Selecione...</option>
+                                    <option value="PREGAO" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'PREGAO' else '' }}>Pregão</option>
+                                    <option value="TOMADA_PRECOS" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'TOMADA_PRECOS' else '' }}>Tomada de Preços</option>
+                                    <option value="CONCORRENCIA" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'CONCORRENCIA' else '' }}>Concorrência</option>
+                                    <option value="CONVITE" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'CONVITE' else '' }}>Convite</option>
+                                    <option value="DISPENSA" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'DISPENSA' else '' }}>Dispensa</option>
+                                    <option value="INEXIGIBILIDADE" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'INEXIGIBILIDADE' else '' }}>Inexigibilidade</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-12">
+                                <label for="objeto" class="form-label">
+                                    Objeto do Contrato <span class="required-field">*</span>
+                                </label>
+                                <textarea class="form-control" id="objeto" name="objeto" rows="3" required>{{ contrato.objeto if contrato else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-12">
+                                <label for="lei_base" class="form-label">Fundamentação Legal</label>
+                                <textarea class="form-control" id="lei_base" name="lei_base" rows="2" 
+                                          placeholder="Ex: Lei 14.133/2021, Lei 8.666/93, etc.">{{ contrato.lei_base if contrato else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-md-4">
+                                <label for="orgao_contratante" class="form-label">Órgão Contratante</label>
+                                <input type="text" class="form-control" id="orgao_contratante" name="orgao_contratante" 
+                                       value="{{ contrato.orgao_contratante if contrato else 'Prefeitura Municipal de Guarapuava' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="secretaria" class="form-label">Secretaria</label>
+                                <select class="form-select" id="secretaria" name="secretaria">
+                                    <option value="">Selecione a Secretaria...</option>
+                                    <option value="SAUDE" {{ 'selected' if contrato and contrato.secretaria == 'SAUDE' else '' }}>Secretaria de Saúde</option>
+                                    <option value="EDUCACAO" {{ 'selected' if contrato and contrato.secretaria == 'EDUCACAO' else '' }}>Secretaria de Educação</option>
+                                    <option value="OBRAS" {{ 'selected' if contrato and contrato.secretaria == 'OBRAS' else '' }}>Secretaria de Obras</option>
+                                    <option value="ASSISTENCIA_SOCIAL" {{ 'selected' if contrato and contrato.secretaria == 'ASSISTENCIA_SOCIAL' else '' }}>Secretaria de Assistência Social</option>
+                                    <option value="ADMINISTRACAO" {{ 'selected' if contrato and contrato.secretaria == 'ADMINISTRACAO' else '' }}>Secretaria de Administração</option>
+                                    <option value="FAZENDA" {{ 'selected' if contrato and contrato.secretaria == 'FAZENDA' else '' }}>Secretaria da Fazenda</option>
+                                    <option value="PLANEJAMENTO" {{ 'selected' if contrato and contrato.secretaria == 'PLANEJAMENTO' else '' }}>Secretaria de Planejamento</option>
+                                    <option value="MEIO_AMBIENTE" {{ 'selected' if contrato and contrato.secretaria == 'MEIO_AMBIENTE' else '' }}>Secretaria de Meio Ambiente</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="status_contrato" class="form-label">Status do Contrato</label>
+                                <select class="form-select" id="status_contrato" name="status_contrato">
+                                    <option value="">Selecione o Status...</option>
+                                    <option value="ATIVO" {{ 'selected' if contrato and contrato.status_contrato == 'ATIVO' else '' }}>Ativo</option>
+                                    <option value="SUSPENSO" {{ 'selected' if contrato and contrato.status_contrato == 'SUSPENSO' else '' }}>Suspenso</option>
+                                    <option value="ENCERRADO" {{ 'selected' if contrato and contrato.status_contrato == 'ENCERRADO' else '' }}>Encerrado</option>
+                                    <option value="RESCINDIDO" {{ 'selected' if contrato and contrato.status_contrato == 'RESCINDIDO' else '' }}>Rescindido</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-md-4">
+                                <label for="categoria_contrato" class="form-label">Categoria do Contrato</label>
+                                <select class="form-select" id="categoria_contrato" name="categoria_contrato">
+                                    <option value="">Selecione a Categoria...</option>
+                                    <option value="ESTRATEGICO" {{ 'selected' if contrato and contrato.categoria_contrato == 'ESTRATEGICO' else '' }}>Estratégico</option>
+                                    <option value="CRITICO" {{ 'selected' if contrato and contrato.categoria_contrato == 'CRITICO' else '' }}>Crítico</option>
+                                    <option value="NORMAL" {{ 'selected' if contrato and contrato.categoria_contrato == 'NORMAL' else '' }}>Normal</option>
+                                    <option value="SIMPLES" {{ 'selected' if contrato and contrato.categoria_contrato == 'SIMPLES' else '' }}>Simples</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="prioridade" class="form-label">Prioridade</label>
+                                <select class="form-select" id="prioridade" name="prioridade">
+                                    <option value="">Selecione a Prioridade...</option>
+                                    <option value="ALTA" {{ 'selected' if contrato and contrato.prioridade == 'ALTA' else '' }}>Alta</option>
+                                    <option value="MEDIA" {{ 'selected' if contrato and contrato.prioridade == 'MEDIA' else '' }}>Média</option>
+                                    <option value="BAIXA" {{ 'selected' if contrato and contrato.prioridade == 'BAIXA' else '' }}>Baixa</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="observacao_identificacao" class="form-label">Observação de Identificação</label>
+                                <input type="text" class="form-control" id="observacao_identificacao" name="observacao_identificacao" 
+                                       value="{{ contrato.observacao_identificacao if contrato else '' }}" 
+                                       placeholder="Observação rápida sobre o contrato">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Datas do Contrato -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="bi bi-calendar me-1"></i>
-                                Prazos e Datas
-                            </h6>
-                        </div>
+                    <!-- Seção 2: Fornecedor & CNPJ -->
+                    <div class="section-card">
+                        <h6 class="section-header">
+                            <i class="bi bi-building me-2"></i>
+                            Dados do Fornecedor
+                        </h6>
                         
-                        <div class="col-md-3 mb-3">
-                            <label for="data_assinatura" class="form-label">Data de Assinatura *</label>
-                            <input type="date" class="form-control" id="data_assinatura" name="data_assinatura" 
-                                   value="{{ contrato.data_assinatura.strftime('%Y-%m-%d') if contrato and contrato.data_assinatura else '' }}" required>
-                        </div>
-                        
-                        <div class="col-md-3 mb-3">
-                            <label for="data_inicio" class="form-label">Data de Inicio *</label>
-                            <input type="date" class="form-control" id="data_inicio" name="data_inicio" 
-                                   value="{{ contrato.data_inicio.strftime('%Y-%m-%d') if contrato and contrato.data_inicio else '' }}" required>
-                        </div>
-                        
-                        <div class="col-md-3 mb-3">
-                            <label for="data_fim" class="form-label">Data de Fim *</label>
-                            <input type="date" class="form-control" id="data_fim" name="data_fim" 
-                                   value="{{ contrato.data_fim.strftime('%Y-%m-%d') if contrato and contrato.data_fim else '' }}" required>
-                        </div>
-                        
-                        <div class="col-md-3 mb-3">
-                            <label for="data_fim_original" class="form-label">Data de Fim Original</label>
-                            <input type="date" class="form-control" id="data_fim_original" name="data_fim_original" 
-                                   value="{{ contrato.data_fim_original.strftime('%Y-%m-%d') if contrato and contrato.data_fim_original else '' }}">
-                        </div>
-                    </div>
-
-                    <!-- Gestao e Controle -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="bi bi-people me-1"></i>
-                                Gestao e Controle
-                            </h6>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="gestor_fiscal" class="form-label">Gestor Fiscal</label>
-                            <input type="text" class="form-control" id="gestor_fiscal" name="gestor_fiscal" 
-                                   value="{{ contrato.gestor_fiscal if contrato else '' }}">
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="gestor_superior" class="form-label">Gestor Superior</label>
-                            <input type="text" class="form-control" id="gestor_superior" name="gestor_superior" 
-                                   value="{{ contrato.gestor_superior if contrato else '' }}">
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="status" class="form-label">Status *</label>
-                            <select class="form-select" id="status" name="status" required>
-                                <option value="">Selecione...</option>
-                                <option value="ATIVO" {{ 'selected' if contrato and contrato.status == 'ATIVO' else '' }}>Ativo</option>
-                                <option value="SUSPENSO" {{ 'selected' if contrato and contrato.status == 'SUSPENSO' else '' }}>Suspenso</option>
-                                <option value="ENCERRADO" {{ 'selected' if contrato and contrato.status == 'ENCERRADO' else '' }}>Encerrado</option>
-                                <option value="RESCINDIDO" {{ 'selected' if contrato and contrato.status == 'RESCINDIDO' else '' }}>Rescindido</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Informacoes Municipais -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="bi bi-building-check me-1"></i>
-                                Informacoes Municipais
-                            </h6>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="modalidade_licitacao" class="form-label">Modalidade de Licitacao</label>
-                            <select class="form-select" id="modalidade_licitacao" name="modalidade_licitacao">
-                                <option value="">Selecione...</option>
-                                <option value="PREGAO" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'PREGAO' else '' }}>Pregao</option>
-                                <option value="TOMADA_PRECOS" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'TOMADA_PRECOS' else '' }}>Tomada de Precos</option>
-                                <option value="CONCORRENCIA" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'CONCORRENCIA' else '' }}>Concorrencia</option>
-                                <option value="CONVITE" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'CONVITE' else '' }}>Convite</option>
-                                <option value="DISPENSA" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'DISPENSA' else '' }}>Dispensa</option>
-                                <option value="INEXIGIBILIDADE" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'INEXIGIBILIDADE' else '' }}>Inexigibilidade</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="numero_processo" class="form-label">Numero do Processo</label>
-                            <input type="text" class="form-control" id="numero_processo" name="numero_processo" 
-                                   value="{{ contrato.numero_processo if contrato else '' }}">
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="lei_base" class="form-label">Lei Base</label>
-                            <input type="text" class="form-control" id="lei_base" name="lei_base" 
-                                   value="{{ contrato.lei_base if contrato else '' }}" placeholder="Ex: Lei 14.133/2021">
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="orgao_contratante" class="form-label">Orgao Contratante</label>
-                            <input type="text" class="form-control" id="orgao_contratante" name="orgao_contratante" 
-                                   value="{{ contrato.orgao_contratante if contrato else '' }}">
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="secretaria" class="form-label">Secretaria</label>
-                            <input type="text" class="form-control" id="secretaria" name="secretaria" 
-                                   value="{{ contrato.secretaria if contrato else '' }}">
-                        </div>
-                    </div>
-
-                    <!-- Garantias e Seguros -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="bi bi-shield-check me-1"></i>
-                                Garantias e Seguros
-                            </h6>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="tipo_garantia" class="form-label">Tipo de Garantia</label>
-                            <select class="form-select" id="tipo_garantia" name="tipo_garantia">
-                                <option value="">Sem garantia</option>
-                                <option value="CAUCAO" {{ 'selected' if contrato and contrato.tipo_garantia == 'CAUCAO' else '' }}>Caucao</option>
-                                <option value="SEGURO_GARANTIA" {{ 'selected' if contrato and contrato.tipo_garantia == 'SEGURO_GARANTIA' else '' }}>Seguro-garantia</option>
-                                <option value="FIANCA_BANCARIA" {{ 'selected' if contrato and contrato.tipo_garantia == 'FIANCA_BANCARIA' else '' }}>Fianca Bancaria</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="valor_garantia" class="form-label">Valor da Garantia</label>
-                            <div class="input-group">
-                                <span class="input-group-text">R$</span>
-                                <input type="number" class="form-control" id="valor_garantia" name="valor_garantia" 
-                                       step="0.01" min="0" value="{{ contrato.valor_garantia if contrato else '' }}">
+                        <div class="row form-row">
+                            <div class="col-md-6">
+                                <label for="fornecedor" class="form-label">
+                                    Nome do Fornecedor <span class="required-field">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="fornecedor" name="fornecedor" 
+                                       value="{{ contrato.fornecedor if contrato else '' }}" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="cnpj_fornecedor" class="form-label">CNPJ do Fornecedor</label>
+                                <input type="text" class="form-control" id="cnpj_fornecedor" name="cnpj_fornecedor" 
+                                       value="{{ contrato.cnpj_fornecedor if contrato else '' }}" 
+                                       placeholder="00.000.000/0000-00">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="telefone_fornecedor" class="form-label">Telefone</label>
+                                <input type="text" class="form-control" id="telefone_fornecedor" name="telefone_fornecedor" 
+                                       value="{{ contrato.telefone_fornecedor if contrato else '' }}" 
+                                       placeholder="(00) 00000-0000">
                             </div>
                         </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="validade_garantia" class="form-label">Validade da Garantia</label>
-                            <input type="date" class="form-control" id="validade_garantia" name="validade_garantia" 
-                                   value="{{ contrato.validade_garantia.strftime('%Y-%m-%d') if contrato and contrato.validade_garantia else '' }}">
+
+                        <h6 class="subsection-title">
+                            <i class="bi bi-person-vcard me-1"></i>
+                            Dados do Responsável
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-md-4">
+                                <label for="responsavel_nome" class="form-label">Nome do Responsável</label>
+                                <input type="text" class="form-control" id="responsavel_nome" name="responsavel_nome" 
+                                       value="{{ contrato.responsavel_nome if contrato else '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="responsavel_cargo" class="form-label">Cargo</label>
+                                <input type="text" class="form-control" id="responsavel_cargo" name="responsavel_cargo" 
+                                       value="{{ contrato.responsavel_cargo if contrato else '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="responsavel_email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="responsavel_email" name="responsavel_email" 
+                                       value="{{ contrato.responsavel_email if contrato else '' }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="responsavel_telefone" class="form-label">Telefone</label>
+                                <input type="tel" class="form-control" id="responsavel_telefone" name="responsavel_telefone" 
+                                       value="{{ contrato.responsavel_telefone if contrato else '' }}" 
+                                       placeholder="(00) 00000-0000">
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Observacoes -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="bi bi-chat-text me-1"></i>
-                                Observacoes
-                            </h6>
-                        </div>
+                    <!-- Seção 3: Financeiro & Prazos -->
+                    <div class="section-card">
+                        <h6 class="section-header">
+                            <i class="bi bi-cash-stack me-2"></i>
+                            Informações Financeiras e Prazos
+                        </h6>
                         
-                        <div class="col-12 mb-3">
-                            <label for="observacoes" class="form-label">Observacoes Gerais</label>
-                            <textarea class="form-control" id="observacoes" name="observacoes" rows="3">{{ contrato.observacoes if contrato else '' }}</textarea>
+                        <h6 class="subsection-title">
+                            <i class="bi bi-currency-dollar me-1"></i>
+                            Valores
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-md-4">
+                                <label for="valor_total" class="form-label">
+                                    Valor Total do Contrato <span class="required-field">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" class="form-control" id="valor_total" name="valor_total" 
+                                           step="0.01" min="0" value="{{ contrato.valor_total if contrato and contrato.valor_total is not none else '' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="valor_inicial" class="form-label">Valor Inicial</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" class="form-control" id="valor_inicial" name="valor_inicial" 
+                                           step="0.01" min="0" value="{{ contrato.valor_inicial if contrato and contrato.valor_inicial is not none else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="prazo_meses" class="form-label">Prazo (meses)</label>
+                                <input type="number" class="form-control" id="prazo_meses" name="prazo_meses" 
+                                       min="1" max="120" value="{{ contrato.prazo_meses if contrato and contrato.prazo_meses is not none else '' }}">
+                            </div>
+                        </div>
+
+                        <h6 class="subsection-title">
+                            <i class="bi bi-calendar me-1"></i>
+                            Prazos
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-md-3">
+                                <label for="data_assinatura" class="form-label">
+                                    Data de Assinatura <span class="required-field">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="data_assinatura" name="data_assinatura" 
+                                       value="{{ contrato.data_assinatura.strftime('%Y-%m-%d') if contrato and contrato.data_assinatura else '' }}" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="data_inicio" class="form-label">
+                                    Data de Início <span class="required-field">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="data_inicio" name="data_inicio" 
+                                       value="{{ contrato.data_inicio.strftime('%Y-%m-%d') if contrato and contrato.data_inicio else '' }}" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="data_fim" class="form-label">
+                                    Data de Fim <span class="required-field">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="data_fim" name="data_fim" 
+                                       value="{{ contrato.data_fim.strftime('%Y-%m-%d') if contrato and contrato.data_fim else '' }}" required>
+                            </div>
+                            <div class="col-md-3">
+                                
+                                
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-md-6">
+                                <label for="gestor" class="form-label">Gestor</label>
+                                <input type="text" class="form-control" id="gestor" name="gestor" 
+                                       value="{{ contrato.gestor if contrato else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="gestor_suplente" class="form-label">Gestor Suplente</label>
+                                <input type="text" class="form-control" id="gestor_suplente" name="gestor_suplente" 
+                                       value="{{ contrato.gestor_suplente if contrato else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-md-6">
+                                <label for="fiscal" class="form-label">Fiscal</label>
+                                <input type="text" class="form-control" id="fiscal" name="fiscal" 
+                                       value="{{ contrato.fiscal if contrato else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="fiscal_suplente" class="form-label">Fiscal Suplente</label>
+                                <input type="text" class="form-control" id="fiscal_suplente" name="fiscal_suplente" 
+                                       value="{{ contrato.fiscal_suplente if contrato else '' }}">
+                            </div>
+                        </div>
+
+                        <h6 class="subsection-title">
+                            <i class="bi bi-shield-check me-1"></i>
+                            Garantias e Seguros
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-md-4">
+                                <label for="tipo_garantia" class="form-label">Tipo de Garantia</label>
+                                <select class="form-select" id="tipo_garantia" name="tipo_garantia">
+                                    <option value="">Sem Garantia</option>
+                                    <option value="CAUCAO" {{ 'selected' if contrato and contrato.tipo_garantia == 'CAUCAO' else '' }}>Caução em Dinheiro</option>
+                                    <option value="SEGURO_GARANTIA" {{ 'selected' if contrato and contrato.tipo_garantia == 'SEGURO_GARANTIA' else '' }}>Seguro-Garantia</option>
+                                    <option value="FIANCA_BANCARIA" {{ 'selected' if contrato and contrato.tipo_garantia == 'FIANCA_BANCARIA' else '' }}>Fiança Bancária</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="valor_garantia" class="form-label">Valor da Garantia</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" class="form-control" id="valor_garantia" name="valor_garantia" 
+                                           step="0.01" min="0" value="{{ contrato.valor_garantia if contrato and contrato.valor_garantia is not none else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="validade_garantia" class="form-label">Validade da Garantia</label>
+                                <input type="date" class="form-control" id="validade_garantia" name="validade_garantia" 
+                                       value="{{ contrato.validade_garantia.strftime('%Y-%m-%d') if contrato and contrato.validade_garantia else '' }}">
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Botoes de Acao -->
-                    <div class="row">
+                    <!-- Seção 4: Itens/Mercadorias do Contrato -->
+                    <div class="section-card">
+                        <h6 class="section-header">
+                            <i class="bi bi-box me-2"></i>
+                            Itens e Mercadorias do Contrato
+                        </h6>
+                        
+                        <div class="row form-row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="subsection-title mb-0">
+                                        <i class="bi bi-list-check me-1"></i>
+                                        Lista de Itens
+                                    </h6>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="adicionarItem()">
+                                        <i class="bi bi-plus-circle me-1"></i>
+                                        Adicionar Item
+                                    </button>
+                                </div>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" id="tabelaItens">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 80px;">Lote</th>
+                                                <th style="width: 80px;">Item</th>
+                                                <th>Descrição</th>
+                                                <th style="width: 120px;">Marca</th>
+                                                <th style="width: 100px;">Qtd</th>
+                                                <th style="width: 80px;">Unidade</th>
+                                                <th style="width: 120px;">Valor Unit.</th>
+                                                <th style="width: 120px;">Valor Total</th>
+                                                <th style="width: 60px;">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="corpoTabelaItens">
+                                            {% if contrato and contrato.itens %}
+                                                {% for item in contrato.itens %}
+                                                <tr data-item-id="{{ item.id }}">
+                                                    <td>
+                                                        <input type="text" class="form-control form-control-sm" 
+                                                               name="itens[{{ loop.index0 }}][lote]" 
+                                                               value="{{ item.lote or '' }}" placeholder="001">
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" class="form-control form-control-sm" 
+                                                               name="itens[{{ loop.index0 }}][item]" 
+                                                               value="{{ item.item }}" placeholder="001" required>
+                                                    </td>
+                                                    <td>
+                                                        <textarea class="form-control form-control-sm" 
+                                                                  name="itens[{{ loop.index0 }}][descricao]" 
+                                                                  rows="2" placeholder="Descrição do produto..." required>{{ item.descricao }}</textarea>
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" class="form-control form-control-sm" 
+                                                               name="itens[{{ loop.index0 }}][marca]" 
+                                                               value="{{ item.marca or '' }}" placeholder="Marca">
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" class="form-control form-control-sm quantidade" 
+                                                               name="itens[{{ loop.index0 }}][quantidade]" 
+                                                               value="{{ item.quantidade if item.quantidade is not none else '' }}" 
+                                                               step="0.001" min="0" placeholder="1.000" required
+                                                               onchange="calcularValorTotal(this)">
+                                                    </td>
+                                                    <td>
+                                                        <select class="form-select form-select-sm" 
+                                                                name="itens[{{ loop.index0 }}][unidade]" required>
+                                                            <option value="">Unid.</option>
+                                                            <option value="UN" {{ 'selected' if item.unidade == 'UN' else '' }}>UN</option>
+                                                            <option value="KG" {{ 'selected' if item.unidade == 'KG' else '' }}>KG</option>
+                                                            <option value="L" {{ 'selected' if item.unidade == 'L' else '' }}>L</option>
+                                                            <option value="M" {{ 'selected' if item.unidade == 'M' else '' }}>M</option>
+                                                            <option value="M2" {{ 'selected' if item.unidade == 'M2' else '' }}>M²</option>
+                                                            <option value="M3" {{ 'selected' if item.unidade == 'M3' else '' }}>M³</option>
+                                                            <option value="CX" {{ 'selected' if item.unidade == 'CX' else '' }}>CX</option>
+                                                            <option value="PC" {{ 'selected' if item.unidade == 'PC' else '' }}>PC</option>
+                                                            <option value="KIT" {{ 'selected' if item.unidade == 'KIT' else '' }}>KIT</option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" class="form-control form-control-sm valor-unitario" 
+                                                               name="itens[{{ loop.index0 }}][valor_unitario]" 
+                                                               value="{{ item.valor_unitario if item.valor_unitario is not none else '' }}" 
+                                                               step="0.0001" min="0" placeholder="0,0000" required
+                                                               onchange="calcularValorTotal(this)">
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" class="form-control form-control-sm valor-total" 
+                                                               name="itens[{{ loop.index0 }}][valor_total]" 
+                                                               value="{{ item.valor_total if item.valor_total is not none else '' }}" 
+                                                               step="0.01" readonly style="background-color: #f8f9fa;">
+                                                        <input type="hidden" name="itens[{{ loop.index0 }}][id]" value="{{ item.id }}">
+                                                    </td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                                onclick="removerItem(this)" title="Remover item">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="table-info">
+                                                <td colspan="7" class="text-end fw-bold">Total Geral dos Itens:</td>
+                                                <td>
+                                                    <input type="text" class="form-control form-control-sm fw-bold" 
+                                                           id="totalGeralItens" readonly 
+                                                           style="background-color: #d1ecf1; border-color: #b8daff;">
+                                                </td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        O valor total de cada item é calculado automaticamente (Quantidade × Valor Unitário)
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 5: Anexos & Observações -->
+                    <div class="section-card">
+                        <h6 class="section-header">
+                            <i class="bi bi-paperclip me-2"></i>
+                            Anexos e Observações
+                        </h6>
+                        
+                        <h6 class="subsection-title">
+                            <i class="bi bi-files me-1"></i>
+                            Anexos do Contrato
+                        </h6>
+
+                        <!-- Container de Anexos -->
+                        <div id="anexos-container">
+                            <!-- Anexo Principal (Contrato) -->
+                            <div class="anexo-item mb-4" data-anexo-tipo="principal">
+                                <div class="anexo-header">
+                                    <div class="anexo-badge principal">
+                                        <i class="bi bi-file-earmark-text me-1"></i>
+                                        Contrato Principal
+                                    </div>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label for="arquivo_contrato" class="form-label">Arquivo do Contrato <span class="required-field">*</span></label>
+                                        <input type="file" class="form-control" id="arquivo_contrato" name="arquivo_contrato" 
+                                               accept=".pdf,.doc,.docx" required>
+                                        {% if contrato and contrato.arquivo_contrato %}
+                                        <small class="text-success mt-1">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Arquivo atual: {{ contrato.arquivo_contrato }}
+                                            <a href="{{ url_for('contratos.download_arquivo', id=contrato.id) }}" target="_blank" class="ms-2">
+                                                <i class="bi bi-download"></i> Baixar
+                                            </a>
+                                        </small>
+                                        {% else %}
+                                        <small class="text-muted">Formatos aceitos: PDF, DOC, DOCX (máx. 10MB)</small>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="descricao_contrato" class="form-label">Descrição do Arquivo</label>
+                                        <input type="text" class="form-control" id="descricao_contrato" name="descricao_contrato" 
+                                               placeholder="Ex: Contrato original assinado" 
+                                               value="{{ contrato.descricao_contrato if contrato else 'Contrato principal' }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anexos Adicionais -->
+                            <div id="anexos-adicionais">
+                                <!-- Anexos dinâmicos serão adicionados aqui -->
+                            </div>
+                        </div>
+
+                        <!-- Botão para Adicionar Anexo -->
+                        <div class="d-flex justify-content-start mb-4">
+                            <button type="button" id="btn-add-anexo" class="btn btn-outline-primary">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                Adicionar Anexo Adicional
+                            </button>
+                        </div>
+
+                        <h6 class="subsection-title">
+                            <i class="bi bi-journal-text me-1"></i>
+                            Observações e Notas
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-12">
+                                <label for="observacoes" class="form-label">Observações Gerais</label>
+                                <textarea class="form-control" id="observacoes" name="observacoes" rows="5" 
+                                          placeholder="Observações, anotações importantes, cláusulas especiais, etc.">{{ contrato.observacoes if contrato else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="row mt-4">
                         <div class="col-12">
                             <div class="d-flex justify-content-between">
                                 <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-secondary">
                                     <i class="bi bi-x-circle me-1"></i>
                                     Cancelar
                                 </a>
-                                <div>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="bi bi-check-circle me-1"></i>
-                                        {{ 'Atualizar' if contrato else 'Salvar' }} Contrato
-                                    </button>
-                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    {{ 'Atualizar' if contrato else 'Salvar' }} Contrato
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -290,36 +853,34 @@
     </div>
 </div>
 
-<!-- Validacao do formulario -->
+<!-- Validação e máscara do formulário -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('formContrato');
     
-    // Validacao basica
-    form.addEventListener('submit', function(e) {
-        const numeroContrato = document.getElementById('numero_contrato').value.trim();
-        const objeto = document.getElementById('objeto').value.trim();
-        const fornecedor = document.getElementById('fornecedor').value.trim();
-        const valorTotal = document.getElementById('valor_total').value;
-        
-        if (!numeroContrato || !objeto || !fornecedor || !valorTotal) {
-            e.preventDefault();
-            alert('Por favor, preencha todos os campos obrigatorios marcados com *');
-            return false;
-        }
-        
-        // Validar datas
-        const dataInicio = new Date(document.getElementById('data_inicio').value);
-        const dataFim = new Date(document.getElementById('data_fim').value);
-        
-        if (dataFim <= dataInicio) {
-            e.preventDefault();
-            alert('A data de fim deve ser posterior a data de inicio.');
-            return false;
-        }
+    // Máscara para CNPJ
+    const cnpjInput = document.getElementById('cnpj_fornecedor');
+    cnpjInput.addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+        value = value.replace(/(\d{2})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d)/, '$1/$2');
+        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+        this.value = value;
     });
     
-    // Auto-preenchimento do valor inicial se estiver vazio
+    // Máscara para telefone
+    const telefoneInput = document.getElementById('responsavel_telefone');
+    telefoneInput.addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+        if (value.length <= 11) {
+            value = value.replace(/(\d{2})(\d)/, '($1) $2');
+            value = value.replace(/(\d{4,5})(\d{4})/, '$1-$2');
+        }
+        this.value = value;
+    });
+    
+    // Auto-preenchimento do valor inicial
     const valorTotal = document.getElementById('valor_total');
     const valorInicial = document.getElementById('valor_inicial');
     
@@ -328,6 +889,320 @@ document.addEventListener('DOMContentLoaded', function() {
             valorInicial.value = this.value;
         }
     });
+    
+    // Validação do formulário simplificada (sem abas)
+    form.addEventListener('submit', function(e) {
+        const requiredFields = [
+            { id: 'numero_pregao', name: 'Número do Pregão' },
+            { id: 'numero_contrato', name: 'Número do Contrato' },
+            { id: 'objeto', name: 'Objeto do Contrato' },
+            { id: 'fornecedor', name: 'Nome do Fornecedor' },
+            { id: 'valor_total', name: 'Valor Total do Contrato' },
+            { id: 'data_assinatura', name: 'Data de Assinatura' },
+            { id: 'data_inicio', name: 'Data de Início' },
+            { id: 'data_fim', name: 'Data de Fim' }
+        ];
+        
+        // Verificar campos obrigatórios
+        for (let field of requiredFields) {
+            const element = document.getElementById(field.id);
+            if (!element.value.trim()) {
+                e.preventDefault();
+                
+                // Focar no campo e mostrar erro
+                element.focus();
+                element.style.borderColor = '#dc3545';
+                alert(`Por favor, preencha o campo obrigatório: ${field.name}`);
+                return false;
+            }
+        }
+        
+        // Validar datas se preenchidas
+        const dataInicio = document.getElementById('data_inicio').value;
+        const dataFim = document.getElementById('data_fim').value;
+        
+        if (dataInicio && dataFim) {
+            const inicio = new Date(dataInicio);
+            const fim = new Date(dataFim);
+            
+            if (fim <= inicio) {
+                e.preventDefault();
+                document.getElementById('data_fim').focus();
+                document.getElementById('data_fim').style.borderColor = '#dc3545';
+                alert('A data de fim deve ser posterior à data de início.');
+                return false;
+            }
+        }
+        
+        // Validar CNPJ se preenchido
+        const cnpj = document.getElementById('cnpj_fornecedor').value;
+        if (cnpj && cnpj.replace(/\D/g, '').length !== 14) {
+            e.preventDefault();
+            document.getElementById('cnpj_fornecedor').focus();
+            document.getElementById('cnpj_fornecedor').style.borderColor = '#dc3545';
+            alert('CNPJ deve ter 14 dígitos.');
+            return false;
+        }
+        
+        // Validar email se preenchido
+        const email = document.getElementById('responsavel_email').value;
+        if (email && !email.includes('@')) {
+            e.preventDefault();
+            document.getElementById('responsavel_email').focus();
+            document.getElementById('responsavel_email').style.borderColor = '#dc3545';
+            alert('Por favor, insira um email válido.');
+            return false;
+        }
+    });
+    
+    // Remover bordas de erro quando o usuário começar a digitar
+    document.querySelectorAll('input, textarea, select').forEach(field => {
+        field.addEventListener('input', function() {
+            this.style.borderColor = '';
+        });
+    });
+    
+    // Inicializar cálculo total dos itens
+    calcularTotalGeral();
 });
+
+// Funções para gerenciar itens do contrato
+let contadorItens = 0;
+
+function adicionarItem() {
+    const tabela = document.getElementById('corpoTabelaItens');
+    const numeroItens = tabela.children.length;
+    contadorItens = numeroItens;
+    
+    const novaLinha = document.createElement('tr');
+    novaLinha.innerHTML = `
+        <td>
+            <input type="text" class="form-control form-control-sm" 
+                   name="itens[${contadorItens}][lote]" 
+                   placeholder="001">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" 
+                   name="itens[${contadorItens}][item]" 
+                   placeholder="001" required>
+        </td>
+        <td>
+            <textarea class="form-control form-control-sm" 
+                      name="itens[${contadorItens}][descricao]" 
+                      rows="2" placeholder="Descrição do produto..." required></textarea>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" 
+                   name="itens[${contadorItens}][marca]" 
+                   placeholder="Marca">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm quantidade" 
+                   name="itens[${contadorItens}][quantidade]" 
+                   step="0.001" min="0" placeholder="1.000" required
+                   onchange="calcularValorTotal(this)">
+        </td>
+        <td>
+            <select class="form-select form-select-sm" 
+                    name="itens[${contadorItens}][unidade]" required>
+                <option value="">Unid.</option>
+                <option value="UN">UN</option>
+                <option value="KG">KG</option>
+                <option value="L">L</option>
+                <option value="M">M</option>
+                <option value="M2">M²</option>
+                <option value="M3">M³</option>
+                <option value="CX">CX</option>
+                <option value="PC">PC</option>
+                <option value="KIT">KIT</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm valor-unitario" 
+                   name="itens[${contadorItens}][valor_unitario]" 
+                   step="0.0001" min="0" placeholder="0,0000" required
+                   onchange="calcularValorTotal(this)">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm valor-total" 
+                   name="itens[${contadorItens}][valor_total]" 
+                   step="0.01" readonly style="background-color: #f8f9fa;">
+        </td>
+        <td>
+            <button type="button" class="btn btn-outline-danger btn-sm" 
+                    onclick="removerItem(this)" title="Remover item">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tabela.appendChild(novaLinha);
+    contadorItens++;
+    
+    // Focar no primeiro campo do novo item
+    novaLinha.querySelector('input[name*="[item]"]').focus();
+}
+
+function removerItem(botao) {
+    if (confirm('Deseja realmente remover este item?')) {
+        const linha = botao.closest('tr');
+        linha.remove();
+        calcularTotalGeral();
+        reindexarItens();
+    }
+}
+
+function calcularValorTotal(elemento) {
+    const linha = elemento.closest('tr');
+    const quantidade = parseFloat(linha.querySelector('.quantidade').value) || 0;
+    const valorUnitario = parseFloat(linha.querySelector('.valor-unitario').value) || 0;
+    const valorTotal = quantidade * valorUnitario;
+    
+    linha.querySelector('.valor-total').value = valorTotal.toFixed(2);
+    calcularTotalGeral();
+}
+
+function calcularTotalGeral() {
+    const valoresTotal = document.querySelectorAll('.valor-total');
+    let totalGeral = 0;
+    
+    valoresTotal.forEach(input => {
+        const valor = parseFloat(input.value) || 0;
+        totalGeral += valor;
+    });
+    
+    const totalGeralInput = document.getElementById('totalGeralItens');
+    if (totalGeralInput) {
+        totalGeralInput.value = 'R$ ' + totalGeral.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+}
+
+function reindexarItens() {
+    const linhas = document.querySelectorAll('#corpoTabelaItens tr');
+    linhas.forEach((linha, index) => {
+        const inputs = linha.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            const name = input.getAttribute('name');
+            if (name && name.includes('itens[')) {
+                const newName = name.replace(/itens\[\d+\]/, `itens[${index}]`);
+                input.setAttribute('name', newName);
+            }
+        });
+    });
+}
 </script>
 {% endblock %}
+
+<!-- Script de validação de formulário -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (!form) return;
+    
+    function validarCamposData() {
+        const camposData = ['data_assinatura', 'data_inicio', 'data_fim'];
+        let camposInvalidos = [];
+        
+        camposData.forEach(campo => {
+            const input = document.getElementById(campo);
+            if (input && (input.hasAttribute('required') || input.classList.contains('js-required'))) {
+                if (!input.value || input.value.trim() === '') {
+                    camposInvalidos.push({
+                        campo: campo,
+                        label: input.closest('.col-md-3, .col-md-6')?.querySelector('label')?.textContent || campo,
+                        elemento: input
+                    });
+                }
+            }
+        });
+        
+        return camposInvalidos;
+    }
+    
+    function focarPrimeiroCampoInvalido(camposInvalidos) {
+        if (camposInvalidos.length > 0) {
+            const primeiro = camposInvalidos[0];
+            primeiro.elemento.focus();
+            primeiro.elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+    
+    form.addEventListener('submit', function(e) {
+        const camposInvalidos = validarCamposData();
+        
+        if (camposInvalidos.length > 0) {
+            e.preventDefault();
+            const nomesCampos = camposInvalidos.map(c => c.label.replace(' *', '')).join(', ');
+            alert(`Por favor, preencha os seguintes campos obrigatórios: ${nomesCampos}`);
+            focarPrimeiroCampoInvalido(camposInvalidos);
+            return false;
+        }
+    });
+    
+    const camposData = document.querySelectorAll('input[type="date"][required]');
+    camposData.forEach(campo => {
+        if (!campo.value) {
+            campo.removeAttribute('required');
+            campo.classList.add('js-required');
+        }
+    });
+});
+</script>
+<!-- Script de validação de formulário -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (!form) return;
+    
+    function validarCamposData() {
+        const camposData = ['data_assinatura', 'data_inicio', 'data_fim'];
+        let camposInvalidos = [];
+        
+        camposData.forEach(campo => {
+            const input = document.getElementById(campo);
+            if (input && (input.hasAttribute('required') || input.classList.contains('js-required'))) {
+                if (!input.value || input.value.trim() === '') {
+                    camposInvalidos.push({
+                        campo: campo,
+                        label: input.closest('.col-md-3, .col-md-6')?.querySelector('label')?.textContent || campo,
+                        elemento: input
+                    });
+                }
+            }
+        });
+        
+        return camposInvalidos;
+    }
+    
+    function focarPrimeiroCampoInvalido(camposInvalidos) {
+        if (camposInvalidos.length > 0) {
+            const primeiro = camposInvalidos[0];
+            primeiro.elemento.focus();
+            primeiro.elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+    
+    form.addEventListener('submit', function(e) {
+        const camposInvalidos = validarCamposData();
+        
+        if (camposInvalidos.length > 0) {
+            e.preventDefault();
+            const nomesCampos = camposInvalidos.map(c => c.label.replace(' *', '')).join(', ');
+            alert(`Por favor, preencha os seguintes campos obrigatórios: ${nomesCampos}`);
+            focarPrimeiroCampoInvalido(camposInvalidos);
+            return false;
+        }
+    });
+    
+    const camposData = document.querySelectorAll('input[type="date"][required]');
+    camposData.forEach(campo => {
+        if (!campo.value) {
+            campo.removeAttribute('required');
+            campo.classList.add('js-required');
+        }
+    });
+});
+</script>

@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if nota else 'Nova' }} Nota Fiscal - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}{{ 'Editar' if nota else 'Nova' }} Nota Fiscal{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('notas.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>
+        Voltar
+    </a>
+    {% if nota %}
+    <a href="{{ url_for('notas.detalhes', id=nota.id) }}" class="btn btn-outline-primary">
+        <i class="bi bi-eye me-1"></i>
+        Ver Detalhes
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-{{ 'pencil' if nota else 'plus-circle' }} me-2"></i>
+                    {{ 'Editar' if nota else 'Criar Nova' }} Nota Fiscal
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="formNota">
+                    <!-- Identificação da Nota -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Identificação da Nota
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="numero_nota" class="form-label">Número da Nota *</label>
+                            <input type="text" class="form-control" id="numero_nota" name="numero_nota" 
+                                   value="{{ nota.numero_nota if nota else '' }}" required>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="serie" class="form-label">Série</label>
+                            <input type="text" class="form-control" id="serie" name="serie" 
+                                   value="{{ nota.serie if nota else '' }}">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="empenho_id" class="form-label">Empenho *</label>
+                            <select class="form-select" id="empenho_id" name="empenho_id" required onchange="carregarDadosEmpenho()">
+                                <option value="">Selecione o empenho...</option>
+                                {% for empenho in empenhos %}
+                                <option value="{{ empenho.id }}" 
+                                        {% if nota and nota.empenho_id == empenho.id %}selected{% endif %}>
+                                    {{ empenho.numero_empenho }} - {{ empenho.fornecedores or 'Sem fornecedor' }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <label for="chave_acesso" class="form-label">Chave de Acesso</label>
+                            <input type="text" class="form-control" id="chave_acesso" name="chave_acesso" 
+                                   value="{{ nota.chave_acesso if nota else '' }}" 
+                                   placeholder="Chave de 44 dígitos da NFe">
+                        </div>
+                    </div>
+
+                    <!-- Dados do Fornecedor -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-building me-1"></i>
+                                Dados do Fornecedor
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-8 mb-3">
+                            <label for="fornecedor_nome" class="form-label">Nome/Razão Social *</label>
+                            <input type="text" class="form-control" id="fornecedor_nome" name="fornecedor_nome" 
+                                   value="{{ nota.fornecedor_nome if nota else '' }}" required>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="fornecedor_cnpj" class="form-label">CNPJ *</label>
+                            <input type="text" class="form-control" id="fornecedor_cnpj" name="fornecedor_cnpj" 
+                                   value="{{ nota.fornecedor_cnpj if nota else '' }}" required>
+                        </div>
+                    </div>
+
+                    <!-- Datas -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-calendar me-1"></i>
+                                Datas
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="data_emissao" class="form-label">Data de Emissão *</label>
+                            <input type="date" class="form-control" id="data_emissao" name="data_emissao" 
+                                   value="{{ nota.data_emissao.strftime('%Y-%m-%d') if nota and nota.data_emissao else '' }}" required>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="data_vencimento" class="form-label">Data de Vencimento</label>
+                            <input type="date" class="form-control" id="data_vencimento" name="data_vencimento" 
+                                   value="{{ nota.data_vencimento.strftime('%Y-%m-%d') if nota and nota.data_vencimento else '' }}">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="data_recebimento" class="form-label">Data de Recebimento</label>
+                            <input type="date" class="form-control" id="data_recebimento" name="data_recebimento" 
+                                   value="{{ nota.data_recebimento.strftime('%Y-%m-%d') if nota and nota.data_recebimento else '' }}">
+                        </div>
+                    </div>
+
+                    <!-- Valores -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-currency-dollar me-1"></i>
+                                Valores Financeiros
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="valor_bruto" class="form-label">Valor Bruto *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_bruto" name="valor_bruto" 
+                                       step="0.01" min="0" value="{{ nota.valor_bruto if nota else '' }}" 
+                                       required onchange="calcularValorLiquido()">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="valor_desconto" class="form-label">Desconto</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_desconto" name="valor_desconto" 
+                                       step="0.01" min="0" value="{{ nota.valor_desconto if nota else '0.00' }}" 
+                                       onchange="calcularValorLiquido()">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="valor_ir" class="form-label">IR</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_ir" name="valor_ir" 
+                                       step="0.01" min="0" value="{{ nota.valor_ir if nota else '0.00' }}" 
+                                       onchange="calcularValorLiquido()">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="valor_inss" class="form-label">INSS</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_inss" name="valor_inss" 
+                                       step="0.01" min="0" value="{{ nota.valor_inss if nota else '0.00' }}" 
+                                       onchange="calcularValorLiquido()">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="valor_iss" class="form-label">ISS</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_iss" name="valor_iss" 
+                                       step="0.01" min="0" value="{{ nota.valor_iss if nota else '0.00' }}" 
+                                       onchange="calcularValorLiquido()">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="valor_outros_impostos" class="form-label">Outros Impostos</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="valor_outros_impostos" name="valor_outros_impostos" 
+                                       step="0.01" min="0" value="{{ nota.valor_outros_impostos if nota else '0.00' }}" 
+                                       onchange="calcularValorLiquido()">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="valor_liquido" class="form-label">Valor Líquido</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control bg-light" id="valor_liquido" 
+                                       step="0.01" readonly value="{{ nota.valor_liquido if nota else '0.00' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="EM_ABERTO" {% if not nota or nota.status == 'EM_ABERTO' %}selected{% endif %}>Em Aberto</option>
+                                <option value="PROCESSANDO" {% if nota and nota.status == 'PROCESSANDO' %}selected{% endif %}>Processando</option>
+                                <option value="PAGO" {% if nota and nota.status == 'PAGO' %}selected{% endif %}>Pago</option>
+                                <option value="CANCELADO" {% if nota and nota.status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-chat-left-text me-1"></i>
+                                Observações
+                            </h6>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea class="form-control" id="observacoes" name="observacoes" rows="3">{{ nota.observacoes if nota else '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('notas.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>
+                            {{ 'Atualizar' if nota else 'Salvar' }} Nota
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar com informações -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Informações
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-lightbulb me-1"></i> Dicas</h6>
+                    <ul class="mb-0 small">
+                        <li>O valor líquido é calculado automaticamente</li>
+                        <li>Selecione o empenho para preencher dados automaticamente</li>
+                        <li>A data de vencimento é opcional mas recomendada</li>
+                        <li>Preencha a chave de acesso para NFe</li>
+                    </ul>
+                </div>
+                
+                <div id="dadosEmpenho" style="display: none;">
+                    <h6 class="text-primary">Dados do Empenho</h6>
+                    <div class="small">
+                        <div><strong>Contrato:</strong> <span id="numeroContrato">-</span></div>
+                        <div><strong>Valor Empenhado:</strong> R$ <span id="valorEmpenhado">0,00</span></div>
+                        <div><strong>CNPJ:</strong> <span id="cnpjCredor">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function calcularValorLiquido() {
+    const valorBruto = parseFloat(document.getElementById('valor_bruto').value) || 0;
+    const valorDesconto = parseFloat(document.getElementById('valor_desconto').value) || 0;
+    const valorIr = parseFloat(document.getElementById('valor_ir').value) || 0;
+    const valorInss = parseFloat(document.getElementById('valor_inss').value) || 0;
+    const valorIss = parseFloat(document.getElementById('valor_iss').value) || 0;
+    const valorOutros = parseFloat(document.getElementById('valor_outros_impostos').value) || 0;
+    
+    const valorLiquido = valorBruto - valorDesconto - valorIr - valorInss - valorIss - valorOutros;
+    document.getElementById('valor_liquido').value = valorLiquido.toFixed(2);
+}
+
+function carregarDadosEmpenho() {
+    const empenhoId = document.getElementById('empenho_id').value;
+    if (!empenhoId) {
+        document.getElementById('dadosEmpenho').style.display = 'none';
+        return;
+    }
+    
+    fetch(`/notas/api/empenho/${empenhoId}`)
+        .then(response => response.json())
+        .then(data => {
+            // Preencher dados do fornecedor se estiver vazio
+            if (!document.getElementById('fornecedor_nome').value) {
+                document.getElementById('fornecedor_nome').value = data.fornecedor_nome;
+            }
+            if (!document.getElementById('fornecedor_cnpj').value) {
+                document.getElementById('fornecedor_cnpj').value = data.cpf_cnpj_credor;
+            }
+            
+            // Mostrar dados do empenho
+            document.getElementById('numeroContrato').textContent = data.numero_contrato;
+            document.getElementById('valorEmpenhado').textContent = data.valor_empenhado.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('cnpjCredor').textContent = data.cpf_cnpj_credor;
+            document.getElementById('dadosEmpenho').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Erro ao carregar dados do empenho:', error);
+        });
+}
+
+// Calcular valor líquido na carga da página
+document.addEventListener('DOMContentLoaded', function() {
+    calcularValorLiquido();
+    if (document.getElementById('empenho_id').value) {
+        carregarDadosEmpenho();
+    }
+});
+</script>
+
+{% endblock %}

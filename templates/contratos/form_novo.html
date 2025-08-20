@@ -11,6 +11,31 @@
         padding: 1.5rem;
     }
     
+    /* Otimizações para campos compactos */
+    .form-row {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    .form-group {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .form-label {
+        margin-bottom: 0.25rem !important;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    
+    .form-control, .form-select {
+        height: calc(1.8125rem + 2px);
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .tab-content {
+        padding: 1rem 0;
+    }
+    
     /* Corrigir sobreposição das abas */
     .nav-tabs {
         border-bottom: 2px solid #dee2e6;
@@ -32,10 +57,11 @@
         background: #f8f9fa;
         color: #6c757d;
         margin-right: 3px;
-        padding: 0.75rem 1.25rem;
+        padding: 0.5rem 1rem;
         font-weight: 500;
         transition: all 0.3s ease;
         position: relative;
+        font-size: 0.9rem;
     }
     
     .nav-tabs .nav-link:hover {
@@ -409,9 +435,8 @@
                                            value="{{ contrato.data_fim.strftime('%Y-%m-%d') if contrato and contrato.data_fim else '' }}">
                                 </div>
                                 <div class="col-md-3">
-                                    <label for="data_fim_original" class="form-label">Data de Fim Original</label>
-                                    <input type="date" class="form-control" id="data_fim_original" name="data_fim_original" 
-                                           value="{{ contrato.data_fim_original.strftime('%Y-%m-%d') if contrato and contrato.data_fim_original else '' }}">
+                                    
+                                    
                                 </div>
                             </div>
 
@@ -462,8 +487,8 @@
                         <!-- Aba 4: Anexos & Observações -->
                         <div class="tab-pane fade" id="anexos" role="tabpanel">
                             <h6 class="section-header">
-                                <i class="bi bi-paperclip me-1"></i>
-                                Anexar Contrato
+                                <i class="bi bi-files me-1"></i>
+                                Anexos do Contrato
                             </h6>
 
                             <div class="row form-row">
@@ -729,3 +754,188 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
+<!-- Script de validação de formulário -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (!form) return;
+    
+    // Função para validar campos de data
+    function validarCamposData() {
+        const camposData = ['data_assinatura', 'data_inicio', 'data_fim'];
+        let camposInvalidos = [];
+        
+        camposData.forEach(campo => {
+            const input = document.getElementById(campo);
+            if (input && input.hasAttribute('required')) {
+                if (!input.value || input.value.trim() === '') {
+                    camposInvalidos.push({
+                        campo: campo,
+                        label: input.closest('.col-md-3, .col-md-6')?.querySelector('label')?.textContent || campo,
+                        elemento: input
+                    });
+                }
+            }
+        });
+        
+        return camposInvalidos;
+    }
+    
+    // Função para focar no primeiro campo inválido
+    function focarPrimeiroCampoInvalido(camposInvalidos) {
+        if (camposInvalidos.length > 0) {
+            const primeiro = camposInvalidos[0];
+            
+            // Verificar se está em uma aba não visível
+            const tabPane = primeiro.elemento.closest('.tab-pane');
+            if (tabPane && !tabPane.classList.contains('active')) {
+                // Ativar a aba correta
+                const tabId = tabPane.id;
+                const tabLink = document.querySelector(`[data-bs-target="#${tabId}"]`);
+                if (tabLink) {
+                    const tab = new bootstrap.Tab(tabLink);
+                    tab.show();
+                }
+            }
+            
+            // Focar no campo após pequeno delay para garantir visibilidade
+            setTimeout(() => {
+                primeiro.elemento.focus();
+                primeiro.elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+    }
+    
+    // Interceptar submit do formulário
+    form.addEventListener('submit', function(e) {
+        const camposInvalidos = validarCamposData();
+        
+        if (camposInvalidos.length > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Mostrar alerta com campos que precisam ser preenchidos
+            const nomesCampos = camposInvalidos.map(c => c.label.replace(' *', '')).join(', ');
+            alert(`Por favor, preencha os seguintes campos obrigatórios: ${nomesCampos}`);
+            
+            // Focar no primeiro campo inválido
+            focarPrimeiroCampoInvalido(camposInvalidos);
+            
+            return false;
+        }
+    });
+    
+    // Remover required de campos vazios para evitar erro de browser
+    const camposData = document.querySelectorAll('input[type="date"][required]');
+    camposData.forEach(campo => {
+        if (!campo.value) {
+            // Remove temporariamente o required
+            campo.removeAttribute('required');
+            // Adiciona classe para identificar que deve ser validado
+            campo.classList.add('js-required');
+        }
+    });
+    
+    // Restaurar required quando campo for preenchido
+    document.addEventListener('change', function(e) {
+        if (e.target.type === 'date' && e.target.classList.contains('js-required')) {
+            if (e.target.value) {
+                e.target.setAttribute('required', '');
+            }
+        }
+    });
+});
+</script>
+<!-- Script de validação de formulário -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (!form) return;
+    
+    // Função para validar campos de data
+    function validarCamposData() {
+        const camposData = ['data_assinatura', 'data_inicio', 'data_fim'];
+        let camposInvalidos = [];
+        
+        camposData.forEach(campo => {
+            const input = document.getElementById(campo);
+            if (input && input.hasAttribute('required')) {
+                if (!input.value || input.value.trim() === '') {
+                    camposInvalidos.push({
+                        campo: campo,
+                        label: input.closest('.col-md-3, .col-md-6')?.querySelector('label')?.textContent || campo,
+                        elemento: input
+                    });
+                }
+            }
+        });
+        
+        return camposInvalidos;
+    }
+    
+    // Função para focar no primeiro campo inválido
+    function focarPrimeiroCampoInvalido(camposInvalidos) {
+        if (camposInvalidos.length > 0) {
+            const primeiro = camposInvalidos[0];
+            
+            // Verificar se está em uma aba não visível
+            const tabPane = primeiro.elemento.closest('.tab-pane');
+            if (tabPane && !tabPane.classList.contains('active')) {
+                // Ativar a aba correta
+                const tabId = tabPane.id;
+                const tabLink = document.querySelector(`[data-bs-target="#${tabId}"]`);
+                if (tabLink) {
+                    const tab = new bootstrap.Tab(tabLink);
+                    tab.show();
+                }
+            }
+            
+            // Focar no campo após pequeno delay para garantir visibilidade
+            setTimeout(() => {
+                primeiro.elemento.focus();
+                primeiro.elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+    }
+    
+    // Interceptar submit do formulário
+    form.addEventListener('submit', function(e) {
+        const camposInvalidos = validarCamposData();
+        
+        if (camposInvalidos.length > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Mostrar alerta com campos que precisam ser preenchidos
+            const nomesCampos = camposInvalidos.map(c => c.label.replace(' *', '')).join(', ');
+            alert(`Por favor, preencha os seguintes campos obrigatórios: ${nomesCampos}`);
+            
+            // Focar no primeiro campo inválido
+            focarPrimeiroCampoInvalido(camposInvalidos);
+            
+            return false;
+        }
+    });
+    
+    // Remover required de campos vazios para evitar erro de browser
+    const camposData = document.querySelectorAll('input[type="date"][required]');
+    camposData.forEach(campo => {
+        if (!campo.value) {
+            // Remove temporariamente o required
+            campo.removeAttribute('required');
+            // Adiciona classe para identificar que deve ser validado
+            campo.classList.add('js-required');
+        }
+    });
+    
+    // Restaurar required quando campo for preenchido
+    document.addEventListener('change', function(e) {
+        if (e.target.type === 'date' && e.target.classList.contains('js-required')) {
+            if (e.target.value) {
+                e.target.setAttribute('required', '');
+            }
+        }
+    });
+});
+</script>

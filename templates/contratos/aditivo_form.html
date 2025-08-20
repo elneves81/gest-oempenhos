@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if aditivo else 'Criar Novo' }} Aditivo Contratual{% endblock %}
+
+{% block extra_css %}
+<style>
+.section-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.section-header {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    color: white;
+    padding: 12px 20px;
+    margin: -20px -20px 20px -20px;
+    border-radius: 8px 8px 0 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.form-row {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+}
+
+.required-field {
+    color: #dc3545;
+}
+
+.btn-outline-secondary {
+    border-color: #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #e55a30 0%, #e67a35 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-file-contract text-warning me-2"></i>
+                    {{ 'Editar' if aditivo else 'Criar Novo' }} Aditivo Contratual
+                </h2>
+                <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Voltar
+                </a>
+            </div>
+
+            <div class="alert alert-info">
+                {% if contrato %}
+                <strong>Contrato:</strong> {{ contrato.numero_ctr or 'N/A' }} - {{ (contrato.resumo_objeto or '')[:100] }}{% if (contrato.resumo_objeto or '')|length > 100 %}...{% endif %}
+                {% else %}
+                <strong>Erro:</strong> Contrato não encontrado.
+                {% endif %}
+            </div>
+
+            <form method="POST" id="aditivoForm">
+
+                <!-- Seção 1: Identificação do Aditivo -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-id-card me-2"></i>Identificação do Aditivo
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-row">
+                                <label for="numero_aditivo" class="form-label">
+                                    Número do Aditivo <span class="required-field">*</span>
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="numero_aditivo" 
+                                       name="numero_aditivo" 
+                                       value="{{ aditivo.numero_aditivo if aditivo else '' }}"
+                                       min="1"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-row">
+                                <label for="numero_instrumento" class="form-label">
+                                    Número do Instrumento/Termo
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="numero_instrumento" 
+                                       name="numero_instrumento" 
+                                       value="{{ aditivo.numero_instrumento if aditivo else '' }}"
+                                       placeholder="Ex: Termo Aditivo nº 001/2024">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-row">
+                                <label for="tipo" class="form-label">
+                                    Tipo de Aditivo <span class="required-field">*</span>
+                                </label>
+                                <select class="form-select" id="tipo" name="tipo" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="PRORROGACAO" {{ 'selected' if aditivo and aditivo.tipo == 'PRORROGACAO' else '' }}>Prorrogação de Prazo</option>
+                                    <option value="REAJUSTE" {{ 'selected' if aditivo and aditivo.tipo == 'REAJUSTE' else '' }}>Reajuste de Preços</option>
+                                    <option value="APOSTILAMENTO" {{ 'selected' if aditivo and aditivo.tipo == 'APOSTILAMENTO' else '' }}>Apostilamento</option>
+                                    <option value="ACRESCIMO" {{ 'selected' if aditivo and aditivo.tipo == 'ACRESCIMO' else '' }}>Acréscimo Quantitativo</option>
+                                    <option value="SUPRESSAO" {{ 'selected' if aditivo and aditivo.tipo == 'SUPRESSAO' else '' }}>Supressão Quantitativa</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-row">
+                                <label for="finalidade" class="form-label">
+                                    Finalidade do Aditivo <span class="required-field">*</span>
+                                </label>
+                                <textarea class="form-control" 
+                                          id="finalidade" 
+                                          name="finalidade" 
+                                          rows="3" 
+                                          required>{{ aditivo.finalidade if aditivo else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 2: Aspectos Financeiros -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-dollar-sign me-2"></i>Aspectos Financeiros
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-row">
+                                <label for="valor_financeiro" class="form-label">
+                                    Valor Financeiro (R$)
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="valor_financeiro" 
+                                       name="valor_financeiro" 
+                                       step="0.01"
+                                       min="0"
+                                       value="{{ aditivo.valor_financeiro if aditivo else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-row">
+                                <label for="percentual" class="form-label">
+                                    Percentual (%)
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="percentual" 
+                                       name="percentual" 
+                                       step="0.01"
+                                       min="0"
+                                       max="100"
+                                       value="{{ aditivo.percentual if aditivo else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 3: Aspectos Temporais -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-calendar me-2"></i>Aspectos Temporais
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-row">
+                                <label for="prazo_prorrogacao" class="form-label">
+                                    Prazo de Prorrogação (dias)
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="prazo_prorrogacao" 
+                                       name="prazo_prorrogacao" 
+                                       min="0"
+                                       value="{{ aditivo.prazo_prorrogacao if aditivo else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-row">
+                                <label for="nova_data_fim" class="form-label">
+                                    Nova Data de Término
+                                </label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="nova_data_fim" 
+                                       name="nova_data_fim" 
+                                       value="{{ aditivo.nova_data_fim.strftime('%Y-%m-%d') if aditivo and aditivo.nova_data_fim else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-row">
+                                <label for="data_inicio_vigencia" class="form-label">
+                                    Data de Início da Vigência
+                                </label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="data_inicio_vigencia" 
+                                       name="data_inicio_vigencia" 
+                                       value="{{ aditivo.data_inicio_vigencia.strftime('%Y-%m-%d') if aditivo and aditivo.data_inicio_vigencia else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 4: Datas do Aditivo -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-calendar-check me-2"></i>Datas do Aditivo
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-row">
+                                <label for="data_assinatura" class="form-label">
+                                    Data de Assinatura <span class="required-field">*</span>
+                                </label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="data_assinatura" 
+                                       name="data_assinatura" 
+                                       value="{{ aditivo.data_assinatura.strftime('%Y-%m-%d') if aditivo and aditivo.data_assinatura else '' }}"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-row">
+                                <label for="data_publicacao" class="form-label">
+                                    Data de Publicação
+                                </label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="data_publicacao" 
+                                       name="data_publicacao" 
+                                       value="{{ aditivo.data_publicacao.strftime('%Y-%m-%d') if aditivo and aditivo.data_publicacao else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 5: Justificativas -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-gavel me-2"></i>Justificativas e Fundamentação
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-row">
+                                <label for="fundamentacao_legal" class="form-label">
+                                    Fundamentação Legal
+                                </label>
+                                <textarea class="form-control" 
+                                          id="fundamentacao_legal" 
+                                          name="fundamentacao_legal" 
+                                          rows="3"
+                                          placeholder="Ex: Art. 65, inciso I, alínea 'd' da Lei nº 8.666/93">{{ aditivo.fundamentacao_legal if aditivo else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-row">
+                                <label for="justificativa" class="form-label">
+                                    Justificativa
+                                </label>
+                                <textarea class="form-control" 
+                                          id="justificativa" 
+                                          name="justificativa" 
+                                          rows="4">{{ aditivo.justificativa if aditivo else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 6: Observações -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-sticky-note me-2"></i>Observações
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-row">
+                                <label for="observacoes" class="form-label">
+                                    Observações Gerais
+                                </label>
+                                <textarea class="form-control" 
+                                          id="observacoes" 
+                                          name="observacoes" 
+                                          rows="3">{{ aditivo.observacoes if aditivo else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-end gap-3">
+                            <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>{{ 'Atualizar' if aditivo else 'Criar' }} Aditivo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Máscara para valores monetários
+    const valorInput = document.getElementById('valor_financeiro');
+    if (valorInput) {
+        valorInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = (value / 100).toFixed(2);
+            e.target.value = value;
+        });
+    }
+
+    // Calculadora automática de nova data fim baseada no prazo
+    const prazoInput = document.getElementById('prazo_prorrogacao');
+    const novaDataInput = document.getElementById('nova_data_fim');
+    
+    if (prazoInput && novaDataInput) {
+        prazoInput.addEventListener('input', function() {
+            const prazo = parseInt(this.value);
+            if (prazo > 0) {
+                // Usar a data fim do contrato original como base
+                let dataBaseStr = '{{ contrato.data_fim.strftime("%Y-%m-%d") if contrato and contrato.data_fim else "" }}';
+                let dataBase = dataBaseStr ? new Date(dataBaseStr) : new Date();
+                
+                if (!isNaN(dataBase.getTime())) {
+                    dataBase.setDate(dataBase.getDate() + prazo);
+                    novaDataInput.value = dataBase.toISOString().split('T')[0];
+                }
+            }
+        });
+    }
+
+    // Validação do formulário
+    const form = document.getElementById('aditivoForm');
+    form.addEventListener('submit', function(e) {
+        const tipo = document.getElementById('tipo').value;
+        const valorFinanceiro = document.getElementById('valor_financeiro').value;
+        const prazoProrrogacao = document.getElementById('prazo_prorrogacao').value;
+
+        // Validações específicas por tipo
+        if (tipo === 'REAJUSTE' && !valorFinanceiro) {
+            e.preventDefault();
+            alert('Para reajuste, o valor financeiro é obrigatório.');
+            return;
+        }
+
+        if (tipo === 'PRORROGACAO' && !prazoProrrogacao) {
+            e.preventDefault();
+            alert('Para prorrogação, o prazo é obrigatório.');
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

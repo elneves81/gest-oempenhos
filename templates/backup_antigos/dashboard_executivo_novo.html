@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Executivo - Sistema de Gestão Municipal{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-speedometer2 me-2"></i>Dashboard Executivo
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>
+        Novo Empenho
+    </a>
+    <a href="{{ url_for('contratos.novo') }}" class="btn btn-success">
+        <i class="bi bi-file-plus me-1"></i>
+        Novo Contrato
+    </a>
+    <a href="{{ url_for('relatorios.index') }}" class="btn btn-info">
+        <i class="bi bi-graph-up me-1"></i>
+        Relatórios
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Barra de Status do Sistema -->
+<div class="alert alert-info border-0 mb-4" role="alert">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <div class="flex-grow-1">
+            <strong>Sistema Operacional</strong> - Último acesso: <span class="current-time">{{ hoje.strftime('%d/%m/%Y %H:%M') if hoje else 'N/A' }}</span>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-success">Online</span>
+        </div>
+    </div>
+</div>
+
+<!-- Cartões de Estatísticas Principais -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="row align-items-center">
+                    <div class="col-8">
+                        <h6 class="text-uppercase text-white-50 mb-1">Total Empenhos</h6>
+                        <h2 class="text-white mb-0">{{ total_empenhos if total_empenhos is defined else 0 }}</h2>
+                    </div>
+                    <div class="col-4">
+                        <i class="bi bi-file-earmark-text text-white opacity-75" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="row align-items-center">
+                    <div class="col-8">
+                        <h6 class="text-uppercase text-white-50 mb-1">Total Contratos</h6>
+                        <h2 class="text-white mb-0">{{ total_contratos if total_contratos is defined else 0 }}</h2>
+                    </div>
+                    <div class="col-4">
+                        <i class="bi bi-file-earmark-ruled text-white opacity-75" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="row align-items-center">
+                    <div class="col-8">
+                        <h6 class="text-uppercase text-white-50 mb-1">Contratos Ativos</h6>
+                        <h2 class="text-white mb-0">{{ contratos_ativos if contratos_ativos is defined else 0 }}</h2>
+                    </div>
+                    <div class="col-4">
+                        <i class="bi bi-check-circle text-white opacity-75" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="row align-items-center">
+                    <div class="col-8">
+                        <h6 class="text-uppercase text-white-50 mb-1">Valor Total</h6>
+                        <h2 class="text-white mb-0">R$ {{ "{:,.0f}".format(valor_total if valor_total is defined else 0) }}</h2>
+                    </div>
+                    <div class="col-4">
+                        <i class="bi bi-currency-dollar text-white opacity-75" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção de Alertas e Status de Contratos -->
+<div class="row mb-4">
+    <!-- Painel de Alertas -->
+    <div class="col-lg-8 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Monitoramento de Contratos
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <!-- Contratos Críticos -->
+                    <div class="col-md-4 mb-3">
+                        <div class="alert alert-danger border-0 h-100">
+                            <i class="bi bi-exclamation-triangle-fill mb-2" style="font-size: 2rem;"></i>
+                            <h4 class="alert-heading">{{ (contratos_criticos|length) if contratos_criticos is defined else 0 }}</h4>
+                            <p class="mb-0">Contratos Críticos</p>
+                            <small class="text-muted">(≤ 30 dias para vencer)</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Contratos Atenção -->
+                    <div class="col-md-4 mb-3">
+                        <div class="alert alert-warning border-0 h-100">
+                            <i class="bi bi-exclamation-circle-fill mb-2" style="font-size: 2rem;"></i>
+                            <h4 class="alert-heading">{{ (contratos_atencao|length) if contratos_atencao is defined else 0 }}</h4>
+                            <p class="mb-0">Requer Atenção</p>
+                            <small class="text-muted">(31-60 dias para vencer)</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Contratos OK -->
+                    <div class="col-md-4 mb-3">
+                        <div class="alert alert-success border-0 h-100">
+                            <i class="bi bi-check-circle-fill mb-2" style="font-size: 2rem;"></i>
+                            <h4 class="alert-heading">{{ (contratos_ok|length) if contratos_ok is defined else 0 }}</h4>
+                            <p class="mb-0">Situação Normal</p>
+                            <small class="text-muted">(> 60 dias para vencer)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Painel de Ações Rápidas -->
+    <div class="col-lg-4 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning me-2"></i>
+                    Ações Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('empenhos.novo') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Criar Empenho
+                    </a>
+                    <a href="{{ url_for('contratos.novo') }}" class="btn btn-outline-success btn-lg">
+                        <i class="bi bi-file-plus me-2"></i>
+                        Novo Contrato
+                    </a>
+                    <a href="{{ url_for('notas.index') }}" class="btn btn-outline-info btn-lg">
+                        <i class="bi bi-receipt me-2"></i>
+                        Notas Fiscais
+                    </a>
+                </div>
+                
+                <hr class="my-3">
+                
+                <div class="text-center">
+                    <small class="text-muted">
+                        <i class="bi bi-person-circle me-1"></i>
+                        Logado como: <strong>{{ current_user.nome if current_user and current_user.nome else 'Admin' }}</strong><br>
+                        <i class="bi bi-shield-check me-1"></i>
+                        Perfil: {{ 'Administrador' if current_user and current_user.is_admin else 'Usuário' }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Contratos Críticos (se houver) -->
+{% if contratos_criticos and contratos_criticos|length > 0 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-alarm me-2"></i>
+                    Contratos que Requerem Ação Imediata
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th><i class="bi bi-hash me-1"></i>Contrato</th>
+                                <th><i class="bi bi-building me-1"></i>Fornecedor</th>
+                                <th><i class="bi bi-calendar me-1"></i>Data Final</th>
+                                <th><i class="bi bi-clock me-1"></i>Dias Restantes</th>
+                                <th><i class="bi bi-currency-dollar me-1"></i>Valor</th>
+                                <th><i class="bi bi-gear me-1"></i>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contrato in contratos_criticos[:5] %}
+                            <tr class="table-danger">
+                                <td><strong>{{ contrato.numero_contrato }}</strong></td>
+                                <td>{{ contrato.fornecedor }}</td>
+                                <td>{{ contrato.data_fim.strftime('%d/%m/%Y') if contrato.data_fim else 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        {{ contrato.dias_restantes }} dias
+                                    </span>
+                                </td>
+                                <td>R$ {{ "{:,.2f}".format(contrato.valor_total) }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('contratos.visualizar', id=contrato.id) }}" 
+                                           class="btn btn-outline-primary" title="Visualizar">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('contratos.editar', id=contrato.id) }}" 
+                                           class="btn btn-outline-warning" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if contratos_criticos|length > 5 %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('contratos.index') }}" class="btn btn-danger">
+                        <i class="bi bi-eye me-1"></i>
+                        Ver todos os {{ contratos_criticos|length }} contratos críticos
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Seção de Navegação Rápida -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-compass me-2"></i>
+                    Navegação Rápida
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-primary btn-lg w-100 h-100">
+                            <i class="bi bi-file-earmark-text d-block mb-2" style="font-size: 2rem;"></i>
+                            <span>Empenhos</span>
+                        </a>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-success btn-lg w-100 h-100">
+                            <i class="bi bi-file-earmark-ruled d-block mb-2" style="font-size: 2rem;"></i>
+                            <span>Contratos</span>
+                        </a>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{{ url_for('notas.index') }}" class="btn btn-outline-info btn-lg w-100 h-100">
+                            <i class="bi bi-receipt d-block mb-2" style="font-size: 2rem;"></i>
+                            <span>Notas Fiscais</span>
+                        </a>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-warning btn-lg w-100 h-100">
+                            <i class="bi bi-graph-up d-block mb-2" style="font-size: 2rem;"></i>
+                            <span>Relatórios</span>
+                        </a>
+                    </div>
+                    {% if current_user and current_user.is_admin %}
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{{ url_for('auth.users') }}" class="btn btn-outline-danger btn-lg w-100 h-100">
+                            <i class="bi bi-people d-block mb-2" style="font-size: 2rem;"></i>
+                            <span>Usuários</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary btn-lg w-100 h-100">
+                            <i class="bi bi-person-circle d-block mb-2" style="font-size: 2rem;"></i>
+                            <span>Perfil</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rodapé com Informações do Sistema -->
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body text-center py-2">
+                <small class="text-muted">
+                    <i class="bi bi-shield-check me-1"></i>
+                    Sistema de Gestão de Empenhos e Contratos - Prefeitura Municipal de Guarapuava
+                    <span class="mx-2">|</span>
+                    <i class="bi bi-clock me-1"></i>
+                    Última atualização: <span class="current-time">{{ hoje.strftime('%d/%m/%Y %H:%M:%S') if hoje else 'N/A' }}</span>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Atualizar relógio em tempo real
+function updateTime() {
+    const now = new Date();
+    const timeString = now.toLocaleString('pt-BR');
+    document.querySelectorAll('.current-time').forEach(el => {
+        el.textContent = timeString;
+    });
+}
+
+// Atualizar a cada segundo
+setInterval(updateTime, 1000);
+
+// Inicializar na carga da página
+document.addEventListener('DOMContentLoaded', function() {
+    updateTime();
+    console.log('Dashboard Executivo carregado com sucesso!');
+    
+    // Animar contadores
+    const counters = document.querySelectorAll('.stats-card h2');
+    counters.forEach(counter => {
+        const target = parseInt(counter.textContent.replace(/[^\d]/g, ''));
+        let current = 0;
+        const increment = target / 30;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                current = target;
+                clearInterval(timer);
+            }
+            
+            if (counter.textContent.includes('R$')) {
+                counter.textContent = `R$ ${Math.floor(current).toLocaleString('pt-BR')}`;
+            } else {
+                counter.textContent = Math.floor(current);
+            }
+        }, 50);
+    });
+});
+</script>
+{% endblock %}

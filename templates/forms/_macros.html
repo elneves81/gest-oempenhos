@@ -1,0 +1,67 @@
+{# templates/forms/_macros.html #}
+
+{# 
+  Use:
+    {{ render_field(form.ano_pregao, type="number", min="2000", max="2100") }}
+    {{ render_select(form.modalidade_licitacao) }}
+    {{ render_textarea(form.objeto, rows=3, placeholder="...") }}
+    {{ render_file(form.arquivo_contrato, accept=".pdf,.doc,.docx") }}
+#}
+
+{% macro render_field(field,
+    type='text',
+    min=None, max=None, step=None,
+    placeholder=None, autocomplete=None, inputmode=None, accept=None,
+    extra_class=''
+) -%}
+  <div class="mb-3">
+    <label class="form-label" for="{{ field.id }}">{{ field.label.text }}</label>
+    {{ field(
+      class_=('form-control' + (' is-invalid' if field.errors else '') + (' ' + extra_class if extra_class else '')),
+      type=type, min=min, max=max, step=step,
+      placeholder=placeholder, autocomplete=autocomplete, inputmode=inputmode, accept=accept
+    ) }}
+    {% if field.errors %}
+      <div class="invalid-feedback">{{ field.errors|join(', ') }}</div>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+
+{% macro render_select(field, extra_class='') -%}
+  <div class="mb-3">
+    <label class="form-label" for="{{ field.id }}">{{ field.label.text }}</label>
+    {{ field(class_=('form-select' + (' is-invalid' if field.errors else '') + (' ' + extra_class if extra_class else ''))) }}
+    {% if field.errors %}
+      <div class="invalid-feedback">{{ field.errors|join(', ') }}</div>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+
+{% macro render_textarea(field, rows=3, placeholder=None, extra_class='') -%}
+  <div class="mb-3">
+    <label class="form-label" for="{{ field.id }}">{{ field.label.text }}</label>
+    {{ field(
+      class_=('form-control' + (' is-invalid' if field.errors else '') + (' ' + extra_class if extra_class else '')),
+      rows=rows, placeholder=placeholder
+    ) }}
+    {% if field.errors %}
+      <div class="invalid-feedback">{{ field.errors|join(', ') }}</div>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+
+{% macro render_file(field, accept=None, extra_class='') -%}
+  <div class="mb-3">
+    <label class="form-label" for="{{ field.id }}">{{ field.label.text }}</label>
+    {{ field(
+      class_=('form-control' + (' is-invalid' if field.errors else '') + (' ' + extra_class if extra_class else '')),
+      accept=accept
+    ) }}
+    {% if field.errors %}
+      <div class="invalid-feedback">{{ field.errors|join(', ') }}</div>
+    {% endif %}
+  </div>
+{%- endmacro %}

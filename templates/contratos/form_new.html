@@ -1,0 +1,730 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if contrato else 'Criar Novo' }} Contrato{% endblock %}
+
+{% block extra_css %}
+<style>
+.section-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.section-header {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    color: white;
+    padding: 12px 20px;
+    margin: -20px -20px 20px -20px;
+    border-radius: 8px 8px 0 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.form-row {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+}
+
+.required-field {
+    color: #dc3545;
+}
+
+.input-group-text {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    border: none;
+    font-weight: 600;
+    padding: 10px 30px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #e55a2b 0%, #e57a35 100%);
+    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-outline-secondary {
+    border-color: #6c757d;
+    color: #6c757d;
+    font-weight: 600;
+    padding: 10px 30px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.subsection-title {
+    color: #ff6b35;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 15px;
+    margin-top: 25px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #ff6b35;
+}
+
+.subsection-title:first-child {
+    margin-top: 0;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    color: white;
+    border: none;
+    padding: 20px;
+}
+
+.card-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+@media (max-width: 768px) {
+    .section-card {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .section-header {
+        margin: -15px -15px 15px -15px;
+        padding: 10px 15px;
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+    <h4>{{ 'Editar' if contrato else 'Criar Novo' }} Contrato</h4>
+    {% if contrato %}
+    <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" class="btn btn-outline-info btn-sm">
+        <i class="bi bi-eye me-1"></i>
+        Ver Detalhes
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-{{ 'pencil' if contrato else 'plus-circle' }} me-2"></i>
+                    {{ 'Editar' if contrato else 'Criar Novo' }} Contrato
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="formContrato" enctype="multipart/form-data">
+                    
+                    <!-- Seção 1: Identificação -->
+                    <div class="section-card">
+                        <h6 class="section-header">
+                            <i class="bi bi-card-heading me-2"></i>
+                            Identificação do Contrato
+                        </h6>
+                        
+                        <div class="row form-row">
+                            <div class="col-md-4">
+                                <label for="numero_pregao" class="form-label">
+                                    Número do Pregão <span class="required-field">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="numero_pregao" name="numero_pregao" 
+                                       value="{{ contrato.numero_pregao if contrato else '' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="numero_contrato" class="form-label">
+                                    Número do Contrato <span class="required-field">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="numero_contrato" name="numero_contrato" 
+                                       value="{{ contrato.numero_contrato if contrato else '' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="numero_processo" class="form-label">Número do Processo</label>
+                                <input type="text" class="form-control" id="numero_processo" name="numero_processo" 
+                                       value="{{ contrato.numero_processo if contrato else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-md-4">
+                                <label for="data_pregao" class="form-label">Data do Pregão</label>
+                                <input type="number" class="form-control" id="data_pregao" name="data_pregao" 
+                                       min="2020" max="2030" placeholder="Ex: 2025"
+                                       value="{{ contrato.data_pregao if contrato else '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="data_contrato" class="form-label">Data do Contrato</label>
+                                <input type="number" class="form-control" id="data_contrato" name="data_contrato" 
+                                       min="2020" max="2030" placeholder="Ex: 2025"
+                                       value="{{ contrato.data_contrato if contrato else '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="data_processo" class="form-label">Data do Processo</label>
+                                <input type="number" class="form-control" id="data_processo" name="data_processo" 
+                                       min="2020" max="2030" placeholder="Ex: 2025"
+                                       value="{{ contrato.data_processo if contrato else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-12">
+                                <label for="objeto" class="form-label">
+                                    Objeto do Contrato <span class="required-field">*</span>
+                                </label>
+                                <textarea class="form-control" id="objeto" name="objeto" rows="3" required>{{ contrato.objeto if contrato else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-12">
+                                <label for="lei_base" class="form-label">Fundamentação Legal</label>
+                                <textarea class="form-control" id="lei_base" name="lei_base" rows="2" 
+                                          placeholder="Ex: Lei 14.133/2021, Lei 8.666/93, etc.">{{ contrato.lei_base if contrato else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-md-4">
+                                <label for="modalidade_licitacao" class="form-label">Modalidade de Licitação</label>
+                                <select class="form-select" id="modalidade_licitacao" name="modalidade_licitacao">
+                                    <option value="">Selecione...</option>
+                                    <option value="PREGAO" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'PREGAO' else '' }}>Pregão</option>
+                                    <option value="TOMADA_PRECOS" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'TOMADA_PRECOS' else '' }}>Tomada de Preços</option>
+                                    <option value="CONCORRENCIA" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'CONCORRENCIA' else '' }}>Concorrência</option>
+                                    <option value="CONVITE" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'CONVITE' else '' }}>Convite</option>
+                                    <option value="DISPENSA" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'DISPENSA' else '' }}>Dispensa</option>
+                                    <option value="INEXIGIBILIDADE" {{ 'selected' if contrato and contrato.modalidade_licitacao == 'INEXIGIBILIDADE' else '' }}>Inexigibilidade</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="orgao_contratante" class="form-label">Órgão Contratante</label>
+                                <input type="text" class="form-control" id="orgao_contratante" name="orgao_contratante" 
+                                       value="{{ contrato.orgao_contratante if contrato else '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="secretaria" class="form-label">Secretaria</label>
+                                <input type="text" class="form-control" id="secretaria" name="secretaria" 
+                                       value="{{ contrato.secretaria if contrato else '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 2: Fornecedor & CNPJ -->
+                    <div class="section-card">
+                        <h6 class="section-header">
+                            <i class="bi bi-building me-2"></i>
+                            Dados do Fornecedor
+                        </h6>
+                        
+                        <div class="row form-row">
+                            <div class="col-md-8">
+                                <label for="fornecedor" class="form-label">
+                                    Nome do Fornecedor <span class="required-field">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="fornecedor" name="fornecedor" 
+                                       value="{{ contrato.fornecedor if contrato else '' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cnpj_fornecedor" class="form-label">CNPJ do Fornecedor</label>
+                                <input type="text" class="form-control" id="cnpj_fornecedor" name="cnpj_fornecedor" 
+                                       value="{{ contrato.cnpj_fornecedor if contrato else '' }}" 
+                                       placeholder="00.000.000/0000-00">
+                            </div>
+                        </div>
+
+                        <h6 class="subsection-title">
+                            <i class="bi bi-person-vcard me-1"></i>
+                            Dados do Responsável
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-md-6">
+                                <label for="responsavel_nome" class="form-label">Nome do Responsável</label>
+                                <input type="text" class="form-control" id="responsavel_nome" name="responsavel_nome" 
+                                       value="{{ contrato.responsavel_nome if contrato else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="responsavel_cargo" class="form-label">Cargo do Responsável</label>
+                                <input type="text" class="form-control" id="responsavel_cargo" name="responsavel_cargo" 
+                                       value="{{ contrato.responsavel_cargo if contrato else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-md-6">
+                                <label for="responsavel_email" class="form-label">Email do Responsável</label>
+                                <input type="email" class="form-control" id="responsavel_email" name="responsavel_email" 
+                                       value="{{ contrato.responsavel_email if contrato else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="responsavel_telefone" class="form-label">Telefone do Responsável</label>
+                                <input type="tel" class="form-control" id="responsavel_telefone" name="responsavel_telefone" 
+                                       value="{{ contrato.responsavel_telefone if contrato else '' }}" 
+                                       placeholder="(00) 00000-0000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 3: Financeiro & Prazos -->
+                    <div class="section-card">
+                        <h6 class="section-header">
+                            <i class="bi bi-cash-stack me-2"></i>
+                            Informações Financeiras e Prazos
+                        </h6>
+                        
+                        <h6 class="subsection-title">
+                            <i class="bi bi-currency-dollar me-1"></i>
+                            Valores
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-md-6">
+                                <label for="valor_total" class="form-label">
+                                    Valor Total do Contrato <span class="required-field">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" class="form-control" id="valor_total" name="valor_total" 
+                                           step="0.01" min="0" value="{{ contrato.valor_total if contrato else '' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="valor_inicial" class="form-label">Valor Inicial (antes de aditivos)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" class="form-control" id="valor_inicial" name="valor_inicial" 
+                                           step="0.01" min="0" value="{{ contrato.valor_inicial if contrato else '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="subsection-title">
+                            <i class="bi bi-calendar me-1"></i>
+                            Prazos
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-md-3">
+                                <label for="data_assinatura" class="form-label">
+                                    Data de Assinatura <span class="required-field">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="data_assinatura" name="data_assinatura" 
+                                       value="{{ contrato.data_assinatura.strftime('%Y-%m-%d') if contrato and contrato.data_assinatura else '' }}" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="data_inicio" class="form-label">
+                                    Data de Início <span class="required-field">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="data_inicio" name="data_inicio" 
+                                       value="{{ contrato.data_inicio.strftime('%Y-%m-%d') if contrato and contrato.data_inicio else '' }}" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="data_fim" class="form-label">
+                                    Data de Fim <span class="required-field">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="data_fim" name="data_fim" 
+                                       value="{{ contrato.data_fim.strftime('%Y-%m-%d') if contrato and contrato.data_fim else '' }}" required>
+                            </div>
+                            <div class="col-md-3">
+                                
+                                
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-md-6">
+                                <label for="gestor_fiscal" class="form-label">Gestor Fiscal</label>
+                                <input type="text" class="form-control" id="gestor_fiscal" name="gestor_fiscal" 
+                                       value="{{ contrato.gestor_fiscal if contrato else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="gestor_superior" class="form-label">Gestor Superior</label>
+                                <input type="text" class="form-control" id="gestor_superior" name="gestor_superior" 
+                                       value="{{ contrato.gestor_superior if contrato else '' }}">
+                            </div>
+                        </div>
+
+                        <h6 class="subsection-title">
+                            <i class="bi bi-shield-check me-1"></i>
+                            Garantias e Seguros
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-md-4">
+                                <label for="tipo_garantia" class="form-label">Tipo de Garantia</label>
+                                <select class="form-select" id="tipo_garantia" name="tipo_garantia">
+                                    <option value="">Sem Garantia</option>
+                                    <option value="CAUCAO" {{ 'selected' if contrato and contrato.tipo_garantia == 'CAUCAO' else '' }}>Caução em Dinheiro</option>
+                                    <option value="SEGURO_GARANTIA" {{ 'selected' if contrato and contrato.tipo_garantia == 'SEGURO_GARANTIA' else '' }}>Seguro-Garantia</option>
+                                    <option value="FIANCA_BANCARIA" {{ 'selected' if contrato and contrato.tipo_garantia == 'FIANCA_BANCARIA' else '' }}>Fiança Bancária</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="valor_garantia" class="form-label">Valor da Garantia</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" class="form-control" id="valor_garantia" name="valor_garantia" 
+                                           step="0.01" min="0" value="{{ contrato.valor_garantia if contrato else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="validade_garantia" class="form-label">Validade da Garantia</label>
+                                <input type="date" class="form-control" id="validade_garantia" name="validade_garantia" 
+                                       value="{{ contrato.validade_garantia.strftime('%Y-%m-%d') if contrato and contrato.validade_garantia else '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 4: Anexos & Observações -->
+                    <div class="section-card">
+                        <h6 class="section-header">
+                            <i class="bi bi-paperclip me-2"></i>
+                            Anexos e Observações
+                        </h6>
+                        
+                        <h6 class="subsection-title">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Informações Complementares
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-md-6">
+                                <label for="categoria_contrato" class="form-label">Categoria do Contrato</label>
+                                <select class="form-select" id="categoria_contrato" name="categoria_contrato">
+                                    <option value="">Selecione a Categoria...</option>
+                                    <option value="ESTRATEGICO">Estratégico</option>
+                                    <option value="CRITICO">Crítico</option>
+                                    <option value="NORMAL">Normal</option>
+                                    <option value="SIMPLES">Simples</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="prioridade" class="form-label">Prioridade</label>
+                                <select class="form-select" id="prioridade" name="prioridade">
+                                    <option value="">Selecione a Prioridade...</option>
+                                    <option value="ALTA">Alta</option>
+                                    <option value="MEDIA">Média</option>
+                                    <option value="BAIXA">Baixa</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row form-row">
+                            <div class="col-12">
+                                <label for="observacao_identificacao" class="form-label">Observação de Identificação</label>
+                                <input type="text" class="form-control" id="observacao_identificacao" name="observacao_identificacao" 
+                                       placeholder="Observação rápida sobre o contrato">
+                            </div>
+                        </div>
+
+                        <h6 class="subsection-title">
+                            <i class="bi bi-journal-text me-1"></i>
+                            Observações e Notas
+                        </h6>
+
+                        <div class="row form-row">
+                            <div class="col-12">
+                                <label for="observacoes" class="form-label">Observações Gerais</label>
+                                <textarea class="form-control" id="observacoes" name="observacoes" rows="5" 
+                                          placeholder="Observações, anotações importantes, cláusulas especiais, etc.">{{ contrato.observacoes if contrato else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('contratos.index') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    {{ 'Atualizar' if contrato else 'Salvar' }} Contrato
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Validação e máscara do formulário -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formContrato');
+    
+    // Máscara para CNPJ
+    const cnpjInput = document.getElementById('cnpj_fornecedor');
+    cnpjInput.addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+        value = value.replace(/(\d{2})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d)/, '$1/$2');
+        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+        this.value = value;
+    });
+    
+    // Máscara para telefone
+    const telefoneInput = document.getElementById('responsavel_telefone');
+    telefoneInput.addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+        if (value.length <= 11) {
+            value = value.replace(/(\d{2})(\d)/, '($1) $2');
+            value = value.replace(/(\d{4,5})(\d{4})/, '$1-$2');
+        }
+        this.value = value;
+    });
+    
+    // Auto-preenchimento do valor inicial
+    const valorTotal = document.getElementById('valor_total');
+    const valorInicial = document.getElementById('valor_inicial');
+    
+    valorTotal.addEventListener('blur', function() {
+        if (this.value && !valorInicial.value) {
+            valorInicial.value = this.value;
+        }
+    });
+    
+    // Validação do formulário simplificada (sem abas)
+    form.addEventListener('submit', function(e) {
+        const requiredFields = [
+            { id: 'numero_pregao', name: 'Número do Pregão' },
+            { id: 'numero_contrato', name: 'Número do Contrato' },
+            { id: 'objeto', name: 'Objeto do Contrato' },
+            { id: 'fornecedor', name: 'Nome do Fornecedor' },
+            { id: 'valor_total', name: 'Valor Total do Contrato' },
+            { id: 'data_assinatura', name: 'Data de Assinatura' },
+            { id: 'data_inicio', name: 'Data de Início' },
+            { id: 'data_fim', name: 'Data de Fim' }
+        ];
+        
+        // Verificar campos obrigatórios
+        for (let field of requiredFields) {
+            const element = document.getElementById(field.id);
+            if (!element.value.trim()) {
+                e.preventDefault();
+                
+                // Focar no campo e mostrar erro
+                element.focus();
+                element.style.borderColor = '#dc3545';
+                alert(`Por favor, preencha o campo obrigatório: ${field.name}`);
+                return false;
+            }
+        }
+        
+        // Validar datas se preenchidas
+        const dataInicio = document.getElementById('data_inicio').value;
+        const dataFim = document.getElementById('data_fim').value;
+        
+        if (dataInicio && dataFim) {
+            const inicio = new Date(dataInicio);
+            const fim = new Date(dataFim);
+            
+            if (fim <= inicio) {
+                e.preventDefault();
+                document.getElementById('data_fim').focus();
+                document.getElementById('data_fim').style.borderColor = '#dc3545';
+                alert('A data de fim deve ser posterior à data de início.');
+                return false;
+            }
+        }
+        
+        // Validar CNPJ se preenchido
+        const cnpj = document.getElementById('cnpj_fornecedor').value;
+        if (cnpj && cnpj.replace(/\D/g, '').length !== 14) {
+            e.preventDefault();
+            document.getElementById('cnpj_fornecedor').focus();
+            document.getElementById('cnpj_fornecedor').style.borderColor = '#dc3545';
+            alert('CNPJ deve ter 14 dígitos.');
+            return false;
+        }
+        
+        // Validar email se preenchido
+        const email = document.getElementById('responsavel_email').value;
+        if (email && !email.includes('@')) {
+            e.preventDefault();
+            document.getElementById('responsavel_email').focus();
+            document.getElementById('responsavel_email').style.borderColor = '#dc3545';
+            alert('Por favor, insira um email válido.');
+            return false;
+        }
+    });
+    
+    // Remover bordas de erro quando o usuário começar a digitar
+    document.querySelectorAll('input, textarea, select').forEach(field => {
+        field.addEventListener('input', function() {
+            this.style.borderColor = '';
+        });
+    });
+});
+</script>
+{% endblock %}
+
+<!-- Script de validação de formulário -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (!form) return;
+    
+    function validarCamposData() {
+        const camposData = ['data_assinatura', 'data_inicio', 'data_fim'];
+        let camposInvalidos = [];
+        
+        camposData.forEach(campo => {
+            const input = document.getElementById(campo);
+            if (input && (input.hasAttribute('required') || input.classList.contains('js-required'))) {
+                if (!input.value || input.value.trim() === '') {
+                    camposInvalidos.push({
+                        campo: campo,
+                        label: input.closest('.col-md-3, .col-md-6')?.querySelector('label')?.textContent || campo,
+                        elemento: input
+                    });
+                }
+            }
+        });
+        
+        return camposInvalidos;
+    }
+    
+    function focarPrimeiroCampoInvalido(camposInvalidos) {
+        if (camposInvalidos.length > 0) {
+            const primeiro = camposInvalidos[0];
+            primeiro.elemento.focus();
+            primeiro.elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+    
+    form.addEventListener('submit', function(e) {
+        const camposInvalidos = validarCamposData();
+        
+        if (camposInvalidos.length > 0) {
+            e.preventDefault();
+            const nomesCampos = camposInvalidos.map(c => c.label.replace(' *', '')).join(', ');
+            alert(`Por favor, preencha os seguintes campos obrigatórios: ${nomesCampos}`);
+            focarPrimeiroCampoInvalido(camposInvalidos);
+            return false;
+        }
+    });
+    
+    // Remover required de campos vazios
+    const camposData = document.querySelectorAll('input[type="date"][required]');
+    camposData.forEach(campo => {
+        if (!campo.value) {
+            campo.removeAttribute('required');
+            campo.classList.add('js-required');
+        }
+    });
+});
+</script>
+<!-- Script de validação de formulário -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (!form) return;
+    
+    function validarCamposData() {
+        const camposData = ['data_assinatura', 'data_inicio', 'data_fim'];
+        let camposInvalidos = [];
+        
+        camposData.forEach(campo => {
+            const input = document.getElementById(campo);
+            if (input && (input.hasAttribute('required') || input.classList.contains('js-required'))) {
+                if (!input.value || input.value.trim() === '') {
+                    camposInvalidos.push({
+                        campo: campo,
+                        label: input.closest('.col-md-3, .col-md-6')?.querySelector('label')?.textContent || campo,
+                        elemento: input
+                    });
+                }
+            }
+        });
+        
+        return camposInvalidos;
+    }
+    
+    function focarPrimeiroCampoInvalido(camposInvalidos) {
+        if (camposInvalidos.length > 0) {
+            const primeiro = camposInvalidos[0];
+            primeiro.elemento.focus();
+            primeiro.elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+    
+    form.addEventListener('submit', function(e) {
+        const camposInvalidos = validarCamposData();
+        
+        if (camposInvalidos.length > 0) {
+            e.preventDefault();
+            const nomesCampos = camposInvalidos.map(c => c.label.replace(' *', '')).join(', ');
+            alert(`Por favor, preencha os seguintes campos obrigatórios: ${nomesCampos}`);
+            focarPrimeiroCampoInvalido(camposInvalidos);
+            return false;
+        }
+    });
+    
+    // Remover required de campos vazios
+    const camposData = document.querySelectorAll('input[type="date"][required]');
+    camposData.forEach(campo => {
+        if (!campo.value) {
+            campo.removeAttribute('required');
+            campo.classList.add('js-required');
+        }
+    });
+});
+</script>

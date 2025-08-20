@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestão de Empenhos e Contratos{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+    <!-- iOS prefere PNG (180x180) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
+    <!-- fallback SVG (mantido) -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/favicon.svg') }}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom Turquoise Theme -->
+    <link href="{{ url_for('static', filename='css/turquoise-theme.css') }}" rel="stylesheet">
+    <!-- Logo Styles -->
+    <link href="{{ url_for('static', filename='css/logo-styles.css') }}" rel="stylesheet">
+    <!-- Accessibility Fixes -->
+    <link href="{{ url_for('static', filename='css/accessibility-fixes.css') }}" rel="stylesheet">
+    <!-- Chart.js (defer para performance) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <!-- Turquoise Theme JS (defer) -->
+    <script src="{{ url_for('static', filename='js/turquoise-theme.js') }}" defer></script>
+    
+    <!-- Extra head block for custom tags/links -->
+    {% block extra_head %}{% endblock %}
+    
+    <!-- GridStack assets (opcional - só para páginas que precisam) -->
+    {% block gridstack_head %}{% endblock %}
+    
+    <style>
+        :root {
+            --turquoise-primary: #20b2aa;
+            --turquoise-light: #48d1cc;
+            --turquoise-dark: #008b8b;
+            --turquoise-muted: #afeeee;
+            --orange-primary: #ff6b35;
+            --orange-light: #ff8c5a;
+            --orange-dark: #e55a2e;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        /* ========== SIDEBAR STYLES ========== */
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--turquoise-primary) 0%, var(--turquoise-light) 100%);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            font-size: 1.1em;
+        }
+        
+        .sidebar-brand {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1rem;
+        }
+        
+        .sidebar-brand h4 {
+            color: white;
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.3em;
+        }
+        
+        .sidebar-brand small {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.85em;
+        }
+        
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background-color: white;
+            border-bottom: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            color: var(--turquoise-primary) !important;
+        }
+        
+        /* ========== CARDS ========== */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+        }
+        
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        /* ========== BUTTONS ========== */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--turquoise-primary) 0%, var(--turquoise-light) 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--turquoise-dark) 0%, var(--turquoise-primary) 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(32, 178, 170, 0.3);
+        }
+        
+        .btn-success { background-color: #28a745; border-color: #28a745; border-radius: 8px; }
+        .btn-warning { background-color: #ffc107; border-color: #ffc107; border-radius: 8px; }
+        .btn-danger  { background-color: #dc3545; border-color: #dc3545; border-radius: 8px; }
+        
+        /* ========== TABLES ========== */
+        .table { border-radius: 8px; overflow: hidden; }
+        .table th {
+            background-color: #f8f9fa;
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .table td { vertical-align: middle; border-bottom: 1px solid #f0f0f0; }
+        .table tbody tr:hover { background-color: #f8f9fa; }
+        
+        /* ========== BADGES ========== */
+        .badge { font-size: 0.75em; padding: 0.5em 0.75em; border-radius: 6px; }
+        .status-pendente { background-color: #ffc107; color: #212529; }
+        .status-aprovado { background-color: #28a745; color: white; }
+        .status-rejeitado { background-color: #dc3545; color: white; }
+        .status-pago     { background-color: #17a2b8; color: white; }
+        .badge-critical  { background-color: #dc3545; color: white; animation: pulse 2s infinite; }
+        .badge-attention { background-color: #ffc107; color: #212529; }
+        .badge-ok        { background-color: #28a745; color: white; }
+        
+        /* ========== STATS CARDS ========== */
+        .stats-card {
+            background: linear-gradient(135deg, var(--turquoise-primary) 0%, var(--turquoise-light) 100%);
+            color: white; border-radius: 15px; border: none; transition: all 0.3s ease; overflow: hidden; position: relative;
+        }
+        .stats-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+        .stats-card::before { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,0.1); opacity: 0; transition: opacity .3s; }
+        .stats-card:hover::before { opacity: 1; }
+        .stats-card .card-body { padding: 1.5rem; position: relative; z-index: 1; }
+        .stats-card h3 { font-size: 2rem; font-weight: bold; margin-bottom: .5rem; }
+        .stats-card p  { margin-bottom: 0; opacity: .9; }
+        
+        /* ========== CONTRACT CARDS ========== */
+        .contract-card { transition: all .3s; border-left: 4px solid transparent; }
+        .contract-card.critical { border-left-color: #dc3545; background-color: #fff5f5; }
+        .contract-card.attention{ border-left-color: #ffc107; background-color: #fffbf0; }
+        .contract-card.ok       { border-left-color: #28a745; background-color: #f8fff8; }
+        .contract-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        
+        /* ========== FORMS ========== */
+        .form-control, .form-select { border-radius: 8px; border: 1px solid #dee2e6; padding: .75rem; transition: all .3s; }
+        .form-control:focus, .form-select:focus { border-color: var(--turquoise-primary); box-shadow: 0 0 0 .2rem rgba(32, 178, 170, .25); }
+        
+        /* ========== ALERTS ========== */
+        .alert { border: none; border-radius: 8px; padding: 1rem; }
+        
+        /* ========== ANIMATIONS ========== */
+        @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.05);} 100% {transform: scale(1);} }
+        
+        /* ========== DASHBOARD SECTIONS ========== */
+        .dashboard-section { margin-bottom: 2rem; }
+        .dashboard-section h4 { color: #2c3e50; margin-bottom: 1rem; font-weight: 600; }
+        .no-contracts { text-align: center; padding: 2rem; color: #6c757d; }
+        .contract-status { font-size: .875rem; font-weight: 600; }
+        .days-remaining { font-weight: 700; }
+        
+        /* ========== SIDEBAR SUBMENU ========== */
+        .submenu {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+        }
+        
+        .submenu-item {
+            padding: 0.5rem 1rem !important;
+            margin: 0.2rem 0 !important;
+            border-radius: 6px !important;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .submenu-item:hover {
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            transform: translateX(5px);
+        }
+        
+        .submenu-item.active {
+            background-color: rgba(255, 255, 255, 0.25) !important;
+            font-weight: 600;
+        }
+        
+        .submenu-item .badge {
+            font-size: 0.6rem;
+            padding: 0.2rem 0.4rem;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Skip link (acessibilidade) -->
+    <a class="visually-hidden-focusable" href="#main-content">Pular para conteúdo</a>
+
+    {% if current_user.is_authenticated %}
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <!-- Logo e Título -->
+                    <div class="text-center mb-4 sidebar-brand">
+                        <img src="{{ url_for('static', filename='img/logo_guarapuava.svg') }}" 
+                             alt="Logo Guarapuava" 
+                             class="report-logo"
+                             style="width: 60px; height: 60px; margin-bottom: 0.5rem; filter: brightness(0) invert(1);">
+                        <h4 class="text-white">Sistema Municipal</h4>
+                        <small class="text-white-50 d-block">Prefeitura de Guarapuava</small>
+                        <small class="text-white-50 d-block">Bem-vindo, {{ current_user.nome or current_user.username }}</small>
+                    </div>
+                    
+                    <!-- Menu Principal -->
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint and (request.endpoint == 'index' or request.endpoint == 'painel') %}active{% endif %}"
+                               {% if request.endpoint and (request.endpoint == 'index' or request.endpoint == 'painel') %}aria-current="page"{% endif %}
+                               href="{{ url_for('painel') }}">
+                                <i class="bi bi-speedometer2"></i>
+                                Dashboard Executivo
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('empenhos') %}active{% endif %}"
+                               {% if request.endpoint and request.endpoint.startswith('empenhos') %}aria-current="page"{% endif %}
+                               href="{{ url_for('empenhos.index') }}">
+                                <i class="bi bi-file-earmark-text"></i>
+                                Empenhos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('contratos') %}active{% endif %}"
+                               {% if request.endpoint and request.endpoint.startswith('contratos') %}aria-current="page"{% endif %}
+                               href="{{ url_for('contratos.index') }}">
+                                <i class="bi bi-file-earmark-ruled"></i>
+                                Contratos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('notas') %}active{% endif %}"
+                               {% if request.endpoint and request.endpoint.startswith('notas') %}aria-current="page"{% endif %}
+                               href="{{ url_for('notas.index') }}">
+                                <i class="bi bi-receipt"></i>
+                                Notas Fiscais
+                            </a>
+                        </li>
+                        <!-- Menu Relatórios com Submenu -->
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('relatorios') %}active{% endif %} d-flex justify-content-between align-items-center"
+                               data-bs-toggle="collapse" href="#relatoriosSubmenu" role="button" 
+                               aria-expanded="{% if request.endpoint and request.endpoint.startswith('relatorios') %}true{% else %}false{% endif %}" 
+                               aria-controls="relatoriosSubmenu">
+                                <span>
+                                    <i class="bi bi-graph-up"></i>
+                                    Relatórios
+                                </span>
+                                <i class="bi bi-chevron-down"></i>
+                            </a>
+                            <div class="collapse {% if request.endpoint and request.endpoint.startswith('relatorios') %}show{% endif %}" id="relatoriosSubmenu">
+                                <div class="submenu">
+                                    <a class="nav-link submenu-item {% if request.endpoint == 'relatorios.index' %}active{% endif %}"
+                                       href="{{ url_for('relatorios.index') }}">
+                                        <i class="bi bi-bar-chart"></i>
+                                        Central de Relatórios
+                                    </a>
+                                    <a class="nav-link submenu-item {% if request.endpoint == 'relatorios.dashboard_interativo' %}active{% endif %}"
+                                       href="{{ url_for('relatorios.dashboard_interativo') }}">
+                                        <i class="bi bi-grid-3x3-gap"></i>
+                                        Dashboard Interativo
+                                        <span class="badge bg-success ms-2">Novo</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </li>
+                        
+                        <!-- Separador -->
+                        <hr class="text-white-50 my-3">
+                        
+                        <!-- Menu Administrativo -->
+                        {% if current_user.is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint and request.endpoint == 'auth.users' %}active{% endif %}"
+                               {% if request.endpoint and request.endpoint == 'auth.users' %}aria-current="page"{% endif %}
+                               href="{{ url_for('auth.users') }}">
+                                <i class="bi bi-people"></i>
+                                Usuários
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Menu do Usuário -->
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint and request.endpoint == 'auth.profile' %}active{% endif %}"
+                               {% if request.endpoint and request.endpoint == 'auth.profile' %}aria-current="page"{% endif %}
+                               href="{{ url_for('auth.profile') }}">
+                                <i class="bi bi-person-circle"></i>
+                                Meu Perfil
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <form method="POST" action="{{ url_for('auth.logout') }}" class="px-3">
+                                <!-- CSRF opcional (se Flask-WTF estiver presente) -->
+                                {{ csrf_token() if csrf_token is defined else '' }}
+                                <button type="submit" class="nav-link btn btn-link p-0 text-start w-100">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                    Sair
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <!-- Conteúdo Principal -->
+            <main id="main-content" role="main" class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <!-- Cabeçalho da Página -->
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <!-- Toggler da sidebar no mobile -->
+                        <button class="btn btn-outline-secondary d-md-none me-2"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#sidebarMenu"
+                                aria-controls="sidebarMenu"
+                                aria-expanded="false"
+                                aria-label="Alternar menu">
+                            <i class="bi bi-list"></i>
+                        </button>
+                        <h1 class="h2 m-0">{% block page_title %}Dashboard{% endblock %}</h1>
+                    </div>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        {% block page_actions %}{% endblock %}
+                    </div>
+                </div>
+                
+                <!-- Mensagens Flash -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            {% set icon_map = {'error': 'exclamation-triangle', 'info': 'info-circle', 'success': 'check-circle', 'warning': 'exclamation-triangle'} %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                <i class="bi bi-{{ icon_map.get(category, 'info-circle') }} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar alerta"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <!-- Conteúdo da Página -->
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+    
+    <!-- Bootstrap JS (no final para melhor performance) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Scripts Personalizados -->
+    <script>
+        // ========== FUNÇÕES UTILITÁRIAS ==========
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        }
+        function formatNumber(value) { return new Intl.NumberFormat('pt-BR').format(value); }
+        function formatDate(dateString) { const date = new Date(dateString); return date.toLocaleDateString('pt-BR'); }
+        
+        // ========== CÁLCULOS AUTOMÁTICOS ==========
+        function calcularValores() {
+            const valorEmpenhado = parseFloat(document.getElementById('valor_empenhado')?.value || 0);
+            const percentualRetencao = parseFloat(document.getElementById('percentual_retencao')?.value || 0);
+            const valorRetencao = valorEmpenhado * (percentualRetencao / 100);
+            const valorLiquido = valorEmpenhado - valorRetencao;
+            const campoRetencao = document.getElementById('valor_retencao');
+            const campoLiquido = document.getElementById('valor_liquido');
+            if (campoRetencao) campoRetencao.value = valorRetencao.toFixed(2);
+            if (campoLiquido)  campoLiquido.value  = valorLiquido.toFixed(2);
+        }
+        
+        // ========== INICIALIZAÇÃO ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            const valorEmpenhado = document.getElementById('valor_empenhado');
+            const percentualRetencao = document.getElementById('percentual_retencao');
+            if (valorEmpenhado) {
+                valorEmpenhado.addEventListener('input', calcularValores);
+                valorEmpenhado.addEventListener('change', calcularValores);
+            }
+            if (percentualRetencao) {
+                percentualRetencao.addEventListener('input', calcularValores);
+                percentualRetencao.addEventListener('change', calcularValores);
+            }
+            // Tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(t => new bootstrap.Tooltip(t));
+            // Popovers
+            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            popoverTriggerList.map(p => new bootstrap.Popover(p));
+            console.log('Sistema de Gestão de Empenhos iniciado com sucesso!');
+        });
+    </script>
+    
+    <!-- Scripts adicionais da página -->
+    {% block extra_js %}{% endblock %}
+    
+    <!-- GridStack JS (opcional - só para páginas que precisam) -->
+    {% block gridstack_js %}{% endblock %}
+</body>
+</html>

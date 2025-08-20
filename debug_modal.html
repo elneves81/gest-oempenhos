@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Modal Anotações</title>
+    <script>
+        // Testar conectividade com servidor
+        async function testarConexao() {
+            try {
+                const response = await fetch('/contratos/1/anotacoes', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+                console.log('Status GET:', response.status);
+                const data = await response.json();
+                console.log('Dados recebidos:', data);
+                document.getElementById('resultado').innerHTML = 
+                    `✅ Conexão OK - ${data.anotacoes?.length || 0} anotações encontradas`;
+            } catch (error) {
+                console.error('Erro na conexão:', error);
+                document.getElementById('resultado').innerHTML = `❌ Erro: ${error.message}`;
+            }
+        }
+
+        // Testar envio de anotação apenas texto
+        async function testarEnvioTexto() {
+            try {
+                const fd = new FormData();
+                fd.append('texto', 'Teste de anotação via debug - ' + new Date().toLocaleString());
+
+                const response = await fetch('/contratos/1/anotacoes', {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin'
+                });
+
+                console.log('Status POST:', response.status);
+                const data = await response.json();
+                console.log('Resposta:', data);
+                
+                if (data.success) {
+                    document.getElementById('resultadoEnvio').innerHTML = 
+                        `✅ Envio OK - ID: ${data.anotacao?.id}`;
+                } else {
+                    document.getElementById('resultadoEnvio').innerHTML = 
+                        `❌ Erro: ${data.error}`;
+                }
+            } catch (error) {
+                console.error('Erro no envio:', error);
+                document.getElementById('resultadoEnvio').innerHTML = `❌ Erro: ${error.message}`;
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>🧪 Debug Modal Anotações</h1>
+    
+    <div>
+        <h3>1. Teste de Conexão</h3>
+        <button onclick="testarConexao()">Testar GET /contratos/1/anotacoes</button>
+        <div id="resultado" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc;"></div>
+    </div>
+
+    <div>
+        <h3>2. Teste de Envio</h3>
+        <button onclick="testarEnvioTexto()">Testar POST anotação texto</button>
+        <div id="resultadoEnvio" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc;"></div>
+    </div>
+
+    <div>
+        <h3>3. Console do Navegador</h3>
+        <p>Abra o Console do Navegador (F12) para ver logs detalhados.</p>
+    </div>
+</body>
+</html>

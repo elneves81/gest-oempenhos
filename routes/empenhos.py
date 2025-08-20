@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from models import Empenho, Contrato, db
+from models import Empenho, Contrato, AditivoContratual, db
 from datetime import datetime
 import json
 
@@ -9,7 +9,7 @@ empenhos_bp = Blueprint('empenhos', __name__)
 @empenhos_bp.route('/')
 @login_required
 def index():
-    """Lista todos os empenhos"""
+    """Lista todos os empenhos com estatísticas"""
     page = request.args.get('page', 1, type=int)
     per_page = 20
     
@@ -36,7 +36,29 @@ def index():
         page=page, per_page=per_page, error_out=False
     )
     
-    return render_template('empenhos/index.html', empenhos=empenhos, search=search, status=status)
+    # Estatísticas para os cards
+    total_empenhos = Empenho.query.count()
+    valor_total_empenhos = db.session.query(db.func.sum(Empenho.valor_empenhado)).scalar() or 0
+    empenhos_recentes = Empenho.query.order_by(Empenho.data_criacao.desc()).limit(10).all()
+    
+    # Status dos empenhos
+    empenhos_pendentes = Empenho.query.filter_by(status='PENDENTE').count()
+    empenhos_aprovados = Empenho.query.filter_by(status='APROVADO').count()
+    empenhos_pagos = Empenho.query.filter_by(status='PAGO').count()
+    empenhos_rejeitados = Empenho.query.filter_by(status='REJEITADO').count()
+    
+    return render_template('empenhos/index.html', 
+                         empenhos=empenhos, 
+                         search=search, 
+                         status=status,
+                         # Estatísticas
+                         total_empenhos=total_empenhos,
+                         valor_total_empenhos=valor_total_empenhos,
+                         empenhos_recentes=empenhos_recentes,
+                         empenhos_pendentes=empenhos_pendentes,
+                         empenhos_aprovados=empenhos_aprovados,
+                         empenhos_pagos=empenhos_pagos,
+                         empenhos_rejeitados=empenhos_rejeitados)
 
 @empenhos_bp.route('/novo', methods=['GET', 'POST'])
 @login_required
@@ -258,7 +280,7 @@ def novo_contrato():
             flash(f'Erro ao criar contrato: {str(e)}', 'error')
             db.session.rollback()
     
-    return render_template('empenhos/contrato_form.html', contrato=None)
+    return render_template('contratos/form_novo.html', contrato=None)
 
 @empenhos_bp.route('/contratos/<int:id>/editar', methods=['GET', 'POST'])
 @login_required
@@ -302,6 +324,7 @@ def visualizar_contrato(id):
 def excluir_contrato(id):
     """Excluir contrato"""
     contrato = Contrato.query.get_or_404(id)
+    force = request.form.get('force', 'false').lower() == 'true'
     
     try:
         # Verificar se há empenhos vinculados
@@ -310,10 +333,20 @@ def excluir_contrato(id):
             flash(f'Não é possível excluir o contrato. Há {empenhos_vinculados} empenho(s) vinculado(s).', 'error')
             return redirect(url_for('empenhos.contratos'))
         
+        # Verificar se há aditivos vinculados
+        aditivos_vinculados = AditivoContratual.query.filter_by(contrato_id=id).count()
+        if aditivos_vinculados > 0 and not force:
+            flash(f'O contrato possui {aditivos_vinculados} aditivo(s) que serão excluídos automaticamente junto com o contrato. Confirme a exclusão para prosseguir.', 'warning')
+            return redirect(url_for('empenhos.contratos'))
+        
+        # Se chegou aqui, pode excluir (cascade irá excluir os aditivos automaticamente)
         db.session.delete(contrato)
         db.session.commit()
         
-        flash('Contrato excluído com sucesso!', 'success')
+        if aditivos_vinculados > 0:
+            flash(f'Contrato e {aditivos_vinculados} aditivo(s) excluídos com sucesso!', 'success')
+        else:
+            flash('Contrato excluído com sucesso!', 'success')
         
     except Exception as e:
         flash(f'Erro ao excluir contrato: {str(e)}', 'error')

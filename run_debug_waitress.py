@@ -4,8 +4,18 @@ Script Waitress com DEBUG ativado para diagnosticar erros
 """
 
 from waitress import serve
-from app import app
+import sys
 import os
+
+# Adicionar o diretório atual ao path para evitar conflito com pasta app/
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Importar app do arquivo app.py especificamente
+import importlib.util
+spec = importlib.util.spec_from_file_location("app_main", "app.py")
+app_main = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(app_main)
+
 import multiprocessing
 import logging
 
@@ -24,8 +34,8 @@ def run_debug_waitress():
     
     # Configurações de DEBUG
     os.environ['FLASK_ENV'] = 'development'
-    app.config['DEBUG'] = True
-    app.config['TESTING'] = False
+    app_main.app.config['DEBUG'] = True
+    app_main.app.config['TESTING'] = False
     
     # Configurar logging
     logging.basicConfig(level=logging.DEBUG)
@@ -53,7 +63,7 @@ def run_debug_waitress():
     try:
         # Iniciar servidor Waitress com debug
         serve(
-            app,
+            app_main.app,
             host=host,
             port=port,
             threads=threads,

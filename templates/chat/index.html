@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}Chat IA - Sistema Municipal{% endblock title %}
+
+{% block content %}
+<div class="container py-3">
+  <div class="row g-3">
+    <!-- Coluna esquerda: sessões -->
+    <div class="col-12 col-md-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Minhas conversas</h5>
+        <button id="btnNewSession" class="btn btn-sm btn-primary">Nova conversa</button>
+      </div>
+      <ul class="list-group" id="sessionList">
+        {% for s in sessions %}
+        <li class="list-group-item d-flex justify-content-between align-items-center {% if s.session_id == current_session_id %}active{% endif %}">
+          <a class="{% if s.session_id == current_session_id %}text-white{% endif %}" href="{{ url_for('chat.index', session_id=s.session_id) }}">
+            {{ s.title or 'Nova Conversa' }}
+          </a>
+          <button class="btn btn-sm btn-outline-danger ms-2 btnDeleteSession" data-session="{{ s.session_id }}">×</button>
+        </li>
+        {% else %}
+        <li class="list-group-item">Nenhuma sessão ainda.</li>
+        {% endfor %}
+      </ul>
+
+      <hr class="my-4">
+
+      <h6 class="mb-2">Mensagens por dia (14 dias)</h6>
+      <canvas id="chartMessages" height="160"></canvas>
+    </div>
+
+    <!-- Coluna direita: mensagens -->
+    <div class="col-12 col-md-8 d-flex flex-column">
+      <!-- Barra de ferramentas -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Chat IA - Assistente Municipal</h5>
+        <div class="btn-group" role="group">
+          <button id="clearChatBtn" class="btn btn-sm btn-outline-warning" title="Limpar chat">
+            <i class="bi bi-trash"></i>
+          </button>
+          <button id="exportChatBtn" class="btn btn-sm btn-outline-info" title="Exportar conversa">
+            <i class="bi bi-download"></i>
+          </button>
+          <button id="settingsBtn" class="btn btn-sm btn-outline-secondary" title="Configurações">
+            <i class="bi bi-gear"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de busca -->
+      <div class="mb-3">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" id="searchMessages" class="form-control" placeholder="Buscar nas mensagens...">
+        </div>
+      </div>
+
+      <div class="card flex-grow-1">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <div class="status-indicator bg-success rounded-circle me-2" style="width: 8px; height: 8px;"></div>
+            <strong>Assistente IA Online</strong>
+          </div>
+          <small class="text-muted">
+            {% if current_session_id %}
+              Sessão: {{ current_session_id[:8] }}...
+            {% else %}
+              Sem sessão ativa
+            {% endif %}
+          </small>
+        </div>
+
+        <div class="card-body position-relative" id="messagesPane" style="height: 50vh; overflow-y: auto; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+          {% if messages %}
+            {% for m in messages %}
+              <div class="message user-message mb-3">
+                <div class="d-flex justify-content-end">
+                  <div class="message-content" style="max-width: 70%;">
+                    <div class="bg-primary text-white p-3 rounded-3 shadow-sm">
+                      <div class="message-text">{{ m.message }}</div>
+                    </div>
+                    <div class="message-meta text-end mt-1">
+                      <small class="text-muted">{{ m.timestamp.strftime('%H:%M') }}</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="message ai-message mb-3">
+                <div class="d-flex">
+                  <div class="avatar-container me-2">
+                    <div class="bg-success rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                      <i class="bi bi-robot text-white"></i>
+                    </div>
+                  </div>
+                  <div class="message-content flex-grow-1" style="max-width: 70%;">
+                    <div class="bg-light border p-3 rounded-3 shadow-sm">
+                      <div class="message-text">{{ m.response }}</div>
+                    </div>
+                    <div class="message-meta mt-1">
+                      <small class="text-muted">{{ m.timestamp.strftime('%H:%M') }}</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-chat-state text-center py-5">
+              <div class="mb-4">
+                <i class="bi bi-chat-dots display-1 text-muted"></i>
+              </div>
+              <h5 class="text-muted mb-3">🤖 Bem-vindo ao Chat IA!</h5>
+              <p class="text-muted mb-4">
+                Seu assistente municipal inteligente está pronto para ajudar.<br>
+                Faça perguntas sobre empenhos, contratos, relatórios e muito mais.
+              </p>
+
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <div class="card border-primary suggestion-card" style="cursor: pointer;">
+                    <div class="card-body text-center py-3">
+                      <i class="bi bi-graph-up text-primary mb-2"></i>
+                      <small class="d-block">Relatório financeiro</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card border-success suggestion-card" style="cursor: pointer;">
+                    <div class="card-body text-center py-3">
+                      <i class="bi bi-file-text text-success mb-2"></i>
+                      <small class="d-block">Status de empenho</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <p class="small text-muted"><strong>Posso ajudar com:</strong></p>
+                <ul class="small text-muted">
+                  <li>Empenhos e liquidações</li>
+                  <li>Contratos e aditivos</li>
+                  <li>Relatórios e consultas</li>
+                  <li>Fluxos de trabalho</li>
+                </ul>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="card-footer bg-white border-top-0">
+          <form id="sendForm">
+            <input type="hidden" id="sessionId" value="{{ current_session_id or '' }}">
+
+            <div class="input-group">
+              <button type="button" id="attachmentBtn" class="btn btn-outline-secondary" title="Anexar arquivo" {% if not current_session_id %}disabled{% endif %}>
+                <i class="bi bi-paperclip"></i>
+              </button>
+
+              <textarea
+                id="messageInput"
+                class="form-control"
+                placeholder="Digite sua mensagem... (Ctrl+Enter para enviar)"
+                rows="1"
+                style="resize: none; min-height: 38px; max-height: 120px;"
+                {% if not current_session_id %}disabled{% endif %}
+              ></textarea>
+
+              <button type="button" id="voiceBtn" class="btn btn-outline-info" title="Mensagem de voz" {% if not current_session_id %}disabled{% endif %}>
+                <i class="bi bi-mic"></i>
+              </button>
+
+              <button class="btn btn-primary" type="submit" {% if not current_session_id %}disabled{% endif %}>
+                <i class="bi bi-send me-1"></i>Enviar
+              </button>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <small class="text-muted">
+                {% if current_session_id %}
+                  ✅ Conectado • Assistente IA ativo
+                {% else %}
+                  ⚠️ Crie uma nova conversa para começar
+                {% endif %}
+              </small>
+              <div class="d-flex align-items-center">
+                <div id="typingIndicator" class="typing-indicator me-2" style="display: none;">
+                  <small class="text-muted">
+                    <i class="bi bi-three-dots"></i> Digitando...
+                  </small>
+                </div>
+                <small class="text-muted" id="messageCounter">0/2000</small>
+              </div>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estilos -->
+<style>
+  .message { animation: slideInUp 0.3s ease; }
+  @keyframes slideInUp { from {opacity:0; transform:translateY(20px)} to {opacity:1; transform:translateY(0)} }
+  .status-indicator { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(40,167,69,.7)} 70%{box-shadow:0 0 0 10px rgba(40,167,69,0)} 100%{box-shadow:0 0 0 0 rgba(40,167,69,0)} }
+  .suggestion-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,.1); transition: all .2s }
+  #messagesPane::-webkit-scrollbar{width:6px} #messagesPane::-webkit-scrollbar-track{background:#f1f1f1;border-radius:10px}
+  #messagesPane::-webkit-scrollbar-thumb{background:#888;border-radius:10px} #messagesPane::-webkit-scrollbar-thumb:hover{background:#555}
+  @media (max-width: 768px){ .message-content{max-width:85%!important} #messageInput{font-size:16px} }
+</style>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Config JS -->
+<script>
+  window.currentSessionId = "{{ current_session_id or '' }}";
+  window.CHAT_CONFIG = {
+    sendUrl: "{{ url_for('chat.send_message') }}",
+    newSessionUrl: "{{ url_for('chat.new_session') }}",
+    deleteSessionBaseUrl: "{{ url_for('chat.delete_session', session_id='__ID__') }}",
+    getMessagesBaseUrl: "{{ url_for('chat.get_messages', session_id='__ID__') }}"
+  };
+</script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock content %}

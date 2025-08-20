@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Teste{% endblock %}
+
+{% block page_title %}Dashboard Teste{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1>🎯 Dashboard Funcionando!</h1>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Empenhos</h5>
+                    <p class="card-text">{{ total_empenhos | default(0) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Contratos</h5>
+                    <p class="card-text">{{ total_contratos | default(0) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Status</h5>
+                    <p class="card-text">✅ Sistema Funcionando</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}Relatório Financeiro - Relatórios{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/logo-styles.css') }}">
+<style>
+    .financial-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        transition: all 0.3s;
+    }
+    
+    .summary-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        height: 100%;
+    }
+    
+    .summary-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .summary-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .table-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        font-weight: 600;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+</style>
+
+<!-- Chart.js (versão específica sem source map) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='img/logo_guarapuava.svg') }}" 
+                         alt="Logo Guarapuava" 
+                         class="report-logo me-3">
+                    <div>
+                        <h1 class="h2 mb-0 text-gray-800">
+                            <span class="d-print-none"><i class="fas fa-coins text-success"></i> Relatório Financeiro</span>
+                            <span class="d-none d-print-inline">RELATÓRIO FINANCEIRO</span>
+                        </h1>
+                        <p class="text-muted mb-0">Prefeitura Municipal de Guarapuava</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-orange d-print-none">
+                    <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Título específico para impressão -->
+    <div class="print-title">
+        <strong>SISTEMA DE GESTÃO DE EMPENHOS E CONTRATOS</strong><br>
+        <strong>RELATÓRIO FINANCEIRO</strong><br>
+        <small>Prefeitura Municipal de Guarapuava - Data: ___/___/_____</small>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-section">
+        <form method="GET" action="{{ url_for('relatorios.financeiro') }}">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Data Início</label>
+                    <input type="date" class="form-control" name="data_inicio" 
+                           value="{{ filtros.data_inicio }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Data Fim</label>
+                    <input type="date" class="form-control" name="data_fim" 
+                           value="{{ filtros.data_fim }}">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-orange me-2">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                    <a href="{{ url_for('relatorios.financeiro') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Limpar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Resumo Empenhos -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4><i class="fas fa-file-invoice text-orange"></i> Resumo de Empenhos</h4>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="summary-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="summary-value">{{ resumo_empenhos.quantidade }}</div>
+                <div class="summary-label">Total de Empenhos</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="summary-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="summary-value">R$ {{ "{:,.0f}".format(resumo_empenhos.valor_empenhado/1000) }}K</div>
+                <div class="summary-label">Valor Empenhado</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="summary-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="summary-value">R$ {{ "{:,.0f}".format(resumo_empenhos.valor_liquido/1000) }}K</div>
+                <div class="summary-label">Valor Líquido</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="summary-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="summary-value">R$ {{ "{:,.0f}".format(resumo_empenhos.valor_retencao/1000) }}K</div>
+                <div class="summary-label">Valor Retenção</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo Notas Fiscais -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4><i class="fas fa-receipt text-info"></i> Resumo de Notas Fiscais</h4>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="summary-box" style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);">
+                <div class="summary-value">{{ resumo_notas.quantidade_total }}</div>
+                <div class="summary-label">Total Notas</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="summary-box" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <div class="summary-value">{{ resumo_notas.quantidade_pagas }}</div>
+                <div class="summary-label">Notas Pagas</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="summary-box" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                <div class="summary-value">{{ resumo_notas.quantidade_abertas }}</div>
+                <div class="summary-label">Notas Abertas</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="summary-box" style="background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);">
+                <div class="summary-value">R$ {{ "{:,.0f}".format(resumo_notas.valor_pago/1000) }}K</div>
+                <div class="summary-label">Valor Pago</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="summary-box" style="background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%);">
+                <div class="summary-value">R$ {{ "{:,.0f}".format(resumo_notas.valor_aberto/1000) }}K</div>
+                <div class="summary-label">Valor Aberto</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="summary-box" style="background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);">
+                <div class="summary-value">R$ {{ "{:,.0f}".format(resumo_notas.valor_total/1000) }}K</div>
+                <div class="summary-label">Valor Total</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fluxo de Caixa -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="financial-card">
+                <div class="table-header">
+                    <i class="fas fa-chart-line"></i> Previsão de Fluxo de Caixa
+                </div>
+                <div class="card-body">
+                    <canvas id="fluxoCaixaChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="financial-card">
+                <div class="table-header">
+                    <i class="fas fa-chart-bar"></i> Comparativo Anual
+                </div>
+                <div class="card-body">
+                    <canvas id="comparativoChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Fluxo de Caixa -->
+    <div class="row">
+        <div class="col-12">
+            <div class="financial-card">
+                <div class="table-header">
+                    <i class="fas fa-table"></i> Detalhamento do Fluxo de Caixa
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Período</th>
+                                <th>Quantidade de Notas</th>
+                                <th>Valor a Receber</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in fluxo_caixa %}
+                            <tr>
+                                <td><strong>{{ item.periodo }}</strong></td>
+                                <td>{{ item.quantidade }} notas</td>
+                                <td class="text-success">R$ {{ "{:,.2f}".format(item.valor) }}</td>
+                                <td>
+                                    {% if item.valor > 50000 %}
+                                        <span class="badge bg-danger">Alto Volume</span>
+                                    {% elif item.valor > 20000 %}
+                                        <span class="badge bg-warning">Médio Volume</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Baixo Volume</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dados dos gráficos
+const fluxoCaixaData = {{ fluxo_caixa | tojson }};
+const comparativoData = {{ comparativo_anual | tojson }};
+
+// Gráfico de Fluxo de Caixa
+const fluxoCtx = document.getElementById('fluxoCaixaChart').getContext('2d');
+new Chart(fluxoCtx, {
+    type: 'bar',
+    data: {
+        labels: fluxoCaixaData.map(item => item.periodo),
+        datasets: [{
+            label: 'Valor a Receber (R$)',
+            data: fluxoCaixaData.map(item => item.valor),
+            backgroundColor: 'rgba(255, 143, 0, 0.8)',
+            borderColor: 'rgb(255, 143, 0)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'R$ ' + (value/1000).toFixed(0) + 'K';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Gráfico Comparativo Anual
+const comparativoCtx = document.getElementById('comparativoChart').getContext('2d');
+new Chart(comparativoCtx, {
+    type: 'line',
+    data: {
+        labels: comparativoData.map(item => item.ano),
+        datasets: [{
+            label: 'Valor Total (R$)',
+            data: comparativoData.map(item => item.valor),
+            borderColor: 'rgb(102, 126, 234)',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'R$ ' + (value/1000000).toFixed(1) + 'M';
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

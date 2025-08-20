@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}Central de Relatórios - Dashboard Moderno{% endblock %}
+{% block page_title %}Central de Relatórios{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relatorios.css') }}">
+<!-- GridStack CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@8.4.0/dist/gridstack.min.css">
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <div class="content">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h1><i class="bi bi-speedometer2 me-3"></i>Central de Relatórios</h1>
+          <p>Dashboard executivo com widgets personalizáveis e arrastar-e-soltar</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+          <button id="toggle-edit-mode" class="btn btn-outline-light btn-lg me-2">
+            <i class="bi bi-pencil me-1"></i>Editar Dashboard
+          </button>
+          <div class="btn-group">
+            <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+              <i class="bi bi-gear me-1"></i>Opções
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="#" id="export-dashboard-btn">
+                <i class="bi bi-download me-2"></i>Exportar Dashboard
+              </a></li>
+              <li><a class="dropdown-item" href="#" id="reset-layout-btn">
+                <i class="bi bi-arrow-clockwise me-2"></i>Resetar Layout
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('relatorios.filtrado') }}">
+                <i class="bi bi-funnel me-2"></i>Relatório Filtrado
+              </a></li>
+              <li><a class="dropdown-item" href="{{ url_for('relatorios.analytics') }}">
+                <i class="bi bi-graph-up me-2"></i>Analytics Avançado
+              </a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Controls (Hidden by default) -->
+  <div id="edit-controls" class="slide-up">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <h5 class="mb-0"><i class="bi bi-tools me-2"></i>Modo de Edição Ativo</h5>
+        <small>Arraste os widgets para reorganizar, redimensione conforme necessário</small>
+      </div>
+      <div class="col-md-4 text-md-end">
+        <button id="add-widget-btn" class="btn btn-outline-light">
+          <i class="bi bi-plus-circle me-1"></i>Adicionar Widget
+        </button>
+        <button id="save-layout-btn" class="btn btn-light">
+          <i class="bi bi-check-lg me-1"></i>Salvar Layout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Grid -->
+  <div class="grid-stack" id="dashboard-grid">
+    <!-- Widgets serão carregados dinamicamente via JavaScript -->
+  </div>
+
+  <!-- Quick Stats Row (Always visible) -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="dashboard-card">
+        <div class="card-body">
+          <h5 class="card-title mb-4">
+            <i class="bi bi-speedometer me-2 text-primary"></i>Estatísticas Rápidas
+          </h5>
+          <div class="row text-center">
+            <div class="col-md-3 col-6 mb-3">
+              <div class="quick-stat">
+                <div class="stat-icon bg-primary">
+                  <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div class="stat-number">{{ total_empenhos or 0 }}</div>
+                <div class="stat-label">Total Empenhos</div>
+              </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+              <div class="quick-stat">
+                <div class="stat-icon bg-success">
+                  <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div class="stat-number">R$ {{ "%.0f"|format(valor_total_empenhado or 0) }}</div>
+                <div class="stat-label">Valor Empenhado</div>
+              </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+              <div class="quick-stat">
+                <div class="stat-icon bg-warning">
+                  <i class="bi bi-receipt"></i>
+                </div>
+                <div class="stat-number">{{ total_notas or 0 }}</div>
+                <div class="stat-label">Notas Fiscais</div>
+              </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+              <div class="quick-stat">
+                <div class="stat-icon bg-info">
+                  <i class="bi bi-building"></i>
+                </div>
+                <div class="stat-number">{{ total_contratos or 0 }}</div>
+                <div class="stat-label">Contratos</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Specialized Reports Section -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="dashboard-card">
+        <div class="card-body">
+          <h5 class="card-title mb-4">
+            <i class="bi bi-folder-open me-2 text-primary"></i>Relatórios Especializados
+          </h5>
+          <div class="row">
+            <div class="col-lg-3 col-md-6 mb-3">
+              <a href="{{ url_for('relatorios.financeiro') }}" class="report-link">
+                <div class="report-card bg-gradient-primary">
+                  <div class="report-icon">
+                    <i class="bi bi-calculator"></i>
+                  </div>
+                  <div class="report-info">
+                    <h6>Relatório Financeiro</h6>
+                    <p>Análise financeira completa</p>
+                  </div>
+                </div>
+              </a>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+              <a href="{{ url_for('relatorios.operacional') }}" class="report-link">
+                <div class="report-card bg-gradient-success">
+                  <div class="report-icon">
+                    <i class="bi bi-gear"></i>
+                  </div>
+                  <div class="report-info">
+                    <h6>Relatório Operacional</h6>
+                    <p>Métricas de produtividade</p>
+                  </div>
+                </div>
+              </a>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+              <a href="{{ url_for('relatorios.analytics') }}" class="report-link">
+                <div class="report-card bg-gradient-info">
+                  <div class="report-icon">
+                    <i class="bi bi-graph-up"></i>
+                  </div>
+                  <div class="report-info">
+                    <h6>Analytics Avançado</h6>
+                    <p>Análises e tendências</p>
+                  </div>
+                </div>
+              </a>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+              <a href="{{ url_for('relatorios.filtrado') }}" class="report-link">
+                <div class="report-card bg-gradient-warning">
+                  <div class="report-icon">
+                    <i class="bi bi-funnel"></i>
+                  </div>
+                  <div class="report-info">
+                    <h6>Relatório Filtrado</h6>
+                    <p>Consultas personalizadas</p>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Widget Library Modal -->
+<div class="modal fade" id="widget-library-modal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-collection me-2"></i>Biblioteca de Widgets
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-4">Selecione os widgets que deseja adicionar ao seu dashboard:</p>
+        <div id="widget-library-container">
+          <!-- Widgets serão carregados dinamicamente -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Widget Configuration Modal -->
+<div class="modal fade" id="widget-config-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-gear me-2"></i>Configurar Widget
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="widget-config-content">
+          <!-- Configurações específicas do widget -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="save-widget-config">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Quick Stats Styles */
+.quick-stat {
+  text-align: center;
+  padding: 1rem;
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.5rem;
+  color: white;
+}
+
+.stat-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #495057;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Report Cards */
+.report-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  height: 100%;
+}
+
+.report-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.report-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+  transform: rotate(45deg);
+}
+
+.report-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 1rem 2rem rgba(0,0,0,0.2);
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.bg-gradient-success {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+}
+
+.bg-gradient-info {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+}
+
+.bg-gradient-warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+}
+
+.report-icon {
+  font-size: 2.5rem;
+  margin-right: 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.report-info {
+  position: relative;
+  z-index: 2;
+}
+
+.report-info h6 {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.report-info p {
+  margin-bottom: 0;
+  opacity: 0.9;
+  font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .dashboard-header .btn {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .report-card {
+    text-align: center;
+    flex-direction: column;
+  }
+  
+  .report-icon {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- GridStack JS -->
+<script src="https://cdn.jsdelivr.net/npm/gridstack@8.4.0/dist/gridstack-all.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Dashboard Drag-Drop JS -->
+<script src="{{ url_for('static', filename='js/dashboard-drag-drop.js') }}"></script>
+
+<script>
+// Dados do backend para os widgets
+window.dashboardData = {
+  empenhos: {
+    total: {{ total_empenhos or 0 }},
+    ativos: {{ empenhos_ativos or 0 }},
+    valor_total: {{ valor_total_empenhado or 0 }}
+  },
+  notas: {
+    total: {{ total_notas or 0 }},
+    valor_total: {{ valor_notas_pagas or 0 }}
+  },
+  contratos: {
+    total: {{ total_contratos or 0 }},
+    ativos: {{ contratos_ativos or 0 }}
+  },
+  insights: {{ insights|tojson|safe if insights else '[]' }},
+  evolucao_mensal: {{ evolucao_mensal|tojson|safe if evolucao_mensal else '[]' }},
+  empenhos_por_status: {{ empenhos_por_status|tojson|safe if empenhos_por_status else '{}' }},
+  notas_por_status: {{ notas_por_status|tojson|safe if notas_por_status else '{}' }}
+};
+
+// Configurações do dashboard
+window.dashboardConfig = {
+  apiBaseUrl: '/relatorios/api',
+  autoRefreshInterval: 300000, // 5 minutos
+  enableAnimations: true,
+  defaultWidgets: ['kpi-empenhos', 'kpi-financeiro', 'grafico-evolucao', 'alertas-sistema']
+};
+
+// Inicializar tooltips do Bootstrap
+document.addEventListener('DOMContentLoaded', function() {
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+});
+
+// Auto-refresh dos dados (opcional)
+setInterval(function() {
+  if (window.refreshAllWidgets && window.dashboardManager && !window.dashboardManager.isEditMode) {
+    window.refreshAllWidgets();
+  }
+}, window.dashboardConfig.autoRefreshInterval);
+</script>
+{% endblock %}

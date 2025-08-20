@@ -1,263 +1,418 @@
 {% extends "base.html" %}
+{% block title %}Relatórios{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
 
-{% block title %}Dashboard - Relatorios{% endblock %}
+{% block extra_css %}
+<style>
+  /* ---- Paleta utilitária ---- */
+  :root{
+    --orange:#ff8f00;
+    --grad-a:#667eea;
+    --grad-b:#764ba2;
+  }
+
+  /* ---- Cartões KPI (versão leve) ---- */
+  .kpi-card{border-left:4px solid var(--bs-primary);border-radius:.5rem}
+  .kpi-value{font-weight:700;font-size:1.4rem}
+  .kpi-sub{color:#6c757d}
+
+  /* ---- Cartões "executivo" unificados ---- */
+  .dashboard-card{
+    border-radius: 16px;
+    box-shadow: 0 0.15rem 1.75rem rgba(58,59,69,.15);
+    transition: transform .2s ease, box-shadow .2s ease;
+    background: #fff;
+  }
+  .dashboard-card:hover{
+    transform: translateY(-3px);
+    box-shadow: 0 0.25rem 2rem rgba(58,59,69,.25);
+  }
+  .table-header{
+    background: linear-gradient(135deg, var(--grad-a) 0%, var(--grad-b) 100%);
+    color: #fff;
+    padding: 1rem;
+    font-weight: 600;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+  }
+
+  /* ---- Métricas coloridas ---- */
+  .metric-card{
+    color:#fff; border-radius:20px; padding:1.5rem; position:relative; overflow:hidden;
+  }
+  .metric-card .metric-value{font-size:2rem;font-weight:700;margin-bottom:.35rem}
+  .metric-card .metric-label{text-transform:uppercase;letter-spacing:.5px;opacity:.9}
+
+  /* ---- Utilitários ---- */
+  .badge-soft{background:#f8f9fc;border:1px solid #e9ecef;color:#6c757d}
+  .insight-item{display:flex;gap:.6rem;align-items:flex-start;margin-bottom:.5rem}
+  .chart-container{height:360px; position:relative}
+  .table-compact td{padding:.55rem .65rem}
+  .bg-orange{background:var(--orange)!important}
+  .text-orange{color:var(--orange)!important}
+
+  /* ---- Cabeçalho de relatório ---- */
+  .report-logo{height:48px}
+  .logo-container{display:flex;align-items:center;gap:.75rem}
+
+  /* ---- Impressão ---- */
+  @media print{
+    .d-print-none{display:none!important}
+    .print-title{display:block!important; text-align:center; margin:1rem 0}
+  }
+  .print-title{display:none}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <h1 class="h3 mb-4 text-gray-800">
-                <i class="fas fa-chart-bar"></i> Dashboard - Relatorios
-            </h1>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="logo-container">
+      <img src="{{ url_for('static', filename='img/logo_guarapuava.svg') }}" alt="Logo Guarapuava" class="report-logo">
+      <div>
+        <h1 class="h4 mb-0 text-gray-800">
+          <i class="bi bi-speedometer2 me-2 text-orange"></i>Dashboard Executivo
+        </h1>
+        <div class="kpi-sub">
+          Janela: {{ periodo.inicio.strftime('%d/%m/%Y') if periodo and periodo.inicio else '01/01/2024' }} — {{ periodo.fim.strftime('%d/%m/%Y') if periodo and periodo.fim else '31/12/2024' }}
         </div>
+      </div>
     </div>
-
-    <!-- Cards de Resumo -->
-    <div class="row">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Total de Empenhos
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ total_empenhos or 0 }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-file-invoice fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Valor Total Empenhado
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                R$ {{ "%.2f"|format(valor_total_empenhado or 0) }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Valor Total Liquido
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                R$ {{ "%.2f"|format(valor_total_liquido or 0) }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calculator fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Contratos Ativos
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ top_contratos|length if top_contratos else 0 }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-handshake fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="d-flex gap-2 d-print-none">
+      <button class="btn btn-outline-secondary" onclick="atualizarDados()">
+        <i class="bi bi-arrow-repeat me-1"></i>Atualizar
+      </button>
+      <div class="btn-group">
+        <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i> Exportar
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="{{ url_for('relatorios.exportar_excel') if 'relatorios.exportar_excel' in url_for.__globals__ else '#' }}"><i class="bi bi-file-earmark-excel"></i> Excel</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('relatorios.exportar_pdf') if 'relatorios.exportar_pdf' in url_for.__globals__ else '#' }}"><i class="bi bi-file-earmark-pdf"></i> PDF</a></li>
+        </ul>
+      </div>
     </div>
+  </div>
 
-    <!-- Graficos e Tabelas -->
-    <div class="row">
-        <!-- Empenhos por Status -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Empenhos por Status</h6>
-                </div>
-                <div class="card-body">
-                    {% if empenhos_por_status %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Status</th>
-                                    <th>Quantidade</th>
-                                    <th>Valor Total</th>
-                                    <th>Percentual</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for resultado in empenhos_por_status %}
-                                <tr>
-                                    <td>
-                                        <span class="badge badge-{% if resultado.status == 'PAGO' %}success{% elif resultado.status == 'PENDENTE' %}warning{% else %}secondary{% endif %}">
-                                            {{ resultado.status }}
-                                        </span>
-                                    </td>
-                                    <td>{{ resultado.quantidade }}</td>
-                                    <td>R$ {{ "{:,.2f}".format(resultado.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
-                                    <td>{{ "%.1f"|format((resultado.quantidade / total_empenhos * 100) if total_empenhos else 0) }}%</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="text-muted">Nenhum dado disponivel</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+  <!-- Título específico para impressão -->
+  <div class="print-title">
+    <strong>SISTEMA DE GESTÃO DE EMPENHOS E CONTRATOS</strong><br>
+    <strong>RELATÓRIO EXECUTIVO</strong><br>
+    <small>Prefeitura Municipal de Guarapuava — Período: {{ periodo.inicio.strftime('%d/%m/%Y') if periodo and periodo.inicio else '01/01/2024' }} a {{ periodo.fim.strftime('%d/%m/%Y') if periodo and periodo.fim else '31/12/2024' }}</small>
+  </div>
 
-        <!-- Top Contratos -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Top 10 Contratos por Valor</h6>
-                </div>
-                <div class="card-body">
-                    {% if top_contratos %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Contrato</th>
-                                    <th>Valor Total</th>
-                                    <th>Qtd. Empenhos</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for contrato in top_contratos %}
-                                <tr>
-                                    <td>{{ contrato.numero_contrato }}</td>
-                                    <td>R$ {{ "%.2f"|format(contrato.valor_total) }}</td>
-                                    <td>{{ contrato.quantidade }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="text-muted">Nenhum contrato encontrado</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+  <!-- KPIs principais (quatro) -->
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <div class="metric-card" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%)">
+        <div class="metric-value">{{ "{:,.0f}".format(total_empenhos or 0) }}</div>
+        <div class="metric-label">Total Empenhos</div>
+        <i class="bi bi-file-earmark-text position-absolute" style="top:.75rem;right:.75rem;opacity:.25;font-size:1.5rem"></i>
+      </div>
     </div>
-
-    <!-- Empenhos por Mes -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Empenhos por Mes</h6>
-                </div>
-                <div class="card-body">
-                    {% if empenhos_por_mes %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Mes/Ano</th>
-                                    <th>Quantidade</th>
-                                    <th>Valor Total</th>
-                                    <th>Valor Medio</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for mes in empenhos_por_mes %}
-                                <tr>
-                                    <td>{{ mes.mes }}/{{ mes.ano }}</td>
-                                    <td>{{ mes.quantidade }}</td>
-                                    <td>R$ {{ "%.2f"|format(mes.valor_total) }}</td>
-                                    <td>R$ {{ "%.2f"|format(mes.valor_total / mes.quantidade if mes.quantidade else 0) }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="text-muted">Nenhum dado disponivel</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    <div class="col-md-3">
+      <div class="metric-card" style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%)">
+        <div class="metric-value">R$ {{ "{:,.0f}".format((valor_total or 0)/1000) }}K</div>
+        <div class="metric-label">Valor Empenhado</div>
+        <i class="bi bi-cash-stack position-absolute" style="top:.75rem;right:.75rem;opacity:.25;font-size:1.5rem"></i>
+      </div>
     </div>
-
-    <!-- Botoes de Acao -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Acoes</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('relatorios.importar') }}" class="btn btn-success btn-block">
-                                <i class="fas fa-upload"></i> Importar Dados
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('empenhos.index') }}" class="btn btn-primary btn-block">
-                                <i class="fas fa-list"></i> Ver Empenhos
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('empenhos.contratos') }}" class="btn btn-info btn-block">
-                                <i class="fas fa-handshake"></i> Ver Contratos
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <button class="btn btn-secondary btn-block" onclick="window.print()">
-                                <i class="fas fa-print"></i> Imprimir
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="col-md-3">
+      <div class="metric-card" style="background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%)">
+        <div class="metric-value">{{ "{:,.0f}".format(total_notas or 0) }}</div>
+        <div class="metric-label">Notas Fiscais</div>
+        <i class="bi bi-receipt position-absolute" style="top:.75rem;right:.75rem;opacity:.25;font-size:1.5rem"></i>
+      </div>
     </div>
+    <div class="col-md-3">
+      <div class="metric-card" style="background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%)">
+        <div class="metric-value">R$ {{ "{:,.0f}".format((valor_notas_pagas or 0)/1000) }}K</div>
+        <div class="metric-label">Notas Pagas</div>
+        <i class="bi bi-check-circle position-absolute" style="top:.75rem;right:.75rem;opacity:.25;font-size:1.5rem"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Linha: Evolução + Insights/Alertas -->
+  <div class="row g-3 mb-3">
+    <div class="col-lg-8">
+      <div class="dashboard-card h-100">
+        <div class="table-header">
+          <i class="bi bi-graph-up"></i> Evolução Mensal (12 meses)
+          <span class="badge badge-soft ms-2">Empenhos x Notas</span>
+        </div>
+        <div class="p-3">
+          <div class="chart-container">
+            <canvas id="chartEvolucao"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="dashboard-card h-100">
+        <div class="table-header"><i class="bi bi-lightbulb"></i> Insights</div>
+        <div class="p-3">
+          {% if insights and insights|length %}
+            {% for i in insights %}
+              <div class="insight-item"><i class="bi bi-{{ i.icon }}"></i><span>{{ i.texto }}</span></div>
+            {% endfor %}
+          {% else %}
+            <div class="text-muted">Sem insights no momento.</div>
+          {% endif %}
+          <hr>
+          {% if alertas and alertas|length %}
+            {% for a in alertas %}
+              <div class="alert alert-{{ a.tipo }} py-2 mb-2">
+                <strong>{{ a.titulo }}</strong> – {{ a.mensagem }}
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="alert alert-success py-2 mb-0">Tudo em dia ✅</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Linha: Status -->
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6">
+      <div class="dashboard-card h-100">
+        <div class="table-header"><i class="bi bi-ui-checks-grid"></i> Empenhos por Status</div>
+        <div class="p-3">
+          <div class="chart-container" style="height:300px">
+            <canvas id="chartEmpStatus"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="dashboard-card h-100">
+        <div class="table-header"><i class="bi bi-receipt"></i> Notas por Status</div>
+        <div class="p-3">
+          <div class="chart-container" style="height:300px">
+            <canvas id="chartNotasStatus"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Fornecedores (gráfico + tabela) -->
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6">
+      <div class="dashboard-card h-100">
+        <div class="table-header"><i class="bi bi-bar-chart"></i> Top Fornecedores (Gráfico)</div>
+        <div class="p-3">
+          <div class="chart-container" style="height:300px">
+            <canvas id="chartFornecedores"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="dashboard-card h-100">
+        <div class="table-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-people"></i> Top 10 Fornecedores por Valor</span>
+          <span class="badge badge-soft">Top 10</span>
+        </div>
+        <div class="p-0">
+          <div class="table-responsive">
+            <table class="table table-striped table-compact mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Posição</th>
+                  <th>Fornecedor</th>
+                  <th class="text-end">Quantidade</th>
+                  <th class="text-end">Valor Total (R$)</th>
+                  <th style="width:140px">Participação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for f in top_fornecedores %}
+                {% set pos = loop.index %}
+                {% set total = f.valor_total or 0 %}
+                {% set part = (total / (valor_total or 1) * 100) if (valor_total or 0) > 0 else 0 %}
+                <tr>
+                  <td><span class="badge bg-orange">{{ pos }}º</span></td>
+                  <td><strong>{{ f.fornecedores or '—' }}</strong></td>
+                  <td class="text-end">{{ f.quantidade or 0 }}</td>
+                  <td class="text-end">{{ '%.2f'|format(total)|replace('.',',') }}</td>
+                  <td>
+                    <div class="progress" style="height:8px">
+                      <div class="progress-bar bg-orange" style="width: {{ '%.1f'|format(part) }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ '%.1f'|format(part) }}%</small>
+                  </td>
+                </tr>
+                {% endfor %}
+                {% if not top_fornecedores %}
+                <tr><td colspan="5" class="text-center text-muted py-3">Sem dados</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Links rápidos -->
+  <div class="row">
+    <div class="col-lg-3 col-md-6 mb-3">
+      <a href="#" class="text-decoration-none">
+        <div class="dashboard-card text-center p-4">
+          <i class="bi bi-graph-up-arrow fa-3x text-orange mb-3"></i>
+          <h5>Analytics Avançado</h5>
+          <p class="text-muted mb-0">Análises detalhadas e tendências</p>
+        </div>
+      </a>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+      <a href="#" class="text-decoration-none">
+        <div class="dashboard-card text-center p-4">
+          <i class="bi bi-coin fa-3x text-success mb-3"></i>
+          <h5>Relatório Financeiro</h5>
+          <p class="text-muted mb-0">Controle financeiro consolidado</p>
+        </div>
+      </a>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+      <a href="#" class="text-decoration-none">
+        <div class="dashboard-card text-center p-4">
+          <i class="bi bi-gear-wide-connected fa-3x text-info mb-3"></i>
+          <h5>Relatório Operacional</h5>
+          <p class="text-muted mb-0">Produtividade e prazos</p>
+        </div>
+      </a>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+      <a href="#" class="text-decoration-none">
+        <div class="dashboard-card text-center p-4">
+          <i class="bi bi-filter-square fa-3x text-warning mb-3"></i>
+          <h5>Relatório Personalizado</h5>
+          <p class="text-muted mb-0">Filtros avançados</p>
+        </div>
+      </a>
+    </div>
+  </div>
 </div>
+{% endblock %}
 
-<style>
-@media print {
-    .btn, .card-header, .navbar, .sidebar {
-        display: none !important;
-    }
-    .card {
-        border: 1px solid #000 !important;
-        box-shadow: none !important;
-    }
-}
-</style>
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+  // --- Dados vindos do servidor ---
+  const evol = {{ evolucao_mensal|tojson }};
+  const empStatus = {{ empenhos_por_status|tojson }};
+  const notStatus = {{ notas_por_status|tojson }};
+  const topFor = {{ top_fornecedores|tojson }};
+  const valorTotalEmp = Number({{ (valor_total or 0) }});
+
+  // Helpers
+  const fmtBR = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+  const compact = v => new Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(v||0);
+  const el = id => document.getElementById(id);
+
+  // Cores consistentes
+  const palette = {
+    primary: 'rgb(102, 126, 234)',
+    primaryFill: 'rgba(102, 126, 234, 0.12)',
+    accent: 'rgb(255, 143, 0)',
+    accentFill: 'rgba(255, 143, 0, 0.12)',
+    success: 'rgb(40,167,69)',
+    warning: 'rgb(255,193,7)',
+    danger: 'rgb(220,53,69)',
+    muted: 'rgb(108,117,125)',
+    info: 'rgb(23,162,184)'
+  };
+
+  // Evolução mensal
+  if (el('chartEvolucao')) {
+    new Chart(el('chartEvolucao'), {
+      type: 'line',
+      data: {
+        labels: evol.map(e => e.mes),
+        datasets: [
+          { label:'Empenhado', data: evol.map(e => e.empenhos_valor), borderColor:palette.accent, backgroundColor:palette.accentFill, tension:.35, fill:true },
+          { label:'Notas',     data: evol.map(e => e.notas_valor),    borderColor:palette.primary, backgroundColor:palette.primaryFill, tension:.35, fill:true }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{ position:'bottom' },
+          tooltip:{ callbacks:{ label:c => `${c.dataset.label}: ${fmtBR(c.parsed.y)}` } }
+        },
+        scales:{
+          y:{ beginAtZero:true, ticks:{ callback:v => compact(v) } }
+        }
+      }
+    });
+  }
+
+  // Empenhos por status (barras por quantidade)
+  if (el('chartEmpStatus')) {
+    new Chart(el('chartEmpStatus'), {
+      type: 'bar',
+      data: {
+        labels: empStatus.map(x => x.status || '—'),
+        datasets:[{ label:'Quantidade', data: empStatus.map(x => x.quantidade), backgroundColor: palette.accent }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } }
+      }
+    });
+  }
+
+  // Notas por status (rosca por valor total OU quantidade, conforme seu contexto)
+  if (el('chartNotasStatus')) {
+    const notasValues = (notStatus[0]?.valor_total !== undefined)
+      ? notStatus.map(x => x.valor_total)
+      : notStatus.map(x => x.quantidade);
+
+    new Chart(el('chartNotasStatus'), {
+      type: 'doughnut',
+      data: {
+        labels: notStatus.map(x => x.status || '—'),
+        datasets: [{ data: notasValues, backgroundColor: [palette.success, palette.warning, palette.danger, palette.muted, palette.info] }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        cutout:'55%',
+        plugins:{
+          legend:{ position:'bottom' },
+          tooltip:{ callbacks:{ label:c => `${c.label}: ${fmtBR(c.parsed)}` } }
+        }
+      }
+    });
+  }
+
+  // Top fornecedores (barras por valor)
+  if (el('chartFornecedores')) {
+    new Chart(el('chartFornecedores'), {
+      type: 'bar',
+      data: {
+        labels: topFor.slice(0,5).map(i => (i.fornecedores||'N/A').slice(0,20) + ((i.fornecedores||'').length>20?'…':'')),
+        datasets: [{ label:'Valor (R$)', data: topFor.slice(0,5).map(i => i.valor_total||0), backgroundColor: palette.accent }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c => `${c.dataset.label}: ${fmtBR(c.parsed.y)}` } } },
+        scales:{ y:{ beginAtZero:true, ticks:{ callback:v => 'R$ ' + (v/1000).toFixed(0) + 'K' } } }
+      }
+    });
+  }
+
+  // Atualização
+  window.atualizarDados = () => location.reload();
+  setInterval(window.atualizarDados, 300000); // 5 min
+})();
+</script>
 {% endblock %}

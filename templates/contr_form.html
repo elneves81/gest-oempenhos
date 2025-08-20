@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if c else 'Novo' }} Contrato{% endblock %}
+{% block page_title %}{{ 'Editar' if c else 'Novo' }} Contrato{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<style>
+.select2-container--bootstrap-5 .select2-selection {
+    min-height: calc(2.25rem + 2px);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="card">
+  <div class="card-body row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Número do Contrato *</label>
+      <input name="numero" class="form-control" required value="{{ c.numero if c else '' }}">
+    </div>
+    <div class="col-md-8">
+      <label class="form-label">Fornecedor *</label>
+      <input name="fornecedor" class="form-control" required value="{{ c.fornecedor if c else '' }}">
+    </div>
+    
+    <div class="col-12">
+      <label class="form-label">Objeto do Contrato</label>
+      <textarea name="objeto" class="form-control" rows="3">{{ c.objeto if c else '' }}</textarea>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Valor Inicial *</label>
+      <div class="input-group">
+        <span class="input-group-text">R$</span>
+        <input type="number" step="0.01" name="valor_inicial" class="form-control" required 
+               value="{{ c.valor_inicial if c else '' }}">
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <label class="form-label">Aditivos (total)</label>
+      <div class="input-group">
+        <span class="input-group-text">R$</span>
+        <input type="number" step="0.01" name="aditivos_total" class="form-control" 
+               value="{{ c.aditivos_total if c else '0' }}">
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <label class="form-label">Data Início</label>
+      <input type="date" name="data_inicio" class="form-control" 
+             value="{{ c.data_inicio if c and c.data_inicio }}">
+    </div>
+    
+    <div class="col-md-3">
+      <label class="form-label">Data Fim</label>
+      <input type="date" name="data_fim" class="form-control" 
+             value="{{ c.data_fim if c and c.data_fim }}">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Orçamento Principal (opcional)</label>
+      <select id="orcamento" name="orcamento_id" class="form-select">
+        {% if c and c.orcamento_id %}
+        <option value="{{ c.orcamento_id }}" selected>Selecionado</option>
+        {% endif %}
+      </select>
+      <div class="form-text">Use para sugerir a linha ao empenhar.</div>
+    </div>
+    
+    <div class="col-md-3">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-select">
+        {% for s in ['VIGENTE','ENCERRADO','RESCINDIDO'] %}
+        <option value="{{s}}" {{ 'selected' if c and c.status==s else '' }}>{{s}}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if c %}
+    <div class="col-md-3">
+      <label class="form-label">Valor Atualizado</label>
+      <div class="input-group">
+        <span class="input-group-text">R$</span>
+        <input type="text" class="form-control" readonly 
+               value="{{ '{:,.2f}'.format(c.valor_atualizado or 0).replace(',', 'X').replace('.', ',').replace('X','.') }}">
+      </div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="alert alert-info mb-0">
+        <strong>Saldo disponível:</strong> 
+        R$ {{ '{:,.2f}'.format(c.saldo_contrato).replace(',', 'X').replace('.', ',').replace('X','.') }}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="col-12 text-end">
+      <a href="{{ url_for('ui_contr.contr_list') }}" class="btn btn-outline-secondary">Cancelar</a>
+      <button class="btn btn-primary">
+        <i class="bi bi-save me-1"></i>Salvar
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.full.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('#orcamento').select2({
+    theme: 'bootstrap-5',
+    placeholder: 'Buscar orçamento…',
+    allowClear: true,
+    ajax: {
+      delay: 300,
+      transport: function(params, success, failure) {
+        const q = params.data.term || '';
+        return $.getJSON(`/api/orcamentos/search?q=${encodeURIComponent(q)}`)
+          .then(success)
+          .catch(failure);
+      },
+      processResults: function(data) {
+        return data;
+      }
+    },
+    width: '100%',
+    minimumInputLength: 0
+  });
+});
+</script>
+{% endblock %}

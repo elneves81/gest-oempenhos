@@ -1,0 +1,172 @@
+/* Estilos para Logo - Sistema de Empenhos Guarapuava */
+
+.report-logo {
+    max-width: 100%;
+    height: auto;
+    transition: all 0.3s ease;
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.1));
+}
+
+.report-logo:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.2));
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.municipality-info {
+    color: #2C5530;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.report-header {
+    border-bottom: 3px solid #2C5530;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+.report-header .logo-container img {
+    width: 50px;
+    height: 50px;
+}
+
+/* Estilos específicos para impressão */
+@media print {
+    .report-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: white !important;
+        border-bottom: 3px solid #2C5530 !important;
+        padding: 15px 20px !important;
+        z-index: 1000;
+        page-break-inside: avoid;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+    
+    .report-header .logo-container {
+        justify-content: center;
+        text-align: center;
+        gap: 1rem;
+        flex-direction: row !important;
+        align-items: center !important;
+    }
+    
+    .report-header .logo-container img {
+        width: 50px !important;
+        height: 50px !important;
+        margin-right: 15px !important;
+    }
+    
+    .report-header h1 {
+        font-size: 20px !important;
+        margin: 0 !important;
+        color: #2C5530 !important;
+        font-weight: bold !important;
+        text-transform: uppercase;
+    }
+    
+    .report-header .municipality-info {
+        font-size: 14px !important;
+        color: #2C5530 !important;
+        margin: 5px 0 0 0 !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Ocultar elementos não necessários na impressão */
+    .btn, .dropdown, .navbar, .sidebar, .alert, 
+    .filter-section, .btn-group, .pagination {
+        display: none !important;
+    }
+    
+    /* Ajustar margens do conteúdo para não sobrepor o header */
+    .container-fluid, .main-content {
+        margin-top: 80px !important;
+        padding-top: 20px !important;
+    }
+    
+    /* Estilo para título do relatório na impressão */
+    .print-title {
+        display: block !important;
+        text-align: center;
+        font-size: 18px !important;
+        font-weight: bold !important;
+        color: #2C5530 !important;
+        margin: 90px 0 30px 0 !important;
+        page-break-after: avoid;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 2px solid #2C5530;
+        padding-bottom: 10px;
+    }
+    
+    .print-title small {
+        font-size: 12px !important;
+        color: #666 !important;
+        text-transform: none;
+        letter-spacing: normal;
+        display: block;
+        margin-top: 5px;
+    }
+    
+    /* Ocultar título padrão na impressão */
+    .report-header h1 i {
+        display: none !important;
+    }
+}
+
+/* Estilos para tela (não impressão) */
+@media screen {
+    .print-title {
+        display: none !important;
+    }
+}
+
+/* Header with logo styling */
+.report-header {
+    border-bottom: 3px solid #ff6b35;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.municipality-info {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Responsive logo sizing */
+@media (max-width: 768px) {
+    .report-logo {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    .logo-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .report-logo {
+        filter: none;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+}

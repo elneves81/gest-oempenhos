@@ -1,0 +1,61 @@
+{% macro render_report_footer() %}
+<div class="report-footer mt-5 pt-3 border-top" style="page-break-inside: avoid;">
+    <div class="row align-items-center">
+        <div class="col-md-3 text-center">
+            <img src="{{ url_for('static', filename='img/logo_guarapuava.svg') }}" 
+                 alt="Logo Guarapuava" 
+                 class="report-logo"
+                 style="width: 50px; height: 50px;">
+        </div>
+        <div class="col-md-6 text-center">
+            <h6 class="mb-1">Prefeitura Municipal de Guarapuava</h6>
+            <p class="text-muted mb-0 small">Sistema de Gestão de Empenhos e Contratos</p>
+            <p class="text-muted mb-0 small">Relatório gerado em <span id="report-time"></span></p>
+            <script>
+                document.getElementById('report-time').textContent = new Date().toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).replace(',', ' às');
+            </script>
+        </div>
+        <div class="col-md-3 text-center">
+            <div class="text-muted small">
+                <div>Estado do Paraná</div>
+                <div>Fundado em 1852</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print styles for footer -->
+<style>
+@media print {
+    .report-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 2px solid #2C5530;
+        padding: 10px 20px;
+    }
+    
+    .report-footer .report-logo {
+        width: 30px !important;
+        height: 30px !important;
+    }
+    
+    .report-footer h6 {
+        font-size: 12px;
+        margin-bottom: 2px;
+    }
+    
+    .report-footer .small {
+        font-size: 8px;
+    }
+}
+</style>
+{% endmacro %}

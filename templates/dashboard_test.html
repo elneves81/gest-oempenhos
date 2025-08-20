@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Simples - Sistema de Empenhos{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1>Dashboard Funcionando!</h1>
+    <p>Este é um teste simples para verificar se o dashboard carrega.</p>
+    
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h4>Empenhos</h4>
+                    <h2>{{ total_empenhos if total_empenhos is defined else 0 }}</h2>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h4>Contratos</h4>
+                    <h2>{{ total_contratos if total_contratos is defined else 0 }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <h3>Links de Navegação</h3>
+        <a href="{{ url_for('empenhos.index') }}" class="btn btn-primary">Empenhos</a>
+        <a href="{{ url_for('contratos.index') }}" class="btn btn-success">Contratos</a>
+    </div>
+</div>
+{% endblock %}

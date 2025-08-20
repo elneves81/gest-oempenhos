@@ -1,0 +1,611 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão de Contratos{% endblock %}
+{% block page_title %}Contratos{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Botões de ação */
+.btn-action { min-width: 40px; border-radius: 6px; transition: all 0.2s ease; }
+.btn-action:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+
+/* Dropdown de ações */
+.dropdown-menu { border: 1px solid #e3e6f0; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,.15); border-radius: .35rem; }
+.dropdown-item { padding: .5rem 1rem; transition: all .2s ease; }
+.dropdown-item:hover { background-color: #f8f9fc; transform: translateX(3px); }
+.dropdown-item.text-danger:hover { background-color: #f8d7da; color: #721c24 !important; }
+
+/* Tabela */
+.table th { border-top: none; background-color: #f8f9fc; font-weight: 600; color: #5a5c69; font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
+.table td { vertical-align: middle; padding: 1rem .75rem; }
+
+/* Badge status */
+.badge { font-size: .75rem; padding: .35rem .65rem; border-radius: .25rem; }
+
+/* Truncar texto longo do objeto */
+.text-truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 320px; }
+
+/* Cards de estatísticas */
+.card { transition: all 0.2s ease; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15); }
+
+/* Filtros */
+.filter-container { background: #f8f9fc; border-radius: 0.375rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+
+/* Modal de anotações */
+.modal-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.modal-body { max-height: 60vh; overflow-y: auto; }
+.anotacao-item { border-left: 3px solid #667eea; background: #f8f9fc; padding: 1rem; margin-bottom: 0.5rem; border-radius: 0.25rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 text-gray-800"><i class="bi bi-file-earmark-text me-2" aria-hidden="true"></i>Gestão de Contratos</h1>
+    <p class="text-muted mb-0">Gerencie todos os contratos da instituição</p>
+  </div>
+  <div>
+    <a href="{{ url_for('contratos.novo') }}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1" aria-hidden="true"></i> Novo Contrato
+    </a>
+  </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+  <div class="col-lg-3 col-md-6 mb-4">
+    <div class="card border-left-primary shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Contratos</div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalContratos">{{ contratos|length }}</div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-file-contract fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-md-6 mb-4">
+    <div class="card border-left-success shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Contratos Ativos</div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800" id="contratosAtivos">0</div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-md-6 mb-4">
+    <div class="card border-left-warning shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Vencendo em 30 dias</div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800" id="contratosVencendo">0</div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-md-6 mb-4">
+    <div class="card border-left-info shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Valor Total Ativo</div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800" id="valorTotalAtivo">R$ 0,00</div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtros -->
+<div class="filter-container">
+  <div class="row">
+    <div class="col-md-3">
+      <label for="filtroEmpresa" class="form-label">Filtrar por Empresa</label>
+      <input type="text" class="form-control" id="filtroEmpresa" placeholder="Digite o nome da empresa...">
+    </div>
+    <div class="col-md-3">
+      <label for="filtroStatus" class="form-label">Filtrar por Status</label>
+      <select class="form-select" id="filtroStatus">
+        <option value="">Todos os status</option>
+        <option value="ativo">Ativo</option>
+        <option value="encerrado">Encerrado</option>
+        <option value="suspenso">Suspenso</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label for="dataInicio" class="form-label">Data Início</label>
+      <input type="date" class="form-control" id="dataInicio">
+    </div>
+    <div class="col-md-2">
+      <label for="dataFim" class="form-label">Data Fim</label>
+      <input type="date" class="form-control" id="dataFim">
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button type="button" class="btn btn-secondary w-100" id="limparFiltros">
+        <i class="bi bi-x-circle me-1"></i> Limpar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Tabela de Contratos -->
+<div class="card shadow mb-4">
+  <div class="card-header py-3">
+    <h6 class="m-0 font-weight-bold text-primary">Lista de Contratos</h6>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Empresa</th>
+            <th>Objeto</th>
+            <th>Valor</th>
+            <th>Data Início</th>
+            <th>Data Fim</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for contrato in contratos %}
+          <tr data-id="{{ contrato.id }}">
+            <td>{{ contrato.numero_contrato }}</td>
+            <td data-empresa="{{ contrato.empresa|lower }}">{{ contrato.empresa }}</td>
+            <td class="text-truncate-2">{{ contrato.objeto }}</td>
+            <td>R$ {{ "{:,.2f}".format(contrato.valor or 0).replace(',', ';').replace('.', ',').replace(';', '.') }}</td>
+            <td data-data="{{ contrato.data_inicio.strftime('%Y-%m-%d') if contrato.data_inicio else '' }}">
+              {{ contrato.data_inicio.strftime('%d/%m/%Y') if contrato.data_inicio else '-' }}
+            </td>
+            <td data-data="{{ contrato.data_fim.strftime('%Y-%m-%d') if contrato.data_fim else '' }}">
+              {{ contrato.data_fim.strftime('%d/%m/%Y') if contrato.data_fim else '-' }}
+            </td>
+            <td>
+              <span class="badge 
+                {% if contrato.status == 'ativo' %}bg-success
+                {% elif contrato.status == 'encerrado' %}bg-secondary
+                {% elif contrato.status == 'suspenso' %}bg-warning
+                {% else %}bg-info{% endif %}" 
+                data-status="{{ contrato.status }}">
+                {{ contrato.status.title() }}
+              </span>
+            </td>
+            <td>
+              <div class="btn-group" role="group" aria-label="Ações do contrato">
+                <button class="btn btn-sm btn-outline-info btn-action" 
+                        type="button" 
+                        onclick="abrirModalAnotacoes({{ contrato.id }}, '{{ contrato.numero_contrato|e }}')"
+                        title="Anotações" 
+                        aria-label="Abrir anotações do contrato {{ contrato.numero_contrato }}">
+                  <i class="bi bi-journal-text"></i>
+                </button>
+                <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" 
+                   class="btn btn-sm btn-outline-primary btn-action" 
+                   title="Detalhes" 
+                   aria-label="Ver detalhes do contrato {{ contrato.numero_contrato }}">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <button class="btn btn-sm btn-outline-success btn-action" 
+                        type="button" 
+                        onclick="gerarRelatorioContrato({{ contrato.id }})"
+                        title="Relatório" 
+                        aria-label="Gerar relatório do contrato {{ contrato.numero_contrato }}">
+                  <i class="bi bi-file-pdf"></i>
+                </button>
+                <a href="{{ url_for('contratos_wtf.editar', id=contrato.id) }}" 
+                   class="btn btn-sm btn-outline-warning btn-action" 
+                   title="Editar" 
+                   aria-label="Editar contrato {{ contrato.numero_contrato }}">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <button class="btn btn-sm btn-outline-danger btn-action" 
+                        type="button" 
+                        onclick="confirmarExclusao('{{ url_for('contratos.excluir', id=contrato.id) }}')"
+                        title="Excluir" 
+                        aria-label="Excluir contrato {{ contrato.numero_contrato }}">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Anotações -->
+<div class="modal fade" id="modalAnotacoes" tabindex="-1" aria-labelledby="modalAnotacoesLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalAnotacoesLabel">
+          <i class="bi bi-journal-text me-2"></i>Anotações do Contrato
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div id="loadingAnotacoes" class="text-center py-3">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Carregando...</span>
+          </div>
+          <p class="mt-2">Carregando anotações...</p>
+        </div>
+        <div id="conteudoAnotacoes" style="display: none;">
+          <div id="listaAnotacoes"></div>
+          <hr>
+          <form id="formNovaAnotacao">
+            <div class="mb-3">
+              <label for="textoAnotacao" class="form-label">Nova Anotação</label>
+              <textarea class="form-control" id="textoAnotacao" rows="3" placeholder="Digite sua anotação aqui..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-1"></i>Adicionar Anotação
+            </button>
+          </form>
+        </div>
+        <div id="erroAnotacoes" style="display: none;" class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <span id="mensagemErro">Erro ao carregar anotações.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Variáveis globais para o modal de anotações
+let contratoAtualId = null;
+let modalAnotacoesBootstrap = null;
+
+// Inicializar modal Bootstrap quando DOM estiver pronto
+document.addEventListener('DOMContentLoaded', function() {
+  const modalElement = document.getElementById('modalAnotacoes');
+  if (modalElement) {
+    modalAnotacoesBootstrap = new bootstrap.Modal(modalElement);
+  }
+  
+  // Configurar form de nova anotação
+  const formNovaAnotacao = document.getElementById('formNovaAnotacao');
+  if (formNovaAnotacao) {
+    formNovaAnotacao.addEventListener('submit', function(e) {
+      e.preventDefault();
+      adicionarAnotacao();
+    });
+  }
+  
+  // Calcular estatísticas
+  calcularEstatisticas();
+});
+
+// Função para abrir modal de anotações
+function abrirModalAnotacoes(contratoId, numeroContrato) {
+  contratoAtualId = contratoId;
+  
+  // Atualizar título do modal
+  const titulo = document.getElementById('modalAnotacoesLabel');
+  if (titulo) {
+    titulo.innerHTML = `<i class="bi bi-journal-text me-2"></i>Anotações do Contrato ${numeroContrato}`;
+  }
+  
+  // Mostrar modal
+  if (modalAnotacoesBootstrap) {
+    modalAnotacoesBootstrap.show();
+  }
+  
+  // Carregar anotações
+  carregarAnotacoes(contratoId);
+}
+
+// Função para carregar anotações via AJAX
+function carregarAnotacoes(contratoId) {
+  const loading = document.getElementById('loadingAnotacoes');
+  const conteudo = document.getElementById('conteudoAnotacoes');
+  const erro = document.getElementById('erroAnotacoes');
+  
+  // Mostrar loading
+  if (loading) loading.style.display = 'block';
+  if (conteudo) conteudo.style.display = 'none';
+  if (erro) erro.style.display = 'none';
+  
+  // Fazer requisição AJAX
+  fetch(`/contratos/${contratoId}/anotacoes`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'same-origin'
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (loading) loading.style.display = 'none';
+    if (conteudo) conteudo.style.display = 'block';
+    
+    mostrarAnotacoes(data.anotacoes || []);
+  })
+  .catch(error => {
+    console.error('Erro ao carregar anotações:', error);
+    
+    if (loading) loading.style.display = 'none';
+    if (erro) {
+      erro.style.display = 'block';
+      const mensagem = document.getElementById('mensagemErro');
+      if (mensagem) {
+        mensagem.textContent = `Erro ao carregar anotações: ${error.message}`;
+      }
+    }
+  });
+}
+
+// Função para mostrar anotações na interface
+function mostrarAnotacoes(anotacoes) {
+  const lista = document.getElementById('listaAnotacoes');
+  if (!lista) return;
+  
+  if (anotacoes.length === 0) {
+    lista.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Nenhuma anotação encontrada para este contrato.</div>';
+    return;
+  }
+  
+  lista.innerHTML = anotacoes.map(anotacao => `
+    <div class="anotacao-item">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+          <p class="mb-1">${anotacao.texto}</p>
+          <small class="text-muted">
+            <i class="bi bi-person me-1"></i>${anotacao.usuario_nome || 'Usuário'} - 
+            <i class="bi bi-calendar me-1"></i>${new Date(anotacao.data_criacao).toLocaleDateString('pt-BR')}
+          </small>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" onclick="excluirAnotacao(${anotacao.id})" title="Excluir anotação">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Função para adicionar nova anotação
+function adicionarAnotacao() {
+  const textarea = document.getElementById('textoAnotacao');
+  if (!textarea || !contratoAtualId) return;
+  
+  const texto = textarea.value.trim();
+  if (!texto) {
+    alert('Por favor, digite uma anotação.');
+    return;
+  }
+  
+  // Desabilitar botão durante requisição
+  const btnSubmit = document.querySelector('#formNovaAnotacao button[type="submit"]');
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="bi bi-hourglass me-1"></i>Salvando...';
+  }
+  
+  fetch(`/contratos/${contratoAtualId}/anotacoes`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify({ texto: texto })
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.success) {
+      textarea.value = '';
+      carregarAnotacoes(contratoAtualId);
+    } else {
+      throw new Error(data.message || 'Erro ao salvar anotação');
+    }
+  })
+  .catch(error => {
+    console.error('Erro ao adicionar anotação:', error);
+    alert(`Erro ao adicionar anotação: ${error.message}`);
+  })
+  .finally(() => {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Adicionar Anotação';
+    }
+  });
+}
+
+// Função para excluir anotação
+function excluirAnotacao(anotacaoId) {
+  if (!confirm('Tem certeza que deseja excluir esta anotação?')) return;
+  
+  fetch(`/contratos/anotacoes/${anotacaoId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'same-origin'
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.success) {
+      carregarAnotacoes(contratoAtualId);
+    } else {
+      throw new Error(data.message || 'Erro ao excluir anotação');
+    }
+  })
+  .catch(error => {
+    console.error('Erro ao excluir anotação:', error);
+    alert(`Erro ao excluir anotação: ${error.message}`);
+  });
+}
+
+// Função para confirmar exclusão de contrato
+function confirmarExclusao(url) {
+  if (confirm('Tem certeza que deseja excluir este contrato? Esta ação não pode ser desfeita.')) {
+    window.location.href = url;
+  }
+}
+
+// Função para gerar relatório do contrato
+function gerarRelatorioContrato(contratoId) {
+  window.open(`/contratos/${contratoId}/relatorio`, '_blank');
+}
+
+// Função para calcular estatísticas
+function calcularEstatisticas() {
+  const rows = document.querySelectorAll('#dataTable tbody tr');
+  let totalAtivos = 0;
+  let valorTotalAtivo = 0;
+  let contratosVencendo = 0;
+  
+  const hoje = new Date();
+  const em30Dias = new Date();
+  em30Dias.setDate(hoje.getDate() + 30);
+  
+  rows.forEach(row => {
+    const statusBadge = row.querySelector('[data-status]');
+    const valorCell = row.cells[3];
+    const dataFimCell = row.querySelector('[data-data]');
+    
+    if (statusBadge && statusBadge.dataset.status === 'ativo') {
+      totalAtivos++;
+      
+      // Somar valor
+      if (valorCell) {
+        const valorTexto = valorCell.textContent.replace(/[^\d,]/g, '').replace(',', '.');
+        const valor = parseFloat(valorTexto) || 0;
+        valorTotalAtivo += valor;
+      }
+      
+      // Verificar se vence em 30 dias
+      if (dataFimCell && dataFimCell.dataset.data) {
+        const dataFim = new Date(dataFimCell.dataset.data);
+        if (dataFim >= hoje && dataFim <= em30Dias) {
+          contratosVencendo++;
+        }
+      }
+    }
+  });
+  
+  // Atualizar interface
+  const totalAtivosEl = document.getElementById('contratosAtivos');
+  if (totalAtivosEl) totalAtivosEl.textContent = totalAtivos;
+  
+  const valorTotalEl = document.getElementById('valorTotalAtivo');
+  if (valorTotalEl) {
+    valorTotalEl.textContent = 'R$ ' + valorTotalAtivo.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+  
+  const vencendoEl = document.getElementById('contratosVencendo');
+  if (vencendoEl) vencendoEl.textContent = contratosVencendo;
+}
+
+// Sistema de filtros com debounce
+(function() {
+  const empresaInput = document.getElementById('filtroEmpresa');
+  const statusSel = document.getElementById('filtroStatus');
+  const dtIni = document.getElementById('dataInicio');
+  const dtFim = document.getElementById('dataFim');
+  const btnLimpar = document.getElementById('limparFiltros');
+  
+  // Função debounce para otimizar performance
+  function debounce(func, delay = 300) {
+    let timeoutId;
+    return function (...args) {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func.apply(this, args), delay);
+    };
+  }
+  
+  function aplicaFiltros() {
+    const rows = document.querySelectorAll('#dataTable tbody tr');
+    const emp = empresaInput?.value.toLowerCase() || '';
+    const st = statusSel?.value || '';
+    const di = dtIni?.value ? new Date(dtIni.value) : null;
+    const df = dtFim?.value ? new Date(dtFim.value) : null;
+    
+    rows.forEach(tr => {
+      const cols = tr.cells;
+      const tdEmpresa = cols[1];
+      const tdStatus = tr.querySelector('[data-status]');
+      const tdIni = cols[4];
+      const tdFim = cols[5];
+      
+      const matchEmpresa = emp === '' || (tdEmpresa?.dataset.empresa || '').includes(emp);
+      const matchStatus = st === '' || (tdStatus?.dataset.status || '') === st;
+      
+      const vIni = tdIni?.dataset.data ? new Date(tdIni.dataset.data) : null;
+      const vFim = tdFim?.dataset.data ? new Date(tdFim.dataset.data) : null;
+      
+      let matchPeriodo = true;
+      if (di && vIni) matchPeriodo = vIni >= di;
+      if (matchPeriodo && df && vFim) matchPeriodo = vFim <= df;
+      
+      tr.style.display = (matchEmpresa && matchStatus && matchPeriodo) ? '' : 'none';
+    });
+    
+    // Recalcular estatísticas após filtro
+    calcularEstatisticas();
+  }
+  
+  // Event listeners
+  empresaInput?.addEventListener('input', debounce(aplicaFiltros));
+  statusSel?.addEventListener('change', aplicaFiltros);
+  dtIni?.addEventListener('change', aplicaFiltros);
+  dtFim?.addEventListener('change', aplicaFiltros);
+  
+  btnLimpar?.addEventListener('click', () => {
+    if (empresaInput) empresaInput.value = '';
+    if (statusSel) statusSel.value = '';
+    if (dtIni) dtIni.value = '';
+    if (dtFim) dtFim.value = '';
+    aplicaFiltros();
+  });
+  
+  aplicaFiltros();
+})();
+</script>
+{% endblock %}

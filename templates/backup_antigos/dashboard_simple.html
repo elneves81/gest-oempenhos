@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>
+        Novo Empenho
+    </a>
+    <a href="{{ url_for('contratos.novo') }}" class="btn btn-success">
+        <i class="bi bi-file-plus me-1"></i>
+        Novo Contrato
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Estatísticas Principais -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-file-earmark-text mb-2" style="font-size: 2rem;"></i>
+                <h3>{{ total_empenhos or 0 }}</h3>
+                <p>Total de Empenhos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-file-earmark-ruled mb-2" style="font-size: 2rem;"></i>
+                <h3>{{ total_contratos or 0 }}</h3>
+                <p>Total de Contratos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle mb-2" style="font-size: 2rem;"></i>
+                <h3>{{ contratos_ativos or 0 }}</h3>
+                <p>Contratos Ativos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-currency-dollar mb-2" style="font-size: 2rem;"></i>
+                <h3>{{ "R$ {:,.2f"|format(valor_total or 0) }}</h3>
+                <p>Valor Total</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção de Contratos por Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    Status dos Contratos
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if contratos_criticos or contratos_atencao or contratos_ok %}
+                <div class="row">
+                    <!-- Contratos Críticos -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card contract-card critical">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="text-danger">Críticos (≤ 30 dias)</h6>
+                                        <h4 class="text-danger">{{ (contratos_criticos|length) if contratos_criticos else 0 }}</h4>
+                                    </div>
+                                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contratos Atenção -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card contract-card attention">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="text-warning">Atenção (31-60 dias)</h6>
+                                        <h4 class="text-warning">{{ (contratos_atencao|length) if contratos_atencao else 0 }}</h4>
+                                    </div>
+                                    <i class="bi bi-exclamation-circle text-warning" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contratos OK -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card contract-card ok">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="text-success">OK (> 60 dias)</h6>
+                                        <h4 class="text-success">{{ (contratos_ok|length) if contratos_ok else 0 }}</h4>
+                                    </div>
+                                    <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-info-circle text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-2">Nenhum contrato encontrado</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contratos que Precisam de Atenção -->
+{% if contratos_criticos %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Contratos Críticos - Ação Imediata Necessária
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Contrato</th>
+                                <th>Fornecedor</th>
+                                <th>Data Final</th>
+                                <th>Dias Restantes</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contrato in contratos_criticos %}
+                            <tr>
+                                <td><strong>{{ contrato.numero_contrato }}</strong></td>
+                                <td>{{ contrato.fornecedor }}</td>
+                                <td>{{ contrato.data_fim.strftime('%d/%m/%Y') if contrato.data_fim else 'N/A' }}</td>
+                                <td>
+                                    <span class="badge badge-critical">
+                                        {{ contrato.dias_restantes }} dias
+                                    </span>
+                                </td>
+                                <td>{{ "R$ {:,.2f"|format(contrato.valor_total) }}</td>
+                                <td>
+                                    <span class="badge bg-success">{{ contrato.status }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('contratos.visualizar', id=contrato.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('contratos.editar', id=contrato.id) }}" class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Ações Rápidas -->
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning me-2"></i>
+                    Ações Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Criar Novo Empenho
+                    </a>
+                    <a href="{{ url_for('contratos.novo') }}" class="btn btn-success">
+                        <i class="bi bi-file-plus me-2"></i>
+                        Criar Novo Contrato
+                    </a>
+                    <a href="{{ url_for('relatorios.index') }}" class="btn btn-info">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Ver Relatórios
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Usuário:</strong> {{ current_user.nome }}</p>
+                <p><strong>Perfil:</strong> {{ 'Administrador' if current_user.is_admin else 'Usuário' }}</p>
+                <p><strong>Último acesso:</strong> {{ moment().format('DD/MM/YYYY HH:mm') }}</p>
+                <div class="mt-3">
+                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-person-circle me-1"></i>
+                        Editar Perfil
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+                        <h5>Status do Sistema</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Servidor
+                                <span class="badge bg-success rounded-pill">Online</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Base de Dados
+                                <span class="badge bg-success rounded-pill">Conectada</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Templates
+                                <span class="badge bg-success rounded-pill">Carregados</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>Links Rápidos</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <a href="/empenhos/" class="btn btn-primary w-100">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                    Empenhos
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <a href="/contratos/" class="btn btn-info w-100">
+                                    <i class="fas fa-handshake"></i>
+                                    Contratos
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <a href="/relatorios/" class="btn btn-success w-100">
+                                    <i class="fas fa-chart-bar"></i>
+                                    Relatórios
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Empenhos{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Cards de Estatísticas - estilo original -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Total de Empenhos</h6>
+                        <div class="stat-number">{{ total_empenhos|default(0) }}</div>
+                        <small class="text-success">
+                            <i class="bi bi-arrow-up"></i> +{{ novos_empenhos_mes|default(0) }} este mês
+                        </small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-receipt" style="font-size: 2rem; color: #ff6b35; opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Total de Contratos</h6>
+                        <div class="stat-number">{{ total_contratos|default(0) }}</div>
+                        <small class="text-muted">{{ contratos_ativos|default(0) }} ativos</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-file-earmark-text" style="font-size: 2rem; color: #ff6b35; opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Valor Total</h6>
+                        <div class="stat-number" style="font-size: 1.5rem;">
+                            {{ "R$ {:,.2f}".format(valor_total_contratos|default(0)).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                        </div>
+                        <small class="text-muted">Em contratos ativos</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-currency-dollar" style="font-size: 2rem; color: #ff6b35; opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Contratos Críticos</h6>
+                        <div class="stat-number text-danger">{{ contratos_criticos_count|default(0) }}</div>
+                        <small class="text-danger">
+                            <i class="bi bi-exclamation-triangle"></i> Vencendo em 30 dias
+                        </small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2rem; color: #dc3545; opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Monitoramento de Contratos -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-check text-primary"></i>
+                    Monitoramento de Contratos por Vencimento
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Contratos Críticos -->
+                    <div class="col-lg-4 mb-3">
+                        <div class="card contrato-critico">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="text-danger mb-0">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        Críticos (≤ 30 dias)
+                                    </h6>
+                                    <span class="badge bg-danger">{{ contratos_criticos|length }}</span>
+                                </div>
+                                
+                                {% if contratos_criticos %}
+                                    <div style="max-height: 250px; overflow-y: auto;">
+                                        {% for contrato in contratos_criticos %}
+                                        <div class="mb-2 p-2 border rounded">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>{{ contrato.numero_contrato }}</strong>
+                                                <small class="text-danger">{{ contrato.dias_restantes }} dias</small>
+                                            </div>
+                                            <small class="text-muted d-block">{{ contrato.objeto[:40] }}...</small>
+                                            <small class="text-danger">
+                                                <i class="bi bi-calendar"></i>
+                                                {{ contrato.data_fim.strftime('%d/%m/%Y') }}
+                                            </small>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-center text-muted">
+                                        <i class="bi bi-check-circle"></i><br>
+                                        Nenhum contrato crítico
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contratos de Atenção -->
+                    <div class="col-lg-4 mb-3">
+                        <div class="card contrato-atencao">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="text-warning mb-0">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        Atenção (31-60 dias)
+                                    </h6>
+                                    <span class="badge bg-warning text-dark">{{ contratos_atencao|length }}</span>
+                                </div>
+                                
+                                {% if contratos_atencao %}
+                                    <div style="max-height: 250px; overflow-y: auto;">
+                                        {% for contrato in contratos_atencao %}
+                                        <div class="mb-2 p-2 border rounded">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>{{ contrato.numero_contrato }}</strong>
+                                                <small class="text-warning">{{ contrato.dias_restantes }} dias</small>
+                                            </div>
+                                            <small class="text-muted d-block">{{ contrato.objeto[:40] }}...</small>
+                                            <small class="text-warning">
+                                                <i class="bi bi-calendar"></i>
+                                                {{ contrato.data_fim.strftime('%d/%m/%Y') }}
+                                            </small>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-center text-muted">
+                                        <i class="bi bi-check-circle"></i><br>
+                                        Nenhum contrato em atenção
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contratos Normais -->
+                    <div class="col-lg-4 mb-3">
+                        <div class="card contrato-normal">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="text-success mb-0">
+                                        <i class="bi bi-check-circle"></i>
+                                        Normais (> 60 dias)
+                                    </h6>
+                                    <span class="badge bg-success">{{ contratos_ok|length }}</span>
+                                </div>
+                                
+                                {% if contratos_ok %}
+                                    <div style="max-height: 250px; overflow-y: auto;">
+                                        {% for contrato in contratos_ok[:3] %}
+                                        <div class="mb-2 p-2 border rounded">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>{{ contrato.numero_contrato }}</strong>
+                                                <small class="text-success">{{ contrato.dias_restantes }} dias</small>
+                                            </div>
+                                            <small class="text-muted d-block">{{ contrato.objeto[:40] }}...</small>
+                                            <small class="text-success">
+                                                <i class="bi bi-calendar"></i>
+                                                {{ contrato.data_fim.strftime('%d/%m/%Y') }}
+                                            </small>
+                                        </div>
+                                        {% endfor %}
+                                        
+                                        {% if contratos_ok|length > 3 %}
+                                        <div class="text-center">
+                                            <small class="text-muted">
+                                                ... e mais {{ contratos_ok|length - 3 }} contratos
+                                            </small>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-center text-muted">
+                                        <i class="bi bi-info-circle"></i><br>
+                                        Nenhum contrato listado
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações Rápidas -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up text-primary"></i>
+                    Resumo Visual
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="contratosChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-task text-primary"></i>
+                    Ações Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/empenhos/" class="btn btn-outline-primary">
+                        <i class="bi bi-receipt"></i>
+                        Gerenciar Empenhos
+                    </a>
+                    <a href="/contratos/" class="btn btn-outline-primary">
+                        <i class="bi bi-file-earmark-text"></i>
+                        Gerenciar Contratos
+                    </a>
+                    <a href="/relatorios/" class="btn btn-outline-success">
+                        <i class="bi bi-graph-up"></i>
+                        Relatórios
+                    </a>
+                    <a href="/relatorios/importar" class="btn btn-outline-warning">
+                        <i class="bi bi-upload"></i>
+                        Importar Dados
+                    </a>
+                </div>
+                
+                <!-- Resumo de ações recomendadas -->
+                {% if contratos_criticos or contratos_atencao %}
+                <div class="mt-3 pt-3 border-top">
+                    <h6 class="text-muted">Ações Recomendadas:</h6>
+                    {% if contratos_criticos %}
+                    <div class="alert alert-danger alert-sm py-2">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        {{ contratos_criticos|length }} contrato(s) precisam atenção urgente
+                    </div>
+                    {% endif %}
+                    
+                    {% if contratos_atencao %}
+                    <div class="alert alert-warning alert-sm py-2">
+                        <i class="bi bi-clock"></i>
+                        {{ contratos_atencao|length }} contrato(s) para planejar renovação
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico simples com estilo conservador
+    const ctx = document.getElementById('contratosChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Críticos', 'Atenção', 'Normais'],
+            datasets: [{
+                data: [
+                    {{ contratos_criticos|length }},
+                    {{ contratos_atencao|length }},
+                    {{ contratos_ok|length }}
+                ],
+                backgroundColor: [
+                    '#dc3545',
+                    '#ffc107', 
+                    '#28a745'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

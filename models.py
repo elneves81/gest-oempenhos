@@ -64,6 +64,8 @@ class Contrato(db.Model):
     responsavel_email = db.Column(db.String(200))
     responsavel_telefone = db.Column(db.String(20))
     responsavel_cargo = db.Column(db.String(100))
+    responsavel_emails_extras = db.Column(db.Text)  # JSON com emails extras
+    responsavel_telefones_extras = db.Column(db.Text)  # JSON com telefones extras
     
     # Arquivo do contrato
     arquivo_contrato = db.Column(db.String(255))  # Nome do arquivo
@@ -79,8 +81,12 @@ class Contrato(db.Model):
     data_fim_original = db.Column(db.Date)  # Data original antes das prorrogações
     
     # Gestão e controle
-    gestor_fiscal = db.Column(db.String(200))
-    gestor_superior = db.Column(db.String(200))
+    gestor = db.Column(db.String(200))  # Gestor principal
+    gestor_suplente = db.Column(db.String(200))  # Gestor suplente
+    fiscal = db.Column(db.String(200))  # Fiscal do contrato
+    fiscal_suplente = db.Column(db.String(200))  # Fiscal suplente
+    gestor_fiscal = db.Column(db.String(200))  # Campo legado - compatibilidade
+    gestor_superior = db.Column(db.String(200))  # Campo legado - compatibilidade
     status = db.Column(db.String(20), default='ATIVO')
     
     # Informações adicionais de contratos municipais
@@ -228,6 +234,7 @@ class Empenho(db.Model):
     data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     usuario_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     contrato_id = db.Column(db.Integer, db.ForeignKey('contratos.id'))
+    contrato_otimizado_id = db.Column(db.Integer, db.ForeignKey('contratos_otimizados.id'), nullable=True)
     
     # Relacionamentos
     usuario = db.relationship('User', backref='empenhos')
@@ -566,3 +573,51 @@ class Comunicacao(db.Model):
     
     def __repr__(self):
         return f'<Comunicacao {self.id}: {self.titulo}>'
+
+
+# =================== MODELO CONTRATO OTIMIZADO SQLITE ===================
+from sqlalchemy import Column, Integer, String, Numeric, Date, ForeignKey, CheckConstraint, UniqueConstraint
+from sqlalchemy.orm import relationship
+
+DEC = Numeric(14,2)
+
+class ContratoOtimizado(db.Model):
+    """Modelo otimizado para contratos com SQLite"""
+    __tablename__ = "contratos_otimizados"
+    
+    id = Column(Integer, primary_key=True)
+    numero = Column(String(60), nullable=False, unique=True)
+    fornecedor = Column(String(200), nullable=False)
+    objeto = Column(String(500), nullable=True)
+
+    data_inicio = Column(Date, nullable=True)
+    data_fim = Column(Date, nullable=True)
+    status = Column(String(20), nullable=False, default="VIGENTE")  # VIGENTE|ENCERRADO|RESCINDIDO
+
+    valor_inicial = Column(DEC, nullable=False, default=0)
+    aditivos_total = Column(DEC, nullable=False, default=0)
+    valor_atualizado = Column(DEC, nullable=False, default=0)      # calculado: inicial + aditivos
+    empenhado_contrato = Column(DEC, nullable=False, default=0)
+    liquidado_contrato = Column(DEC, nullable=False, default=0)
+    pago_contrato = Column(DEC, nullable=False, default=0)
+
+    # (opcional) vincular contrato a uma linha orçamentária principal
+    orcamento_id = Column(Integer, ForeignKey("orcamentos.id"), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("valor_inicial >= 0 AND aditivos_total >= 0", name="ck_contrato_vals_pos"),
+    )
+
+    # Relacionamentos
+    empenhos_vinculados = relationship("Empenho", 
+                                     primaryjoin="ContratoOtimizado.id == Empenho.contrato_otimizado_id",
+                                     back_populates="contrato_otimizado")
+
+    @property
+    def saldo_contrato(self):
+        return float((self.valor_atualizado or 0) - (self.empenhado_contrato or 0))
+
+# Ajustar relacionamento no Empenho existente - usar primaryjoin para evitar conflitos
+Empenho.contrato_otimizado = relationship("ContratoOtimizado", 
+                                        primaryjoin="Empenho.contrato_otimizado_id == ContratoOtimizado.id",
+                                        back_populates="empenhos_vinculados")

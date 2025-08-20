@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}Chat do Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <!-- Sidebar com usuários online -->
+        <div class="col-md-3 bg-light border-end h-100">
+            <div class="d-flex flex-column h-100">
+                <div class="p-3 border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-chat-dots me-2"></i>
+                        Chat do Sistema
+                    </h5>
+                    <small class="text-muted">{{ current_room.title() }}</small>
+                </div>
+                
+                <!-- Usuários Online -->
+                <div class="flex-grow-1 overflow-auto">
+                    <div class="p-3">
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-people me-1"></i>
+                            Usuários Online (<span id="user-count">{{ online_users|length }}</span>)
+                        </h6>
+                        <div id="users-list">
+                            {% for user in online_users %}
+                            <div class="d-flex align-items-center mb-2 user-item" data-user-id="{{ user.id }}">
+                                <div class="bg-success rounded-circle me-2" style="width: 8px; height: 8px;"></div>
+                                <span class="{% if user.id == current_user.id %}fw-bold text-primary{% endif %}">
+                                    {{ user.username }}
+                                    {% if user.id == current_user.id %}(você){% endif %}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ações da sala -->
+                <div class="p-3 border-top">
+                    {% if current_user.is_admin %}
+                    <button class="btn btn-outline-danger btn-sm w-100" onclick="clearRoom()">
+                        <i class="bi bi-trash me-1"></i>
+                        Limpar Chat
+                    </button>
+                    {% else %}
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Chat interno do sistema
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Área principal do chat -->
+        <div class="col-md-9 d-flex flex-column h-100">
+            <!-- Cabeçalho do chat -->
+            <div class="p-3 border-bottom bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">Chat Geral</h5>
+                        <small class="text-muted">Conversas internas do sistema</small>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="refreshChat()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>
+                            Atualizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Área de mensagens -->
+            <div class="flex-grow-1 overflow-auto p-3" id="messages-container">
+                <div id="messages-list">
+                    {% for message in messages %}
+                    <div class="mb-3 message-item" data-message-id="{{ message.id }}">
+                        <div class="d-flex">
+                            <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center text-white" style="width: 36px; height: 36px; min-width: 36px;">
+                                {{ message.username[0].upper() }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    <strong class="me-2 {% if message.user_id == current_user.id %}text-primary{% endif %}">
+                                        {{ message.username }}
+                                    </strong>
+                                    <small class="text-muted">{{ message.timestamp }}</small>
+                                </div>
+                                <div class="message-content">
+                                    {{ message.message }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Indicador de digitação -->
+                <div id="typing-indicator" class="text-muted small" style="display: none;">
+                    <i class="bi bi-three-dots"></i>
+                    Alguém está digitando...
+                </div>
+            </div>
+            
+            <!-- Área de envio de mensagem -->
+            <div class="p-3 border-top bg-light">
+                <form id="message-form" class="d-flex">
+                    <div class="flex-grow-1 me-2">
+                        <input type="text" 
+                               id="message-input" 
+                               class="form-control" 
+                               placeholder="Digite sua mensagem..." 
+                               maxlength="500"
+                               autocomplete="off">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i>
+                        Enviar
+                    </button>
+                </form>
+                <small class="text-muted">Pressione Enter para enviar • Máximo 500 caracteres</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.h-100 {
+    height: calc(100vh - 120px) !important;
+}
+
+#messages-container {
+    background: #f8f9fa;
+}
+
+.message-item {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.user-item {
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.user-item:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+.message-content {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+#message-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+}
+</style>
+
+<script>
+let lastMessageId = '';
+let currentRoom = 'geral';
+let refreshInterval;
+
+// Inicializar chat
+document.addEventListener('DOMContentLoaded', function() {
+    initializeChat();
+    startAutoRefresh();
+    
+    // Focar no input de mensagem
+    document.getElementById('message-input').focus();
+    
+    // Scroll para o final das mensagens
+    scrollToBottom();
+});
+
+function initializeChat() {
+    // Configurar envio de mensagem
+    document.getElementById('message-form').addEventListener('submit', sendMessage);
+    
+    // Configurar tecla Enter
+    document.getElementById('message-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage(e);
+        }
+    });
+    
+    // Obter ID da última mensagem
+    const messages = document.querySelectorAll('.message-item');
+    if (messages.length > 0) {
+        lastMessageId = messages[messages.length - 1].dataset.messageId;
+    }
+}
+
+function sendMessage(e) {
+    e.preventDefault();
+    
+    const input = document.getElementById('message-input');
+    const message = input.value.trim();
+    
+    if (!message) {
+        return;
+    }
+    
+    // Desabilitar input temporariamente
+    input.disabled = true;
+    
+    fetch('/chat-offline/send_message', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: message,
+            room: currentRoom
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            input.value = '';
+            addMessage(data.message);
+            scrollToBottom();
+        } else {
+            alert('Erro ao enviar mensagem: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao enviar mensagem');
+    })
+    .finally(() => {
+        input.disabled = false;
+        input.focus();
+    });
+}
+
+function addMessage(message) {
+    const messagesList = document.getElementById('messages-list');
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'mb-3 message-item';
+    messageDiv.dataset.messageId = message.id;
+    
+    const currentUserId = {{ current_user.id }};
+    const isCurrentUser = message.user_id === currentUserId;
+    const userClass = isCurrentUser ? 'text-primary' : '';
+    
+    messageDiv.innerHTML = `
+        <div class="d-flex">
+            <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center text-white" style="width: 36px; height: 36px; min-width: 36px;">
+                ${message.username[0].toUpperCase()}
+            </div>
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-1">
+                    <strong class="me-2 ${userClass}">
+                        ${message.username}
+                    </strong>
+                    <small class="text-muted">${message.timestamp}</small>
+                </div>
+                <div class="message-content">
+                    ${message.message}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    messagesList.appendChild(messageDiv);
+    lastMessageId = message.id;
+}
+
+function refreshChat() {
+    // Buscar novas mensagens
+    fetch(`/chat-offline/get_messages?room=${currentRoom}&last_id=${lastMessageId}`)
+    .then(response => response.json())
+    .then(data => {
+        data.messages.forEach(message => {
+            addMessage(message);
+        });
+        
+        if (data.messages.length > 0) {
+            scrollToBottom();
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao buscar mensagens:', error);
+    });
+    
+    // Buscar usuários online
+    fetch(`/chat-offline/get_users?room=${currentRoom}`)
+    .then(response => response.json())
+    .then(data => {
+        updateUsersList(data.users);
+    })
+    .catch(error => {
+        console.error('Erro ao buscar usuários:', error);
+    });
+}
+
+function updateUsersList(users) {
+    const usersList = document.getElementById('users-list');
+    const userCount = document.getElementById('user-count');
+    
+    usersList.innerHTML = '';
+    userCount.textContent = users.length;
+    
+    users.forEach(user => {
+        const userDiv = document.createElement('div');
+        userDiv.className = 'd-flex align-items-center mb-2 user-item';
+        userDiv.dataset.userId = user.id;
+        
+        const userClass = user.is_current ? 'fw-bold text-primary' : '';
+        const userSuffix = user.is_current ? ' (você)' : '';
+        
+        userDiv.innerHTML = `
+            <div class="bg-success rounded-circle me-2" style="width: 8px; height: 8px;"></div>
+            <span class="${userClass}">
+                ${user.username}${userSuffix}
+            </span>
+        `;
+        
+        usersList.appendChild(userDiv);
+    });
+}
+
+function scrollToBottom() {
+    const container = document.getElementById('messages-container');
+    container.scrollTop = container.scrollHeight;
+}
+
+function startAutoRefresh() {
+    refreshInterval = setInterval(refreshChat, 3000); // Atualizar a cada 3 segundos
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+}
+
+function clearRoom() {
+    if (!confirm('Tem certeza que deseja limpar todas as mensagens do chat?')) {
+        return;
+    }
+    
+    fetch('/chat-offline/clear_room', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            room: currentRoom
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('messages-list').innerHTML = '';
+            lastMessageId = '';
+        } else {
+            alert('Erro ao limpar chat: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao limpar chat');
+    });
+}
+
+// Limpar intervalo quando sair da página
+window.addEventListener('beforeunload', function() {
+    stopAutoRefresh();
+    
+    // Sair da sala
+    fetch('/chat-offline/leave_room', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            room: currentRoom
+        })
+    });
+});
+</script>
+{% endblock %}

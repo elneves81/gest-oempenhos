@@ -1,0 +1,201 @@
+/* Correções de acessibilidade e compatibilidade */
+
+/* Correção para compatibilidade do text-align */
+th {
+    text-align: inherit;
+    text-align: -webkit-match-parent;
+}
+
+/* Correção para text-size-adjust */
+body {
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Correção para print color adjust */
+@media print {
+    * {
+        color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+/* Estilos para melhorar acessibilidade */
+.btn-close:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Estilos para alertas */
+.alert .btn-close {
+    opacity: 0.8;
+}
+
+.alert .btn-close:hover {
+    opacity: 1;
+}
+
+/* Melhorias de contraste para acessibilidade */
+.text-muted {
+    color: #6c757d !important;
+}
+
+/* Focus styles melhorados */
+.form-control:focus,
+.form-select:focus,
+.btn:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+}
+
+/* Styles para melhor acessibilidade em modais */
+.modal-content {
+    border-radius: 0.5rem;
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+}
+
+/* Melhoria nos cards de estatísticas */
+.stats-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Melhoria na responsividade */
+@media (max-width: 768px) {
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0;
+    }
+}
+
+/* Correções para formulários */
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+/* Melhorias na navegação */
+.navbar-nav .nav-link {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.navbar-nav .nav-link:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Estilo para tabelas responsivas */
+.table-responsive {
+    border-radius: 0.375rem;
+}
+
+.table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
+}
+
+/* Melhorias nos badges */
+.badge {
+    font-size: 0.75em;
+    font-weight: 500;
+}
+
+/* Estilos para melhor contraste */
+.text-light {
+    color: #f8f9fa !important;
+}
+
+.bg-dark {
+    background-color: #212529 !important;
+}
+
+/* Correções para ícones */
+.bi {
+    vertical-align: -0.125em;
+}
+
+/* Estilos para dropdown melhorado */
+.dropdown-menu {
+    border-radius: 0.375rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: #f8f9fa;
+}
+
+/* Melhorias nos botões */
+.btn {
+    font-weight: 500;
+    border-radius: 0.375rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Estilos para paginação */
+.page-link {
+    color: #0d6efd;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+}
+
+.page-link:hover {
+    color: #0a58ca;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Melhorias de acessibilidade para formulários */
+.was-validated .form-control:invalid,
+.form-control.is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.was-validated .form-control:valid,
+.form-control.is-valid {
+    border-color: #198754;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.73.73c.17.17.45.17.62 0l2.77-2.77c.17-.17.17-.45 0-.62l-.73-.73c-.17-.17-.45-.17-.62 0L3.56 4.85 2.93 4.22c-.17-.17-.45-.17-.62 0l-.73.73c-.17.17-.17.45 0 .62z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}

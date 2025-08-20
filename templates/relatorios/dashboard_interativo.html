@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Central de Relatórios - Dashboard Interativo</title>
+
+  <!-- Bootstrap + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- GridStack -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack.min.css">
+
+  <style>
+    body{
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      background: linear-gradient(135deg,#667eea 0%, #764ba2 100%);
+      min-height:100vh; padding:20px;
+    }
+    .dashboard-header{
+      background: rgba(255,255,255,.95);
+      backdrop-filter: blur(10px);
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.1);
+      border:1px solid rgba(255,255,255,.25);
+      margin-bottom:16px;
+    }
+    .btn-glass{
+      background: rgba(255,255,255,.2);
+      border:1px solid rgba(255,255,255,.35);
+      color:#2c3e50; border-radius:10px; padding:8px 14px;
+      transition: all 0.3s ease;
+    }
+    .btn-glass:hover{ background: rgba(255,255,255,.3); color:#2c3e50; }
+    .btn-glass.btn-success {
+      background: rgba(40, 167, 69, 0.9);
+      color: white;
+      border-color: rgba(40, 167, 69, 0.5);
+    }
+
+    #dashboard-grid { width: 100%; }
+    .grid-stack{ background: transparent; min-height:70vh; }
+    /* .grid-stack-item{ min-width:200px; min-height:120px; } */
+    .grid-stack-item-content{
+      background:#fff; height:100%; border-radius:14px; padding:16px;
+      box-shadow:0 6px 24px rgba(0,0,0,.08); border:1px solid rgba(0,0,0,.06);
+      display:flex; flex-direction:column; overflow:hidden;
+      transition: all 0.3s ease;
+    }
+    .grid-stack-item-content:hover {
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      transform: translateY(-2px);
+    }
+    .widget-header{ display:flex; align-items:center; justify-content:space-between;
+      gap:8px; padding-bottom:8px; margin-bottom:10px; border-bottom:1px solid #eee; }
+    .widget-title{ font-weight:600; color:#333; display:flex; align-items:center; gap:6px; }
+    .kpi-card{ text-align:center; display:flex; flex:1; flex-direction:column; justify-content:center; }
+    .widget-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      opacity: 0.9;
+    }
+    .kpi-value {
+      font-size: 2.4rem;
+      font-weight: 700;
+      margin: 8px 0;
+      line-height: 1.1;
+    }
+    .kpi-label {
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 0.8rem;
+      color: #6b7280;
+      font-weight: 500;
+    }
+    .chart-container{ 
+      flex:1; 
+      min-height:250px; 
+      position:relative; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chart-container canvas {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .status-dot{ width:8px; height:8px; background:#28a745; border-radius:50%; animation:pulse 2s infinite; }
+    .report-card {
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      color: white; cursor: pointer; transition: all 0.3s ease;
+      height: 100%; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; text-align: center;
+      border-radius: 14px;
+    }
+    .report-card:hover { transform: scale(1.02); }
+    .report-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+    .report-description { font-size: 0.9rem; opacity: 0.9; }
+    @keyframes pulse {0%{opacity:1} 50%{opacity:.5} 100%{opacity:1}}
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .loading-indicator {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+    
+    .widget-loading {
+      opacity: 0.7;
+      position: relative;
+    }
+    
+    .widget-loading::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="dashboard-header d-flex flex-wrap align-items-center justify-content-between">
+      <div class="me-3 mb-2 mb-sm-0">
+        <h4 class="mb-1"><i class="bi bi-grid-3x3-gap me-2"></i>Dashboard Interativo</h4>
+        <div class="text-muted small"><span class="status-dot me-2"></span>Widgets drag-and-drop • Atualização em tempo real</div>
+      </div>
+      <div class="d-flex gap-2">
+        <button id="btnAddWidgets" class="btn-glass"><i class="bi bi-plus-circle me-1"></i>Adicionar Widgets</button>
+        <a href="{{ url_for('relatorios.index') }}" class="btn-glass"><i class="bi bi-arrow-left me-1"></i>Central de Relatórios</a>
+        <button class="btn-glass" onclick="resetLayout()"><i class="bi bi-arrow-clockwise me-1"></i>Reset Layout</button>
+        <button class="btn-glass" onclick="saveLayout()"><i class="bi bi-save me-1"></i>Salvar Layout</button>
+        <button class="btn-glass" onclick="refreshData()"><i class="bi bi-arrow-repeat me-1"></i>Atualizar</button>
+      </div>
+    </div>
+
+    <!-- Grid Principal -->
+    <div class="grid-stack" id="dashboard-grid"></div>
+  </div>
+
+  <!-- Modal Biblioteca de Widgets -->
+  <div class="modal fade" id="widgetLibraryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-grid-3x3-gap me-2"></i>Biblioteca de Widgets</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3" id="widgetLibraryGrid"></div>
+          <hr class="my-3">
+          <small class="text-muted d-block"><i class="bi bi-info-circle me-1"></i>
+            Clique no botão <b>"+"</b> para adicionar um widget ao dashboard.
+          </small>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack-all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // ======== Proteções contra layout/canvas quebrados ========
+    const LS_KEY = 'dashboard-layout-v4';              // nova chave
+    localStorage.removeItem('dashboard-layout');       // limpa antigas
+    localStorage.removeItem('dashboard-layout-v2');
+    localStorage.removeItem('dashboard-layout-v3');
+
+    // ======== GridStack ========
+    const grid = GridStack.init({
+      column: 12,
+      cellHeight: 90,
+      margin: 8,
+      float: false,
+      animate: true,
+      resizable: { handles: 'all' },
+      minRow: 6,
+      acceptWidgets: true,                       // <- aceita arrastar de fora
+      dragIn: '.gs-widget-src',                  // <- classe usada nos cards do modal
+      dragInOptions: { revert: 'invalid', helper: 'clone', appendTo: 'body', scroll: false }
+    }, '#dashboard-grid');
+
+    grid.enableMove(true);
+    grid.enableResize(true);
+
+    // ======== Utilitários: ID único + fábrica de HTML com botão "remover" ========
+    
+    // id único para cada instância (evita conflito de canvas)
+    function uid(prefix='w') {
+      return `${prefix}-${Math.random().toString(36).slice(2,9)}`;
+    }
+
+    // cria HTML padrão do widget com header e botão remover
+    function wrapWidgetContent(titleHtml, innerHtml) {
+      return `
+        <div class="grid-stack-item-content">
+          <div class="widget-header">
+            <div class="widget-title">${titleHtml}</div>
+            <div class="d-flex gap-1">
+              <button type="button" class="btn btn-sm btn-outline-danger gs-remove">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+          ${innerHtml}
+        </div>`;
+    }
+
+    // remoção (event delegation — funciona para todos os widgets)
+    document.getElementById('dashboard-grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.gs-remove');
+      if (!btn) return;
+      const item = btn.closest('.grid-stack-item');
+      if (item) grid.removeWidget(item, true);   // remove do DOM e do grid
+    });
+
+    // ======== Definições dos widgets e biblioteca ========
+    
+    // define os "tipos" (não use IDs fixos pra canvas; gere dentro)
+    const widgetDefs = {
+      'kpi-empenhos':  { w:3, h:3, minW:3, minH:2 },
+      'kpi-financeiro':{ w:3, h:3, minW:3, minH:2 },
+      'kpi-notas':     { w:3, h:3, minW:3, minH:2 },
+      'kpi-contratos': { w:3, h:3, minW:3, minH:2 },
+      'chart-contratos': { w:6, h:5, minW:4, minH:4 },
+      'chart-evolucao':  { w:6, h:5, minW:4, minH:4 },
+      'report-financeiro': { w:3, h:3, minW:3, minH:2 },
+      'report-operacional':{ w:3, h:3, minW:3, minH:2 },
+      'report-analytics':  { w:3, h:3, minW:3, minH:2 },
+      'report-filtrado':   { w:3, h:3, minW:3, minH:2 },
+    };
+
+    // monta os cards do modal (classe .gs-widget-src = arrastável)
+    const libGrid = document.getElementById('widgetLibraryGrid');
+    libGrid.innerHTML = '';
+    Object.keys(widgetDefs).forEach(type => {
+      const col = document.createElement('div');
+      col.className = 'col-12 col-sm-6 col-lg-4';
+      col.innerHTML = `
+        <div class="p-3 border rounded-3 h-100 gs-widget-src" draggable="true"
+             data-widget-type="${type}" data-w="${widgetDefs[type].w}" data-h="${widgetDefs[type].h}">
+          <div class="d-flex align-items-start gap-2">
+            <i class="bi ${type.startsWith('chart') ? 'bi-graph-up' : type.startsWith('report') ? 'bi-files' : 'bi-grid'} fs-4 text-primary"></i>
+            <div class="flex-grow-1">
+              <div class="fw-semibold">${type.replace('-', ' ')}</div>
+              <div class="text-muted small">${widgetDefs[type].w}x${widgetDefs[type].h}</div>
+            </div>
+            <button class="btn btn-sm btn-primary add-widget"><i class="bi bi-plus-lg"></i></button>
+          </div>
+        </div>`;
+      // adicionar via clique
+      col.querySelector('.add-widget').addEventListener('click', () => addWidgetByType(type));
+      libGrid.appendChild(col);
+    });
+
+    // abrir modal
+    const libModal = new bootstrap.Modal(document.getElementById('widgetLibraryModal'));
+    document.getElementById('btnAddWidgets').addEventListener('click', () => libModal.show());
+
+    // ======== KPIs (exemplo plugável) ========
+    async function loadKPIs() {
+      // Adicionar indicadores de loading aos elementos com IDs dinâmicos
+      const addLoading = (selector) => {
+        document.querySelectorAll(selector).forEach(el => {
+          if (el) el.innerHTML = '<div class="loading-indicator"></div>Carregando...';
+        });
+      };
+      
+      addLoading('[id^="emp-"]');
+      addLoading('[id^="fin-"]');
+      addLoading('[id^="ctr-"]');
+      addLoading('[id^="nf-"]');
+      
+      try {
+        const [a,b,c] = await Promise.all([
+          fetch('/relatorios/api/widget-data/kpi-empenhos'),
+          fetch('/relatorios/api/widget-data/kpi-financeiro'),
+          fetch('/relatorios/api/widget-data/kpi-contratos'),
+        ]);
+        const [dEmp, dFin, dCon] = await Promise.all([a.json(), b.json(), c.json()]);
+
+        const setText = (selector, v) => {
+          document.querySelectorAll(selector).forEach(el => { if (el) el.textContent = v; });
+        };
+        setText('[id^="emp-"]', dEmp?.total ?? 0);
+        setText('[id^="fin-"]', dFin?.valor_total ?? 'R$ 0,00');
+        setText('[id^="nf-"]', dEmp?.notas_fiscais ?? 0);
+        setText('[id^="ctr-"]', dCon?.total_contratos ?? 0);
+      } catch (e) {
+        console.warn('KPIs fallback', e);
+        // Em caso de erro, mostrar valores padrão
+        const setErrorText = (selector, defaultValue) => {
+          document.querySelectorAll(selector).forEach(el => { if (el) el.textContent = defaultValue; });
+        };
+        setErrorText('[id^="emp-"]', '0');
+        setErrorText('[id^="fin-"]', 'R$ 0,00');
+        setErrorText('[id^="nf-"]', '0');
+        setErrorText('[id^="ctr-"]', '0');
+      }
+    }
+    loadKPIs();
+
+    // ======== Criar widget no grid (clicando no "+" OU soltando do modal) ========
+    function addWidgetByType(type, pos) {
+      const def = widgetDefs[type];
+      if (!def) return;
+
+      // gera conteúdo por tipo
+      let inner = '';
+      if (type === 'kpi-empenhos') {
+        inner = wrapWidgetContent(
+          `<i class="bi bi-file-earmark-text me-1"></i>KPI Empenhos`,
+          `<div class="kpi-card"><div class="widget-icon text-primary"><i class="bi bi-file-earmark-text"></i></div>
+           <div class="kpi-value text-primary" id="${uid('emp')}">0</div>
+           <div class="kpi-label">Total de Empenhos</div></div>`
+        );
+      } else if (type === 'kpi-financeiro') {
+        inner = wrapWidgetContent(
+          `<i class="bi bi-currency-dollar me-1"></i>KPI Financeiro`,
+          `<div class="kpi-card"><div class="widget-icon text-success"><i class="bi bi-currency-dollar"></i></div>
+           <div class="kpi-value text-success" id="${uid('fin')}">R$ 0,00</div>
+           <div class="kpi-label">Valor Empenhado</div></div>`
+        );
+      } else if (type === 'kpi-notas') {
+        inner = wrapWidgetContent(
+          `<i class="bi bi-receipt me-1"></i>KPI Notas`,
+          `<div class="kpi-card"><div class="widget-icon text-info"><i class="bi bi-receipt"></i></div>
+           <div class="kpi-value text-info" id="${uid('nf')}">0</div>
+           <div class="kpi-label">Notas Fiscais</div></div>`
+        );
+      } else if (type === 'kpi-contratos') {
+        inner = wrapWidgetContent(
+          `<i class="bi bi-file-earmark-check me-1"></i>KPI Contratos`,
+          `<div class="kpi-card"><div class="widget-icon text-warning"><i class="bi bi-file-earmark-check"></i></div>
+           <div class="kpi-value text-warning" id="${uid('ctr')}">0</div>
+           <div class="kpi-label">Contratos</div></div>`
+        );
+      } else if (type === 'chart-contratos') {
+        const canvasId = uid('contratosChart');
+        inner = wrapWidgetContent(
+          `<i class="bi bi-pie-chart me-1"></i>Contratos por Status`,
+          `<div class="chart-container"><canvas id="${canvasId}"></canvas></div>`
+        );
+      } else if (type === 'chart-evolucao') {
+        const canvasId = uid('evolucaoChart');
+        inner = wrapWidgetContent(
+          `<i class="bi bi-graph-up me-1"></i>Evolução Mensal`,
+          `<div class="chart-container"><canvas id="${canvasId}"></canvas></div>`
+        );
+      } else if (type === 'report-financeiro') {
+        inner = wrapWidgetContent(
+          `<i class="bi bi-bar-chart-fill me-1"></i>Relatório Financeiro`,
+          `<div class="report-card" style="--gradient-start:#6a11cb;--gradient-end:#2575fc"
+             onclick="openReport('financeiro')">
+             <div class="report-title">Relatório Financeiro</div>
+             <div class="report-description">Análise completa</div>
+           </div>`
+        );
+      } else if (type === 'report-operacional') {
+        inner = wrapWidgetContent(
+          `<i class="bi bi-gear-fill me-1"></i>Relatório Operacional`,
+          `<div class="report-card" style="--gradient-start:#11998e;--gradient-end:#38ef7d"
+             onclick="openReport('operacional')">
+             <div class="report-title">Relatório Operacional</div>
+             <div class="report-description">Produtividade</div>
+           </div>`
+        );
+      } else if (type === 'report-analytics') {
+        inner = wrapWidgetContent(
+          `<i class="bi bi-graph-up-arrow me-1"></i>Analytics Avançado`,
+          `<div class="report-card" style="--gradient-start:#00c6ff;--gradient-end:#0072ff"
+             onclick="openReport('analytics')">
+             <div class="report-title">Analytics Avançado</div>
+             <div class="report-description">Tendências</div>
+           </div>`
+        );
+      } else if (type === 'report-filtrado') {
+        inner = wrapWidgetContent(
+          `<i class="bi bi-funnel-fill me-1"></i>Relatórios Filtrados`,
+          `<div class="report-card" style="--gradient-start:#f953c6;--gradient-end:#b91d73"
+             onclick="openReport('filtrado')">
+             <div class="report-title">Relatórios Filtrados</div>
+             <div class="report-description">Consultas por período</div>
+           </div>`
+        );
+      }
+
+      // cria item no grid
+      const el = document.createElement('div');
+      el.className = 'grid-stack-item';
+      el.setAttribute('gs-w', def.w);
+      el.setAttribute('gs-h', def.h);
+      el.innerHTML = inner;
+
+      grid.addWidget(el, {
+        w: def.w, h: def.h, autoPosition: !pos, ...(pos || {}),
+        minW: def.minW, minH: def.minH
+      });
+
+      // inicializações pós-criação
+      // se tiver canvas, cria chart seguro usando Chart.getChart(...)
+      const canvas = el.querySelector('canvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        // identifica o tipo pelo título
+        const isPizza = type === 'chart-contratos';
+        const prev = Chart.getChart(canvas);
+        if (prev) prev.destroy();
+        if (isPizza) {
+          new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: ['Ativos','Vencendo','Vencidos'],
+              datasets: [{ data:[45,15,8], backgroundColor:['#28a745','#ffc107','#dc3545'], borderWidth:0 }] },
+            options: { responsive:true, maintainAspectRatio:false,
+              plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, padding:16 } } } }
+          });
+        } else {
+          new Chart(ctx, {
+            type: 'line',
+            data: { labels:['Jan','Fev','Mar','Abr','Mai','Jun'],
+              datasets:[{ label:'Empenhos', data:[120,150,180,142,195,210],
+                borderColor:'#667eea', backgroundColor:'rgba(102,126,234,.12)', fill:true, tension:.35 }] },
+            options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+          });
+        }
+      }
+
+      // KPIs puxam dados
+      if (type.startsWith('kpi-')) loadKPIs();
+
+      // fecha modal se veio pelo botão +
+      try { libModal.hide(); } catch(_) {}
+    }
+
+    // ======== Capturar drop do modal no grid ========
+    grid.on('dropped', (event, previousWidget, newWidget) => {
+      const src = previousWidget && previousWidget.el;         // origem (card do modal)
+      if (!src) return;
+      const type = src.getAttribute('data-widget-type');
+      if (!type) return;
+
+      // remove conteúdo placeholder do item criado e recria usando nossa fábrica
+      grid.removeWidget(newWidget.el, true);
+      addWidgetByType(type, {x:newWidget.x, y:newWidget.y, w:newWidget.w, h:newWidget.h});
+    });
+
+    // ======== Layout padrão inicial ========
+    const buildDefault = () => {
+      addWidgetByType('kpi-empenhos');
+      addWidgetByType('kpi-financeiro');
+      addWidgetByType('kpi-notas');
+      addWidgetByType('kpi-contratos');
+      addWidgetByType('chart-contratos');
+      addWidgetByType('chart-evolucao');
+      addWidgetByType('report-financeiro');
+      addWidgetByType('report-operacional');
+      addWidgetByType('report-analytics');
+      addWidgetByType('report-filtrado');
+      grid.compact(); // empacota bonitinho sem sobreposição
+    };
+
+    // nunca deixe widgets antigos "fantasmas"
+    grid.removeAll();
+    buildDefault();
+
+    // ======== Garantias contra "fininhos" e gráficos duplicados ========
+    grid.on('dragstop resizestop', (e, el) => {
+      el.querySelectorAll('canvas').forEach(c => {
+        const ch = Chart.getChart(c);
+        if (ch) ch.resize();
+      });
+    });
+
+    // ======== Funções dos botões ========
+    window.saveLayout = () => {
+      try {
+        const layout = grid.save();
+        localStorage.setItem(LS_KEY, JSON.stringify(layout));
+        // Feedback visual
+        const btn = document.querySelector('[onclick="saveLayout()"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Salvo!';
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.classList.remove('btn-success');
+        }, 2000);
+      } catch (e) {
+        console.error('Erro ao salvar layout:', e);
+      }
+    };
+
+    window.resetLayout = () => {
+      if (confirm('Deseja realmente restaurar o layout padrão? Isso irá remover suas personalizações.')) {
+        localStorage.removeItem(LS_KEY);
+        grid.removeAll();
+        buildDefault();
+        loadKPIs();
+        // Feedback visual
+        const btn = document.querySelector('[onclick="resetLayout()"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Reset!';
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+        }, 2000);
+      }
+    };
+
+    window.refreshData = () => {
+      const btn = document.querySelector('[onclick="refreshData()"]');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<div class="loading-indicator"></div>Atualizando...';
+      btn.disabled = true;
+      
+      loadKPIs().finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      });
+    };
+
+    // Rotas dos cards
+    window.openReport = (tipo) => {
+      const map = { financeiro:'/relatorios/financeiro', operacional:'/relatorios/operacional',
+                    analytics:'/relatorios/analytics', filtrado:'/relatorios/filtrado' };
+      location.href = map[tipo] || '/relatorios';
+    };
+
+    // ======== Funções dos botões ========
+    window.saveLayout = () => {
+      try {
+        const layout = grid.save();
+        localStorage.setItem(LS_KEY, JSON.stringify(layout));
+        // Feedback visual
+        const btn = document.querySelector('[onclick="saveLayout()"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Salvo!';
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.classList.remove('btn-success');
+        }, 2000);
+      } catch (e) {
+        console.error('Erro ao salvar layout:', e);
+      }
+    };
+
+    window.resetLayout = () => {
+      if (confirm('Deseja realmente restaurar o layout padrão? Isso irá remover suas personalizações.')) {
+        localStorage.removeItem(LS_KEY);
+        grid.removeAll();
+        buildDefault();
+        // Feedback visual
+        const btn = document.querySelector('[onclick="resetLayout()"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Reset!';
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+        }, 2000);
+      }
+    };
+
+    window.refreshData = () => {
+      const btn = document.querySelector('[onclick="refreshData()"]');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<div class="loading-indicator"></div>Atualizando...';
+      btn.disabled = true;
+      
+      loadKPIs().finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      });
+    };
+
+    // limpeza
+    window.addEventListener('beforeunload', () => {
+      // Destroi todos os charts do dashboard
+      document.querySelectorAll('canvas').forEach(canvas => {
+        const chart = Chart.getChart(canvas);
+        if (chart) chart.destroy();
+      });
+    });
+  });
+  </script>
+</body>
+</html>

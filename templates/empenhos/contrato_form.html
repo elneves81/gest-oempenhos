@@ -2,6 +2,31 @@
 
 {% block title %}{{ 'Editar' if contrato else 'Novo' }} Contrato - Sistema de Empenhos{% endblock %}
 
+{% block extra_css %}
+<style>
+.form-group.mb-2 {
+    margin-bottom: 0.5rem !important;
+}
+.form-label.mb-1 {
+    margin-bottom: 0.25rem !important;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+.form-control-sm {
+    height: calc(1.8125rem + 2px);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+.card-body {
+    padding: 1rem;
+}
+.card-footer.py-2 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row">
@@ -24,10 +49,10 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="numero_pregao">Numero do Pregao <span class="text-danger">*</span></label>
+                                <div class="form-group mb-2">
+                                    <label for="numero_pregao" class="form-label mb-1">Numero do Pregao <span class="text-danger">*</span></label>
                                     <input type="text" 
-                                           class="form-control" 
+                                           class="form-control form-control-sm" 
                                            id="numero_pregao" 
                                            name="numero_pregao" 
                                            value="{{ contrato.numero_pregao if contrato else '' }}"
@@ -39,10 +64,10 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="numero_contrato">Numero do Contrato <span class="text-danger">*</span></label>
+                                <div class="form-group mb-2">
+                                    <label for="numero_contrato" class="form-label mb-1">Numero do Contrato <span class="text-danger">*</span></label>
                                     <input type="text" 
-                                           class="form-control" 
+                                           class="form-control form-control-sm" 
                                            id="numero_contrato" 
                                            name="numero_contrato" 
                                            value="{{ contrato.numero_contrato if contrato else '' }}"
@@ -56,12 +81,12 @@
                         
                         <div class="row">
                             <div class="col-12">
-                                <div class="form-group">
-                                    <label for="objeto">Objeto do Contrato <span class="text-danger">*</span></label>
-                                    <textarea class="form-control" 
+                                <div class="form-group mb-2">
+                                    <label for="objeto" class="form-label mb-1">Objeto do Contrato <span class="text-danger">*</span></label>
+                                    <textarea class="form-control form-control-sm" 
                                               id="objeto" 
                                               name="objeto" 
-                                              rows="3" 
+                                              rows="2" 
                                               required>{{ contrato.objeto if contrato else '' }}</textarea>
                                     <div class="invalid-feedback">
                                         Por favor, informe o objeto do contrato.
@@ -72,10 +97,10 @@
                         
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="fornecedor">Fornecedor <span class="text-danger">*</span></label>
+                                <div class="form-group mb-2">
+                                    <label for="fornecedor" class="form-label mb-1">Fornecedor <span class="text-danger">*</span></label>
                                     <input type="text" 
-                                           class="form-control" 
+                                           class="form-control form-control-sm" 
                                            id="fornecedor" 
                                            name="fornecedor" 
                                            value="{{ contrato.fornecedor if contrato else '' }}"
@@ -87,9 +112,9 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="valor_total">Valor Total <span class="text-danger">*</span></label>
-                                    <div class="input-group">
+                                <div class="form-group mb-2">
+                                    <label for="valor_total" class="form-label mb-1">Valor Total <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text">R$</span>
                                         </div>
@@ -111,10 +136,10 @@
                         
                         <div class="row">
                             <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="data_assinatura">Data de Assinatura <span class="text-danger">*</span></label>
+                                <div class="form-group mb-2">
+                                    <label for="data_assinatura" class="form-label mb-1">Data de Assinatura <span class="text-danger">*</span></label>
                                     <input type="date" 
-                                           class="form-control" 
+                                           class="form-control form-control-sm" 
                                            id="data_assinatura" 
                                            name="data_assinatura" 
                                            value="{{ contrato.data_assinatura.strftime('%Y-%m-%d') if contrato and contrato.data_assinatura else '' }}"
@@ -126,10 +151,10 @@
                             </div>
                             
                             <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="data_inicio">Data de Inicio <span class="text-danger">*</span></label>
+                                <div class="form-group mb-2">
+                                    <label for="data_inicio" class="form-label mb-1">Data de Inicio <span class="text-danger">*</span></label>
                                     <input type="date" 
-                                           class="form-control" 
+                                           class="form-control form-control-sm" 
                                            id="data_inicio" 
                                            name="data_inicio" 
                                            value="{{ contrato.data_inicio.strftime('%Y-%m-%d') if contrato and contrato.data_inicio else '' }}"
@@ -141,10 +166,10 @@
                             </div>
                             
                             <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="data_fim">Data de Fim <span class="text-danger">*</span></label>
+                                <div class="form-group mb-2">
+                                    <label for="data_fim" class="form-label mb-1">Data de Fim <span class="text-danger">*</span></label>
                                     <input type="date" 
-                                           class="form-control" 
+                                           class="form-control form-control-sm" 
                                            id="data_fim" 
                                            name="data_fim" 
                                            value="{{ contrato.data_fim.strftime('%Y-%m-%d') if contrato and contrato.data_fim else '' }}"
@@ -158,9 +183,9 @@
                         
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="status">Status</label>
-                                    <select class="form-control" id="status" name="status">
+                                <div class="form-group mb-2">
+                                    <label for="status" class="form-label mb-1">Status</label>
+                                    <select class="form-control form-control-sm" id="status" name="status">
                                         <option value="ATIVO" {{ 'selected' if contrato and contrato.status == 'ATIVO' else '' }}>Ativo</option>
                                         <option value="INATIVO" {{ 'selected' if contrato and contrato.status == 'INATIVO' else '' }}>Inativo</option>
                                         <option value="VENCIDO" {{ 'selected' if contrato and contrato.status == 'VENCIDO' else '' }}>Vencido</option>
@@ -171,14 +196,14 @@
                         </div>
                     </div>
                     
-                    <div class="card-footer">
+                    <div class="card-footer py-2">
                         <div class="row">
                             <div class="col-12">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary btn-sm">
                                     <i class="fas fa-save mr-1"></i>
                                     {{ 'Atualizar' if contrato else 'Salvar' }} Contrato
                                 </button>
-                                <a href="{{ url_for('empenhos.contratos') }}" class="btn btn-secondary ml-2">
+                                <a href="{{ url_for('empenhos.contratos') }}" class="btn btn-secondary btn-sm ml-2">
                                     <i class="fas fa-times mr-1"></i>
                                     Cancelar
                                 </a>

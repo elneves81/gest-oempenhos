@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Aditivo – {{ c.numero }}{% endblock %}
+{% block page_title %}Aditivo ao Contrato {{ c.numero }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h6 class="mb-0">Informações do Contrato</h6>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <strong>Fornecedor:</strong> {{ c.fornecedor }}
+      </div>
+      <div class="col-md-6">
+        <strong>Status:</strong> 
+        <span class="badge bg-{{ 'success' if c.status == 'VIGENTE' else 'secondary' }}">
+          {{ c.status }}
+        </span>
+      </div>
+    </div>
+    
+    <div class="row mt-2">
+      <div class="col-md-3">
+        <strong>Valor Inicial:</strong><br>
+        R$ {{ '{:,.2f}'.format(c.valor_inicial or 0).replace(',', 'X').replace('.', ',').replace('X','.') }}
+      </div>
+      <div class="col-md-3">
+        <strong>Aditivos Anteriores:</strong><br>
+        R$ {{ '{:,.2f}'.format(c.aditivos_total or 0).replace(',', 'X').replace('.', ',').replace('X','.') }}
+      </div>
+      <div class="col-md-3">
+        <strong>Valor Atualizado:</strong><br>
+        R$ {{ '{:,.2f}'.format(c.valor_atualizado or 0).replace(',', 'X').replace('.', ',').replace('X','.') }}
+      </div>
+      <div class="col-md-3">
+        <strong>Saldo Disponível:</strong><br>
+        <span class="text-success fw-bold">
+          R$ {{ '{:,.2f}'.format(c.saldo_contrato).replace(',', 'X').replace('.', ',').replace('X','.') }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="post" class="card mt-3">
+  <div class="card-header">
+    <h6 class="mb-0">Novo Aditivo</h6>
+  </div>
+  <div class="card-body row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Valor do Aditivo *</label>
+      <div class="input-group">
+        <span class="input-group-text">R$</span>
+        <input type="number" name="valor" step="0.01" class="form-control" required>
+      </div>
+      <div class="form-text">Valor a ser adicionado ao contrato</div>
+    </div>
+    
+    <div class="col-md-8">
+      <label class="form-label">Justificativa (opcional)</label>
+      <textarea name="descricao" class="form-control" rows="3" 
+                placeholder="Descreva o motivo do aditivo..."></textarea>
+    </div>
+    
+    <div class="col-12 text-end">
+      <a href="{{ url_for('ui_contr.contr_list') }}" class="btn btn-outline-secondary">Cancelar</a>
+      <button class="btn btn-success">
+        <i class="bi bi-plus-circle me-1"></i>Aplicar Aditivo
+      </button>
+    </div>
+  </div>
+</form>
+
+<div class="alert alert-info mt-3">
+  <i class="bi bi-info-circle me-2"></i>
+  <strong>Importante:</strong> O aditivo será somado ao valor atual do contrato. 
+  Certifique-se de que o valor está correto antes de confirmar.
+</div>
+{% endblock %}

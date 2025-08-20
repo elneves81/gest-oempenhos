@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Relatório Operacional - Relatórios{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/logo-styles.css') }}">
+<style>
+    .operational-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        transition: all 0.3s;
+    }
+    
+    .kpi-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        height: 100%;
+        position: relative;
+    }
+    
+    .kpi-value {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .kpi-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+    
+    .progress-circle {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 1rem;
+        position: relative;
+    }
+    
+    .table-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        font-weight: 600;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .alert-box {
+        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        border: none;
+        border-radius: 15px;
+        padding: 1.5rem;
+    }
+</style>
+
+<!-- Chart.js (versão específica sem source map) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='img/logo_guarapuava.svg') }}" 
+                         alt="Logo Guarapuava" 
+                         class="report-logo me-3">
+                    <div>
+                        <h1 class="h2 mb-0 text-gray-800">
+                            <span class="d-print-none"><i class="fas fa-cogs text-info"></i> Relatório Operacional</span>
+                            <span class="d-none d-print-inline">RELATÓRIO OPERACIONAL</span>
+                        </h1>
+                        <p class="text-muted mb-0">Prefeitura Municipal de Guarapuava</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-orange d-print-none">
+                    <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Título específico para impressão -->
+    <div class="print-title">
+        <strong>SISTEMA DE GESTÃO DE EMPENHOS E CONTRATOS</strong><br>
+        <strong>RELATÓRIO OPERACIONAL</strong><br>
+        <small>Prefeitura Municipal de Guarapuava - Data: ___/___/_____</small>
+    </div>
+
+    <!-- KPIs de Produtividade -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="kpi-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="kpi-value">{{ produtividade.empenhos_mes }}</div>
+                <div class="kpi-label">Empenhos no Mês</div>
+                <i class="fas fa-calendar-day fa-2x position-absolute" style="top: 1rem; right: 1rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="kpi-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="kpi-value">{{ "{:.1f}".format(produtividade.media_diaria) }}</div>
+                <div class="kpi-label">Média Diária</div>
+                <i class="fas fa-chart-line fa-2x position-absolute" style="top: 1rem; right: 1rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="kpi-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="kpi-value">{{ produtividade.meta_mensal }}</div>
+                <div class="kpi-label">Meta Mensal</div>
+                <i class="fas fa-target fa-2x position-absolute" style="top: 1rem; right: 1rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="kpi-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="progress-circle">
+                    <canvas id="progressChart" width="120" height="120"></canvas>
+                </div>
+                <div class="kpi-label">Progresso da Meta</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Análise de Prazos -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="operational-card">
+                <div class="table-header">
+                    <i class="fas fa-clock"></i> Análise de Prazos
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                            </div>
+                            <h3 class="text-warning">{{ prazos.vencendo_30_dias }}</h3>
+                            <p class="text-muted mb-0">Vencendo em 30 dias</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-times-circle fa-3x text-danger"></i>
+                            </div>
+                            <h3 class="text-danger">{{ prazos.vencidos }}</h3>
+                            <p class="text-muted mb-0">Vencidos</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-check-circle fa-3x text-success"></i>
+                            </div>
+                            <h3 class="text-success">{{ prazos.em_dia }}</h3>
+                            <p class="text-muted mb-0">Em dia</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="operational-card">
+                <div class="table-header">
+                    <i class="fas fa-chart-pie"></i> Distribuição Status
+                </div>
+                <div class="card-body">
+                    <canvas id="statusDistChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas Operacionais -->
+    {% if alertas_operacionais %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert-box">
+                <h5 class="mb-3"><i class="fas fa-bell"></i> Alertas Operacionais</h5>
+                <div class="row">
+                    {% for alerta in alertas_operacionais %}
+                    <div class="col-md-6 mb-3">
+                        <div class="alert alert-{{ alerta.tipo }} mb-0">
+                            <h6><i class="fas fa-exclamation-triangle"></i> {{ alerta.titulo }}</h6>
+                            <p class="mb-0">{{ alerta.valor }} itens requerem atenção</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Distribuição Detalhada -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="operational-card">
+                <div class="table-header">
+                    <i class="fas fa-file-invoice"></i> Status dos Empenhos
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Status</th>
+                                <th>Quantidade</th>
+                                <th>Percentual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set total_empenhos = status_distribuicao.empenhos | sum(attribute='quantidade') %}
+                            {% for item in status_distribuicao.empenhos %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-orange">{{ item.status }}</span>
+                                </td>
+                                <td>{{ item.quantidade }}</td>
+                                <td>
+                                    {% set percentual = (item.quantidade / total_empenhos * 100) if total_empenhos > 0 else 0 %}
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-orange" style="width: {{ percentual }}%"></div>
+                                    </div>
+                                    <small>{{ "{:.1f}".format(percentual) }}%</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="operational-card">
+                <div class="table-header">
+                    <i class="fas fa-receipt"></i> Status das Notas Fiscais
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Status</th>
+                                <th>Quantidade</th>
+                                <th>Percentual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set total_notas = status_distribuicao.notas | sum(attribute='quantidade') %}
+                            {% for item in status_distribuicao.notas %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-info">{{ item.status }}</span>
+                                </td>
+                                <td>{{ item.quantidade }}</td>
+                                <td>
+                                    {% set percentual = (item.quantidade / total_notas * 100) if total_notas > 0 else 0 %}
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-info" style="width: {{ percentual }}%"></div>
+                                    </div>
+                                    <small>{{ "{:.1f}".format(percentual) }}%</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dados dos gráficos
+const statusEmpenhos = {{ status_distribuicao.empenhos | tojson }};
+const progressoMeta = {{ produtividade.percentual_meta }};
+
+// Gráfico de progresso circular
+const progressCtx = document.getElementById('progressChart').getContext('2d');
+new Chart(progressCtx, {
+    type: 'doughnut',
+    data: {
+        datasets: [{
+            data: [progressoMeta, 100 - progressoMeta],
+            backgroundColor: ['#43e97b', 'rgba(255,255,255,0.3)'],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: false,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                enabled: false
+            }
+        }
+    },
+    plugins: [{
+        beforeDraw: function(chart) {
+            const ctx = chart.ctx;
+            ctx.save();
+            ctx.font = "bold 16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "white";
+            ctx.fillText(progressoMeta.toFixed(1) + "%", 60, 65);
+            ctx.restore();
+        }
+    }]
+});
+
+// Gráfico de distribuição de status
+const statusDistCtx = document.getElementById('statusDistChart').getContext('2d');
+new Chart(statusDistCtx, {
+    type: 'doughnut',
+    data: {
+        labels: statusEmpenhos.map(item => item.status),
+        datasets: [{
+            data: statusEmpenhos.map(item => item.quantidade),
+            backgroundColor: [
+                '#FF8F00',
+                '#667eea',
+                '#f093fb',
+                '#4facfe',
+                '#43e97b'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    boxWidth: 12,
+                    fontSize: 10
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

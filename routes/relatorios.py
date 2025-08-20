@@ -12,6 +12,15 @@ import json
 import random
 from collections import defaultdict
 
+# Importações para módulo orçamentário
+try:
+    from models_orcamento import Orcamento, EmpenhoOrcamentario
+    from services.orcamento import OrcamentoService
+    ORCAMENTO_DISPONIVEL = True
+except ImportError:
+    ORCAMENTO_DISPONIVEL = False
+    print("⚠️ Módulo orçamentário não disponível")
+
 # Função para simular relativedelta sem import problemático
 def add_months(source_date, months):
     """Adicionar meses a uma data sem usar relativedelta"""
@@ -1296,7 +1305,7 @@ def index_moderno():
         flash('Erro ao carregar dashboard moderno', 'error')
         return redirect(url_for('relatorios.index'))
 
-@relatorios_bp.route('/api/widget-data/<widget_id>')
+@relatorios_bp.route('/api/widget-data-legacy/<widget_id>')
 @login_required
 def api_widget_data(widget_id):
     """API para dados específicos de widgets"""
@@ -1570,6 +1579,12 @@ def demo():
     return render_template('relatorios/demo.html')
 
 # Novas rotas para relatórios avançados
+@relatorios_bp.route('/dashboard-interativo')
+@login_required
+def dashboard_interativo():
+    """Dashboard interativo com drag-and-drop"""
+    return render_template('relatorios/dashboard_interativo.html')
+
 @relatorios_bp.route('/analytics')
 @login_required
 def analytics():
@@ -2247,6 +2262,7 @@ def get_widget_data(widget_id):
     Devolve JSON específico por widget_id:
       - kpi-empenhos        -> { total, ativos }
       - kpi-financeiro      -> { valor_total, variacao }
+      - kpi-contratos       -> { total_contratos, ativos, vencendo, vencidos, valor_total, dados_grafico }
       - grafico-evolucao    -> { evolucao: { labels, values } }
       - grafico-pizza       -> { pizza:   { labels, values } }
       - tabela-top-fornecedores -> { fornecedores: [{nome, valor}] }
@@ -2259,6 +2275,9 @@ def get_widget_data(widget_id):
 
         elif widget_id == "kpi-financeiro":
             return jsonify(_data_kpi_financeiro())
+
+        elif widget_id == "kpi-contratos":
+            return jsonify(_data_contratos())
 
         elif widget_id == "grafico-evolucao":
             return jsonify(_data_grafico_evolucao())
@@ -2326,6 +2345,89 @@ def _data_kpi_financeiro():
         "valor_total": _fmt_money(valor_total),
         "variacao": round(variacao, 1)
     }
+
+def _data_contratos():
+    """Widget de contratos - estatísticas e status"""
+    try:
+        # Verificar se a tabela contratos existe
+        try:
+            total_contratos = db.session.query(func.count(Contrato.id)).scalar() or 0
+        except Exception:
+            # Se não existir tabela contratos, usar dados de fallback
+            return {
+                "total_contratos": 0,
+                "ativos": 0,
+                "vencendo": 0,
+                "vencidos": 0,
+                "valor_total": "R$ 0,00",
+                "dados_grafico": []
+            }
+
+        # Contar contratos por status se existir campo status
+        try:
+            contratos_ativos = db.session.query(func.count(Contrato.id))\
+                .filter(or_(Contrato.status == 'ATIVO', Contrato.status == 'ativo')).scalar() or 0
+        except Exception:
+            # Se não tiver campo status, usar data_fim para determinar
+            hoje = date.today()
+            contratos_ativos = db.session.query(func.count(Contrato.id))\
+                .filter(Contrato.data_fim >= hoje).scalar() or 0
+
+        # Verificar contratos vencendo (próximos 30 dias)
+        hoje = date.today()
+        data_limite = hoje + timedelta(days=30)
+        try:
+            contratos_vencendo = db.session.query(func.count(Contrato.id))\
+                .filter(or_(
+                    Contrato.status == 'VENCENDO',
+                    and_(Contrato.data_fim >= hoje, Contrato.data_fim <= data_limite)
+                )).scalar() or 0
+        except Exception:
+            contratos_vencendo = db.session.query(func.count(Contrato.id))\
+                .filter(Contrato.data_fim >= hoje, Contrato.data_fim <= data_limite).scalar() or 0
+
+        # Verificar contratos vencidos
+        try:
+            contratos_vencidos = db.session.query(func.count(Contrato.id))\
+                .filter(or_(
+                    Contrato.status == 'VENCIDO',
+                    Contrato.data_fim < hoje
+                )).scalar() or 0
+        except Exception:
+            contratos_vencidos = db.session.query(func.count(Contrato.id))\
+                .filter(Contrato.data_fim < hoje).scalar() or 0
+
+        # Valor total dos contratos
+        try:
+            valor_total = db.session.query(func.coalesce(func.sum(Contrato.valor_total), 0.0)).scalar() or 0.0
+        except Exception:
+            valor_total = 0.0
+
+        # Dados para gráfico de pizza (status dos contratos)
+        dados_grafico = [
+            {"label": "Ativos", "value": contratos_ativos},
+            {"label": "Vencendo", "value": contratos_vencendo},
+            {"label": "Vencidos", "value": contratos_vencidos}
+        ]
+
+        return {
+            "total_contratos": total_contratos,
+            "ativos": contratos_ativos,
+            "vencendo": contratos_vencendo,
+            "vencidos": contratos_vencidos,
+            "valor_total": _fmt_money(valor_total),
+            "dados_grafico": dados_grafico
+        }
+    except Exception as e:
+        # Fallback completo em caso de erro
+        return {
+            "total_contratos": 0,
+            "ativos": 0,
+            "vencendo": 0,
+            "vencidos": 0,
+            "valor_total": "R$ 0,00",
+            "dados_grafico": []
+        }
 
 def _data_grafico_evolucao():
     """
@@ -2513,6 +2615,91 @@ def load_dashboard_layout():
             {'id': 'top-fornecedores', 'x': 0, 'y': 4, 'w': 8, 'h': 3},
             {'id': 'calendario-vencimentos', 'x': 8, 'y': 4, 'w': 4, 'h': 3}
         ]
+        
+        return jsonify({
+            'success': True,
+            'layout': default_layout
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao carregar layout: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erro ao carregar layout do dashboard'
+        }), 500
+
+# ======================= RELATÓRIO ORÇAMENTÁRIO =======================
+
+@relatorios_bp.route('/orcamento')
+@login_required
+def relatorio_orcamento():
+    """Relatório orçamentário detalhado"""
+    if not ORCAMENTO_DISPONIVEL:
+        flash('Módulo orçamentário não disponível', 'warning')
+        return redirect(url_for('relatorios.index'))
+    
+    try:
+        ano = int(request.args.get('ano', datetime.now().year))
+        categoria = request.args.get('categoria', '')
+        
+        # Buscar dados orçamentários
+        service = OrcamentoService()
+        resumo = service.gerar_resumo(ano=ano, categoria=categoria or None)
+        
+        # Construir linhas detalhadas
+        linhas = []
+        query = db.session.query(Orcamento)
+        
+        if ano:
+            query = query.filter(Orcamento.ano == ano)
+        if categoria:
+            query = query.filter(Orcamento.categoria == categoria)
+            
+        orcamentos = query.order_by(Orcamento.orgao, Orcamento.unidade).all()
+        
+        for orc in orcamentos:
+            empenhado = sum(emp.valor_empenhado or 0 for emp in orc.empenhos)
+            liquidado = sum(emp.valor_liquidado or 0 for emp in orc.empenhos)
+            pago = sum(emp.valor_pago or 0 for emp in orc.empenhos)
+            
+            linhas.append({
+                'orgao': orc.orgao,
+                'unidade': orc.unidade,
+                'fonte': orc.fonte,
+                'dotado': orc.valor_dotado or 0,
+                'atualizado': orc.valor_atualizado or 0,
+                'empenhado': empenhado,
+                'liquidado': liquidado,
+                'pago': pago,
+                'saldo_empenhar': (orc.valor_atualizado or 0) - empenhado
+            })
+        
+        return render_template('rel_orcamento.html',
+            ano=ano,
+            categoria=categoria,
+            total=resumo.get('total', {}),
+            linhas=linhas
+        )
+        
+    except Exception as e:
+        logger.error(f"Erro no relatório orçamentário: {e}")
+        flash(f'Erro ao gerar relatório: {str(e)}', 'error')
+        return redirect(url_for('relatorios.index'))
+
+# ======================= RELATÓRIO DE CONTRATOS =======================
+
+@relatorios_bp.route('/contratos')
+@login_required
+def rel_contratos():
+    """Relatório de contratos imprimível"""
+    try:
+        from models import ContratoOtimizado as Contrato
+        contratos = Contrato.query.order_by(Contrato.fornecedor.asc()).all()
+        return render_template("rel_contratos.html", contratos=contratos)
+    except Exception as e:
+        logger.error(f"Erro no relatório de contratos: {e}")
+        flash(f'Erro ao gerar relatório: {str(e)}', 'error')
+        return redirect(url_for('relatorios.index'))
         
         return jsonify({'layout': default_layout})
         

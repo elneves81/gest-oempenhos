@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Erro interno - Sistema de Empenhos{% endblock %}
+
+{% block page_title %}Erro 500 - Erro interno do servidor{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <h1 class="display-1 text-danger">500</h1>
+                    <h3 class="mb-3">Erro interno do servidor</h3>
+                    <p class="lead">Ocorreu um erro interno. Nossa equipe foi notificada e está trabalhando na correção.</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="bi bi-house"></i> Voltar ao Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard de Notas Fiscais - Gestão de Empenhos e Contratos{% endblock %}
+
+{% block page_title %}Dashboard de Notas Fiscais{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('notas.nova') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>
+        Nova Nota Fiscal
+    </a>
+    <a href="{{ url_for('notas.index') }}" class="btn btn-outline-primary">
+        <i class="bi bi-list-ul me-1"></i>
+        Listar Notas
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Cards de estatísticas por status -->
+<div class="row mb-4">
+    {% for stat in stats_status %}
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card 
+            {% if stat.status == 'EM_ABERTO' %}border-warning{% endif %}
+            {% if stat.status == 'PAGO' %}border-success{% endif %}
+            {% if stat.status == 'VENCIDO' %}border-danger{% endif %}
+            {% if stat.status == 'CANCELADO' %}border-secondary{% endif %}
+        ">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3>{{ stat.quantidade }}</h3>
+                        <p class="mb-1">{{ stat.status.replace('_', ' ').title() }}</p>
+                        <small class="text-muted">R$ {{ "%.2f"|format(stat.valor_total or 0) }}</small>
+                    </div>
+                    <div>
+                        <i class="bi 
+                            {% if stat.status == 'EM_ABERTO' %}bi-clock-history text-warning{% endif %}
+                            {% if stat.status == 'PAGO' %}bi-check-circle text-success{% endif %}
+                            {% if stat.status == 'VENCIDO' %}bi-exclamation-triangle text-danger{% endif %}
+                            {% if stat.status == 'CANCELADO' %}bi-x-circle text-secondary{% endif %}
+                        " style="font-size: 2rem; opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Notas Vencendo -->
+{% if notas_vencendo %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Notas Vencendo nos Próximos 30 Dias
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Fornecedor</th>
+                                <th>Empenho</th>
+                                <th>Vencimento</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for nota in notas_vencendo %}
+                            <tr>
+                                <td>{{ nota.numero_nota }}</td>
+                                <td>{{ nota.fornecedor_nome }}</td>
+                                <td>{{ nota.empenho.numero_empenho if nota.empenho else 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-warning">
+                                        {{ nota.data_vencimento.strftime('%d/%m/%Y') if nota.data_vencimento else 'N/A' }}
+                                    </span>
+                                </td>
+                                <td>R$ {{ "%.2f"|format(nota.valor_liquido) }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ nota.status.replace('_', ' ').title() }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('notas.detalhes', id=nota.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Gráfico de Notas por Mês -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-bar-chart me-2"></i>
+                    Notas por Mês (Últimos 12 Meses)
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="notasPorMesChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Fornecedores -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-building me-2"></i>
+                    Top 10 Fornecedores
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Fornecedor</th>
+                                <th>Qtd</th>
+                                <th>Valor Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fornecedor in top_fornecedores %}
+                            <tr>
+                                <td>{{ fornecedor.fornecedor_nome }}</td>
+                                <td>{{ fornecedor.quantidade }}</td>
+                                <td>R$ {{ "%.2f"|format(fornecedor.valor_total) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script>
+// Gráfico de Notas por Mês
+const ctxNotas = document.getElementById('notasPorMesChart').getContext('2d');
+const notasData = {
+    labels: [
+        {% for item in notas_por_mes %}
+        '{{ "%02d/%04d"|format(item.mes, item.ano) }}'{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        label: 'Quantidade de Notas',
+        data: [
+            {% for item in notas_por_mes %}
+            {{ item.quantidade }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+    }]
+};
+
+new Chart(ctxNotas, {
+    type: 'bar',
+    data: notasData,
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
