@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Analytics{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@8.4.0/dist/gridstack.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/relatorios.css') }}">
+<style>
+/* CSS específico para widgets */
+.widget-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.widget-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+
+.widget-title {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.widget-controls {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.widget-controls .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.widget-content {
+    flex: 1;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.widget-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6c757d;
+}
+
+.kpi-mini-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.bg-success { background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important; }
+.bg-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; }
+
+.kpi-mini-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+.kpi-mini-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.kpi-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+.kpi-label {
+    font-size: 0.9rem;
+}
+
+.widget-library-card:hover .card {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.widget-library-card .card {
+    transition: all 0.3s ease;
+}
+
+.calendar-event {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.event-date {
+    width: 2rem;
+    height: 2rem;
+    background: #667eea;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-right: 0.75rem;
+}
+
+.event-info {
+    flex: 1;
+}
+
+.event-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.event-type {
+    font-size: 0.75rem;
+}
+
+.grid-stack.edit-mode .widget-container {
+    cursor: move;
+}
+
+.grid-stack.edit-mode .widget-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+@media (max-width: 768px) {
+    .widget-header {
+        padding: 0.5rem;
+    }
+    
+    .widget-content {
+        padding: 0.75rem;
+    }
+    
+    .kpi-mini-value {
+        font-size: 1.2rem;
+    }
+    
+    .kpi-value {
+        font-size: 1.4rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h3 class="mb-0"><i class="bi bi-grid-3x3-gap me-2"></i>Dashboard Analytics</h3>
+        <div class="btn-group" id="edit-controls" style="display:none">
+            <button id="add-widget-btn" class="btn btn-outline-primary">
+                <i class="bi bi-plus-lg me-1"></i>Adicionar widget
+            </button>
+            <button id="save-layout-btn" class="btn btn-outline-success">
+                <i class="bi bi-save me-1"></i>Salvar layout
+            </button>
+            <button id="reset-layout-btn" class="btn btn-outline-warning">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Redefinir
+            </button>
+        </div>
+        <button id="toggle-edit-mode" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Editar Dashboard
+        </button>
+    </div>
+
+    <div id="dashboard-grid" class="grid-stack"></div>
+</div>
+
+<!-- Modal Biblioteca de Widgets -->
+<div class="modal fade" id="widget-library-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-boxes me-2"></i>Biblioteca de Widgets</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="widget-library-container">
+                <!-- preenchido via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toasts -->
+<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- GridStack + Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/gridstack@8.4.0/dist/gridstack-h5.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Dashboard JS -->
+<script src="{{ url_for('static', filename='js/dashboard-drag-drop.js') }}"></script>
+{% endblock %}
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='img/logo_guarapuava.svg') }}" 
+                         alt="Logo Guarapuava" 
+                         class="report-logo me-3">
+                    <div>
+                        <h1 class="h2 mb-0 text-gray-800">
+                            <span class="d-print-none"><i class="fas fa-chart-line text-orange"></i> Analytics Avançado</span>
+                            <span class="d-none d-print-inline">RELATÓRIO ANALÍTICO AVANÇADO</span>
+                        </h1>
+                        <p class="text-muted mb-0">Prefeitura Municipal de Guarapuava</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('relatorios.index') }}" class="btn btn-outline-orange d-print-none">
+                    <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Título específico para impressão -->
+    <div class="print-title">
+        <strong>SISTEMA DE GESTÃO DE EMPENHOS E CONTRATOS</strong><br>
+        <strong>RELATÓRIO ANALÍTICO AVANÇADO</strong><br>
+        <small>Prefeitura Municipal de Guarapuava - Data: ___/___/_____</small>
+    </div>
+
+    <!-- KPIs Principais -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="kpi-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="kpi-value">{{ "{:.1f}".format(indicadores_kpi.tempo_medio_processamento) }}</div>
+                <div class="kpi-label">Dias Médio Processamento</div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="kpi-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="kpi-value">{{ "{:.1f}".format(indicadores_kpi.taxa_execucao) }}%</div>
+                <div class="kpi-label">Taxa de Execução</div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="kpi-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="kpi-value">R$ {{ "{:,.0f}".format(indicadores_kpi.valor_medio_empenho/1000) }}K</div>
+                <div class="kpi-label">Valor Médio Empenho</div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="kpi-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="kpi-value">{{ indicadores_kpi.total_processados }}</div>
+                <div class="kpi-label">Total Processados</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Análise de Tendências -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="analytics-card">
+                <div class="table-header">
+                    <i class="fas fa-trending-up"></i> Análise de Tendências
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <h4 class="text-muted">Variação Quantidade</h4>
+                            <h2 class="{{ 'text-success' if tendencias.variacao_quantidade >= 0 else 'text-danger' }}">
+                                {{ "{:+.1f}".format(tendencias.variacao_quantidade) }}%
+                                <i class="fas fa-arrow-{{ 'up' if tendencias.variacao_quantidade >= 0 else 'down' }} trend-indicator"></i>
+                            </h2>
+                            <small class="text-muted">{{ tendencias.periodo_atual }} vs {{ tendencias.periodo_anterior }}</small>
+                        </div>
+                        <div class="col-6 text-center">
+                            <h4 class="text-muted">Variação Valor</h4>
+                            <h2 class="{{ 'text-success' if tendencias.variacao_valor >= 0 else 'text-danger' }}">
+                                {{ "{:+.1f}".format(tendencias.variacao_valor) }}%
+                                <i class="fas fa-arrow-{{ 'up' if tendencias.variacao_valor >= 0 else 'down' }} trend-indicator"></i>
+                            </h2>
+                            <small class="text-muted">Comparativo trimestral</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="analytics-card">
+                <div class="table-header">
+                    <i class="fas fa-chart-pie"></i> Distribuição por Fornecedores
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="distribuicaoChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Mensal -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="analytics-card">
+                <div class="table-header">
+                    <i class="fas fa-chart-area"></i> Performance Mensal Detalhada
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela Detalhada de Performance -->
+    <div class="row">
+        <div class="col-12">
+            <div class="analytics-card">
+                <div class="table-header">
+                    <i class="fas fa-table"></i> Detalhamento Mensal
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mês</th>
+                                <th>Empenhos</th>
+                                <th>Valor Empenhos</th>
+                                <th>Notas Fiscais</th>
+                                <th>Valor Notas</th>
+                                <th>Eficiência</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mes in performance_mensal %}
+                            <tr>
+                                <td><strong>{{ mes.mes }}</strong></td>
+                                <td>{{ mes.empenhos_qtd }}</td>
+                                <td class="text-success">R$ {{ "{:,.2f}".format(mes.empenhos_valor) }}</td>
+                                <td>{{ mes.notas_qtd }}</td>
+                                <td class="text-info">R$ {{ "{:,.2f}".format(mes.notas_valor) }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                            <div class="progress-bar bg-orange" style="width: {{ mes.eficiencia }}%"></div>
+                                        </div>
+                                        <small>{{ "{:.1f}".format(mes.eficiencia) }}%</small>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dados dos gráficos
+const performanceData = {{ performance_mensal | tojson }};
+const distribuicaoData = {{ distribuicao_fornecedores | tojson }};
+
+// Gráfico de Performance Mensal
+const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+new Chart(performanceCtx, {
+    type: 'line',
+    data: {
+        labels: performanceData.map(item => item.mes),
+        datasets: [{
+            label: 'Empenhos (R$)',
+            data: performanceData.map(item => item.empenhos_valor),
+            borderColor: 'rgb(255, 143, 0)',
+            backgroundColor: 'rgba(255, 143, 0, 0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y'
+        }, {
+            label: 'Notas Fiscais (R$)',
+            data: performanceData.map(item => item.notas_valor),
+            borderColor: 'rgb(102, 126, 234)',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y'
+        }, {
+            label: 'Eficiência (%)',
+            data: performanceData.map(item => item.eficiencia),
+            borderColor: 'rgb(67, 233, 123)',
+            backgroundColor: 'rgba(67, 233, 123, 0.1)',
+            type: 'line',
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                ticks: {
+                    callback: function(value) {
+                        return 'R$ ' + (value/1000).toFixed(0) + 'K';
+                    }
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                ticks: {
+                    callback: function(value) {
+                        return value.toFixed(1) + '%';
+                    }
+                },
+                grid: {
+                    drawOnChartArea: false,
+                }
+            }
+        }
+    }
+});
+
+// Gráfico de Distribuição por Fornecedores
+const distribuicaoCtx = document.getElementById('distribuicaoChart').getContext('2d');
+new Chart(distribuicaoCtx, {
+    type: 'doughnut',
+    data: {
+        labels: distribuicaoData.slice(0, 8).map(item => 
+            (item.nome && item.nome.length > 0) 
+                ? item.nome.substring(0, 20) + '...' 
+                : 'N/A'
+        ),
+        datasets: [{
+            data: distribuicaoData.slice(0, 8).map(item => item.valor),
+            backgroundColor: [
+                '#FF8F00',
+                '#667eea',
+                '#f093fb',
+                '#4facfe',
+                '#43e97b',
+                '#764ba2',
+                '#f5576c',
+                '#38f9d7'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    boxWidth: 12,
+                    fontSize: 10
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.label + ': R$ ' + context.parsed.toLocaleString('pt-BR');
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
