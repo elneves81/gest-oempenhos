@@ -114,58 +114,6 @@
       width:3px; border-radius:3px; background:var(--sb-active);
     }
 
-    /* SUBMENU DROPDOWN */
-    .menu-dropdown {
-      position: relative;
-    }
-    .menu-dropdown .dropdown-toggle {
-      cursor: pointer;
-    }
-    .menu-dropdown .dropdown-toggle::after {
-      content: '\f282'; /* bi-chevron-down */
-      font-family: 'bootstrap-icons';
-      margin-left: auto;
-      transition: transform 0.2s ease;
-    }
-    .menu-dropdown.show .dropdown-toggle::after {
-      transform: rotate(180deg);
-    }
-    .menu-dropdown .dropdown-menu {
-      position: relative;
-      background: transparent;
-      border: none;
-      padding: 0;
-      margin: 0;
-      box-shadow: none;
-      display: none;
-    }
-    .menu-dropdown.show .dropdown-menu {
-      display: block;
-    }
-    .menu-dropdown .dropdown-item {
-      color: var(--sb-text-dim);
-      padding: 8px 12px 8px 44px;
-      margin: 2px 6px;
-      border-radius: 8px;
-      transition: all .18s ease;
-      text-decoration: none;
-      font-size: 0.9rem;
-    }
-    .menu-dropdown .dropdown-item:hover {
-      color: var(--sb-active);
-      background: var(--sb-active-pill);
-      transform: translateX(2px);
-    }
-    .menu-dropdown .dropdown-item.active {
-      color: var(--sb-active);
-      background: var(--sb-active-pill);
-    }
-    .menu-dropdown .dropdown-item .badge {
-      font-size: 0.65rem;
-      padding: 2px 6px;
-      margin-left: 4px;
-    }
-
     /* FOOTER (SAIR) */
     .sidebar-footer{
       margin-top:auto; padding:8px 6px;
@@ -206,6 +154,62 @@
     @media (max-width: 768px) {
       .sidebar { transform: translateX(-100%); position: fixed; z-index: 1000; }
       .sidebar.show { transform: translateX(0); }
+    }
+
+    /* Submenu Styles */
+    .submenu {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      margin: 5px 15px;
+      padding: 8px 0;
+    }
+    
+    .submenu-item {
+      padding: 8px 20px !important;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      margin: 2px 8px;
+      transition: all 0.2s ease;
+    }
+    
+    .submenu-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(4px);
+    }
+    
+    .submenu-item.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .submenu-item .icon-sm {
+      font-size: 0.9rem;
+      min-width: 20px;
+    }
+    
+    .dropdown-toggle::after {
+      content: "\F282"; /* bi-chevron-down */
+      font-family: "bootstrap-icons";
+      border: none;
+      font-size: 0.8rem;
+      margin-left: auto;
+      transition: transform 0.2s ease;
+      display: inline-block;
+    }
+    
+    .dropdown-toggle[aria-expanded="true"]::after {
+      transform: rotate(180deg);
+    }
+    
+    /* Remove a seta padrão do Bootstrap e garante que nossa seta customizada apareça */
+    .nav-link.dropdown-toggle::after {
+      vertical-align: 0;
+      margin-left: auto;
+    }
+    
+    /* Animação suave para o collapse */
+    .collapsing {
+      transition: height 0.25s ease;
     }
   </style>
 </head>
@@ -253,26 +257,50 @@
               <span class="text">Contratos</span>
             </a>
 
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('chat.') %}active{% endif %}"
+               href="{{ url_for('chat.index') }}">
+              <i class="bi bi-robot icon"></i>
+              <span class="text">Chat IA</span>
+            </a>
+
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('chat_offline') %}active{% endif %}"
+               href="{{ url_for('chat_offline.index') }}">
+              <i class="bi bi-chat-dots icon"></i>
+              <span class="text">Chat Interno</span>
+            </a>
+
             <!-- Relatórios com Submenu -->
-            <div class="menu-dropdown {% if request.endpoint and request.endpoint.startswith('relatorios') %}show{% endif %}">
-              <a class="nav-link dropdown-toggle {% if request.endpoint and request.endpoint.startswith('relatorios') %}active{% endif %}"
-                 onclick="toggleDropdown(this)">
+            <div class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle {% if request.endpoint and (request.endpoint.startswith('relatorios') or 'ai_kb' in request.endpoint) %}active{% endif %}"
+                 href="#" id="relatoriosDropdown" role="button" data-bs-toggle="collapse" data-bs-target="#relatoriosSubmenu" 
+                 aria-expanded="{% if request.endpoint and (request.endpoint.startswith('relatorios') or 'ai_kb' in request.endpoint) %}true{% else %}false{% endif %}" aria-controls="relatoriosSubmenu">
                 <i class="bi bi-graph-up icon"></i>
                 <span class="text">Relatórios</span>
               </a>
-              <div class="dropdown-menu">
-                <a class="dropdown-item {% if request.endpoint=='relatorios.index' %}active{% endif %}"
-                   href="{{ url_for('relatorios.index') }}">
-                  <i class="bi bi-bar-chart me-2"></i>Central de Relatórios
-                </a>
-                <a class="dropdown-item {% if request.endpoint=='relatorios.dashboard_interativo' %}active{% endif %}"
-                   href="{{ url_for('relatorios.dashboard_interativo') }}">
-                  <i class="bi bi-grid-3x3-gap me-2"></i>Dashboard Interativo
-                  <span class="badge bg-primary">NOVO</span>
-                </a>
+              <div class="collapse {% if request.endpoint and (request.endpoint.startswith('relatorios') or 'ai_kb' in request.endpoint) %}show{% endif %}" id="relatoriosSubmenu">
+                <div class="submenu">
+                  <a class="nav-link submenu-item {% if request.endpoint == 'relatorios.index' %}active{% endif %}"
+                     href="{{ url_for('relatorios.index') }}">
+                    <i class="bi bi-bar-chart icon-sm"></i>
+                    <span class="text">Central de Relatórios</span>
+                  </a>
+                  <a class="nav-link submenu-item {% if request.endpoint == 'relatorios.dashboard_interativo' %}active{% endif %}"
+                     href="{{ url_for('relatorios.dashboard_interativo') }}">
+                    <i class="bi bi-speedometer2 icon-sm"></i>
+                    <span class="text">Dashboard Interativo</span>
+                  </a>
+                  {% if current_user.is_admin %}
+                  <a class="nav-link submenu-item {% if request.endpoint and 'ai_kb_admin' in request.endpoint %}active{% endif %}"
+                     href="{{ url_for('ai_kb_admin.kb_list') }}">
+                    <i class="bi bi-brain icon-sm"></i>
+                    <span class="text">Base de Conhecimento</span>
+                  </a>
+                  {% endif %}
+                </div>
               </div>
             </div>
 
+            <!-- Usuários (Admin apenas) -->
             {% if current_user.is_admin %}
             <a class="nav-link {% if request.endpoint=='auth.users' %}active{% endif %}"
                href="{{ url_for('auth.users') }}">
@@ -356,33 +384,6 @@
       window.addEventListener('resize', checkMobile);
       checkMobile();
     })();
-
-    // Função para controlar dropdown do menu
-    function toggleDropdown(element) {
-      const dropdown = element.parentElement;
-      const isOpen = dropdown.classList.contains('show');
-      
-      // Fecha todos os dropdowns abertos
-      document.querySelectorAll('.menu-dropdown.show').forEach(dd => {
-        dd.classList.remove('show');
-      });
-      
-      // Abre o dropdown clicado se não estava aberto
-      if (!isOpen) {
-        dropdown.classList.add('show');
-      }
-    }
-
-    // Fecha dropdown ao clicar fora
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('.menu-dropdown')) {
-        document.querySelectorAll('.menu-dropdown.show').forEach(dd => {
-          if (!dd.querySelector('.nav-link.active')) {
-            dd.classList.remove('show');
-          }
-        });
-      }
-    });
   </script>
 
   <!-- Espaço para scripts por página -->

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, flash, url_for
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
-from sqlalchemy import func
+from sqlalchemy import func, text
 from models_chat import ChatMessage, ChatSession
 from models import db
 import uuid
@@ -98,6 +98,106 @@ def get_messages(session_id):
 # ----------------------
 # API: Mensagens
 # ----------------------
+@chat.route('/ask', methods=['POST'])
+@login_required
+def ask():
+    """
+    API dedicada para perguntas diretas ao chat.
+    Formato: {"question": "texto da pergunta"}
+    Retorna: {"answer": "resposta", "kb_id": id ou null, "matched_question": "pergunta original" ou null}
+    """
+    try:
+        data = request.get_json(force=True) or {}
+        question = (data.get('question') or '').strip()
+        
+        if not question:
+            return jsonify({"answer": "Digite uma pergunta.", "kb_id": None, "matched_question": None})
+        
+        # 🔎 1º tenta no KB
+        kb_match = kb_best_match(question)
+        if kb_match:
+            return jsonify({
+                "answer": kb_match["answer"],
+                "kb_id": kb_match["id"],
+                "matched_question": kb_match["question"]
+            })
+        
+        # 🤖 2º tenta OpenAI 
+        if OPENAI_AVAILABLE:
+            try:
+                resp = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "Você é um assistente para gestão municipal (empenhos/contratos). Seja claro e útil."},
+                        {"role": "user", "content": question}
+                    ],
+                    max_tokens=500,
+                    temperature=0.7,
+                    timeout=20
+                )
+                return jsonify({
+                    "answer": resp.choices[0].message["content"],
+                    "kb_id": None,
+                    "matched_question": None
+                })
+            except Exception:
+                pass
+        
+        # ❌ fallback se não achou
+        return jsonify({
+            "answer": generate_mock_response(question),
+            "kb_id": None,
+            "matched_question": None
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "answer": f"Erro interno: {str(e)}",
+            "kb_id": None,
+            "matched_question": None
+        }), 500
+
+@chat.route('/test_kb', methods=['POST', 'GET'])
+def test_kb():
+    """
+    Rota de teste para verificar integração do KB (sem login)
+    """
+    if request.method == 'GET':
+        return jsonify({"message": "Use POST com {\"question\": \"sua pergunta\"}"})
+    
+    try:
+        data = request.get_json(force=True) or {}
+        question = (data.get('question') or '').strip()
+        
+        if not question:
+            return jsonify({"answer": "Digite uma pergunta.", "kb_id": None, "matched_question": None})
+        
+        # 🔎 Busca no KB
+        kb_match = kb_best_match(question)
+        if kb_match:
+            return jsonify({
+                "answer": kb_match["answer"],
+                "kb_id": kb_match["id"],
+                "matched_question": kb_match["question"],
+                "source": "KB"
+            })
+        
+        # ❌ fallback
+        return jsonify({
+            "answer": generate_mock_response(question),
+            "kb_id": None,
+            "matched_question": None,
+            "source": "MOCK"
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "answer": f"Erro interno: {str(e)}",
+            "kb_id": None,
+            "matched_question": None,
+            "source": "ERROR"
+        }), 500
+
 @chat.route('/send_message', methods=['POST'])
 @login_required
 def send_message():
@@ -186,6 +286,28 @@ def messages_per_day():
         return jsonify(success=True, labels=labels, values=values)
     except Exception as e:
         return jsonify(success=False, error=str(e)), 500
+
+# ----------------------
+# Knowledge Base Integration
+# ----------------------
+def kb_best_match(pergunta: str):
+    """
+    Busca a melhor correspondência no Knowledge Base usando FTS5.
+    Retorna dict com id, question, answer, score ou None se não encontrar.
+    """
+    try:
+        sql = """
+        SELECT e.id, e.question, e.answer, bm25(ai_kb_entries_fts) AS score
+        FROM ai_kb_entries_fts f
+        JOIN ai_kb_entries e ON e.id = f.rowid
+        WHERE e.is_active=1 AND ai_kb_entries_fts MATCH :q
+        ORDER BY score ASC LIMIT 1;
+        """
+        row = db.session.execute(text(sql), {"q": pergunta}).mappings().first()
+        return dict(row) if row else None
+    except Exception as e:
+        print(f"Erro na busca KB: {e}")
+        return None
 
 # ----------------------
 # Internals
@@ -686,10 +808,21 @@ def generate_mock_response(message):
     )
 
 def _generate_ai_response(user_text: str) -> str:
-    """Abstração segura: usa OpenAI se disponível; caso contrário, cai no mock estável."""
+    """
+    Geração de resposta inteligente:
+    1º - Busca no Knowledge Base (KB) 
+    2º - Se não achou, usa OpenAI (se disponível)
+    3º - Fallback para respostas mock estáveis
+    """
+    
+    # 🔎 1º PRIORIDADE: Buscar no Knowledge Base
+    kb_match = kb_best_match(user_text)
+    if kb_match:
+        return f"📚 **KB**: {kb_match['answer']}\n\n*Baseado na pergunta: \"{kb_match['question']}\"*"
+    
+    # 🤖 2º PRIORIDADE: OpenAI (se disponível)
     if OPENAI_AVAILABLE:
         try:
-            # Modelos novos: se quiser trocar, só mude aqui
             resp = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -700,12 +833,13 @@ def _generate_ai_response(user_text: str) -> str:
                 temperature=0.7,
                 timeout=20
             )
-            return resp.choices[0].message["content"]
+            return f"🤖 **IA**: {resp.choices[0].message['content']}"
         except Exception as e:
             # Se a API falhar, não quebra o fluxo
-            return f"Não consegui falar com o serviço de IA agora. Segue orientação geral: {generate_mock_response(user_text)}"
-    # Fallback
-    return generate_mock_response(user_text)
+            pass
+    
+    # 💡 3º PRIORIDADE: Fallback mock estável  
+    return f"💡 **Sistema**: {generate_mock_response(user_text)}"
 
 def _mock_response(text: str) -> str:
     """Função legada mantida para compatibilidade"""

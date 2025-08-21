@@ -1,0 +1,154 @@
+{# templates/ai_kb_form.html #}
+{% extends "base.html" %}
+
+{% block title %}
+{{ 'Editar' if e else 'Nova' }} Entrada - Base de Conhecimento
+{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-{{ 'pencil' if e else 'plus' }} me-2"></i>
+{{ 'Editar' if e else 'Nova' }} Entrada da KB
+{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('ai_kb_admin.kb_list') }}" class="btn btn-outline-secondary btn-sm">
+  <i class="bi bi-arrow-left me-1"></i>Voltar à Lista
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <form method="post" class="card">
+      <div class="card-body">
+        <div class="row g-3">
+          <!-- Pergunta -->
+          <div class="col-12">
+            <label class="form-label fw-bold">
+              <i class="bi bi-question-circle me-1"></i>Pergunta
+            </label>
+            <textarea name="question" class="form-control" rows="3" required 
+                      placeholder="Ex: Como criar um novo empenho?">{{ e.question if e else '' }}</textarea>
+            <div class="form-text">
+              Escreva a pergunta como um usuário faria. Seja claro e específico.
+            </div>
+          </div>
+
+          <!-- Resposta -->
+          <div class="col-12">
+            <label class="form-label fw-bold">
+              <i class="bi bi-chat-text me-1"></i>Resposta
+            </label>
+            <textarea name="answer" class="form-control" rows="6" required 
+                      placeholder="Resposta detalhada e útil...">{{ e.answer if e else '' }}</textarea>
+            <div class="form-text">
+              Forneça uma resposta completa e útil. Use formatação markdown se necessário.
+            </div>
+          </div>
+
+          <!-- Palavras-chave -->
+          <div class="col-12">
+            <label class="form-label fw-bold">
+              <i class="bi bi-tags me-1"></i>Palavras-chave
+            </label>
+            <input name="keywords" class="form-control" 
+                   value="{{ e.keywords if e else '' }}"
+                   placeholder="empenho, criar, novo, cadastrar">
+            <div class="form-text">
+              Separe por vírgula. Ajudam na busca e indexação FTS5.
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" id="is_active" name="is_active" 
+                     {{ 'checked' if (e and e.is_active) or not e else '' }}>
+              <label class="form-check-label fw-bold" for="is_active">
+                <i class="bi bi-toggle-on me-1"></i>Entrada Ativa
+              </label>
+              <div class="form-text">
+                Apenas entradas ativas aparecem nas buscas do chat.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer text-end">
+        <a href="{{ url_for('ai_kb_admin.kb_list') }}" class="btn btn-outline-secondary me-2">
+          <i class="bi bi-x me-1"></i>Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i>Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-lg-4">
+    <!-- Preview da resposta -->
+    <div class="card border-info">
+      <div class="card-header bg-info text-white">
+        <i class="bi bi-eye me-1"></i>Preview da Resposta
+      </div>
+      <div class="card-body">
+        <div id="answer-preview" class="border rounded p-2 bg-light">
+          <em class="text-muted">Digite a resposta para ver o preview...</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dicas -->
+    <div class="card border-success mt-3">
+      <div class="card-header bg-success text-white">
+        <i class="bi bi-lightbulb me-1"></i>Dicas
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled mb-0 small">
+          <li><i class="bi bi-check text-success me-1"></i>Use linguagem clara e objetiva</li>
+          <li><i class="bi bi-check text-success me-1"></i>Inclua passos numerados quando aplicável</li>
+          <li><i class="bi bi-check text-success me-1"></i>Mencione menus e botões específicos</li>
+          <li><i class="bi bi-check text-success me-1"></i>Teste a busca com palavras-chave</li>
+        </ul>
+      </div>
+    </div>
+
+    {% if e %}
+    <!-- Links relacionados -->
+    <div class="card border-warning mt-3">
+      <div class="card-header bg-warning text-dark">
+        <i class="bi bi-link me-1"></i>Links Relacionados
+      </div>
+      <div class="card-body">
+        <a href="{{ url_for('ai_kb_admin.kb_links', id=e.id) }}" class="btn btn-outline-warning btn-sm w-100">
+          <i class="bi bi-link-45deg me-1"></i>Gerenciar Links ({{ e.id }})
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Preview da resposta em tempo real
+document.addEventListener('DOMContentLoaded', function() {
+  const answerTextarea = document.querySelector('textarea[name="answer"]');
+  const previewDiv = document.getElementById('answer-preview');
+  
+  function updatePreview() {
+    const text = answerTextarea.value.trim();
+    if (text) {
+      // Simples conversão de quebras de linha para HTML
+      const html = text.replace(/\n/g, '<br>');
+      previewDiv.innerHTML = html;
+    } else {
+      previewDiv.innerHTML = '<em class="text-muted">Digite a resposta para ver o preview...</em>';
+    }
+  }
+  
+  answerTextarea.addEventListener('input', updatePreview);
+  updatePreview(); // Preview inicial
+});
+</script>
+{% endblock %}

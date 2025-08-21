@@ -12,15 +12,6 @@ import json
 import random
 from collections import defaultdict
 
-# Importações para módulo orçamentário
-try:
-    from models_orcamento import Orcamento, EmpenhoOrcamentario
-    from services.orcamento import OrcamentoService
-    ORCAMENTO_DISPONIVEL = True
-except ImportError:
-    ORCAMENTO_DISPONIVEL = False
-    print("⚠️ Módulo orçamentário não disponível")
-
 # Função para simular relativedelta sem import problemático
 def add_months(source_date, months):
     """Adicionar meses a uma data sem usar relativedelta"""
@@ -1239,11 +1230,45 @@ def backup():
         return redirect(url_for('relatorios.index'))
     
     try:
-        # TEMPORARIAMENTE DESABILITADO
-        # filename = ExportUtils.create_backup()
-        # return send_file(filename, as_attachment=True, download_name=f'backup_empenhos_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx')
-        flash('Backup temporariamente desabilitado', 'warning')
-        return redirect(url_for('relatorios.index'))
+        import shutil
+        import os
+        from datetime import datetime
+        
+        # Caminho do banco atual
+        db_path = os.path.join(os.getcwd(), 'empenhos.db')
+        
+        if not os.path.exists(db_path):
+            flash('Banco de dados não encontrado!', 'error')
+            return redirect(url_for('relatorios.index'))
+        
+        # Criar diretório de backup se não existir
+        backup_dir = os.path.join(os.getcwd(), 'instance', 'backups')
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        # Nome do arquivo de backup
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_filename = f'backup_empenhos_{timestamp}.db'
+        backup_path = os.path.join(backup_dir, backup_filename)
+        
+        # Copiar arquivo do banco
+        shutil.copy2(db_path, backup_path)
+        
+        # Verificar se o backup foi criado com sucesso
+        if os.path.exists(backup_path):
+            file_size = os.path.getsize(backup_path) // 1024  # Tamanho em KB
+            flash(f'✅ Backup criado com sucesso! Arquivo: {backup_filename} ({file_size} KB)', 'success')
+            
+            # Enviar arquivo para download
+            return send_file(
+                backup_path, 
+                as_attachment=True, 
+                download_name=backup_filename,
+                mimetype='application/octet-stream'
+            )
+        else:
+            flash('Erro: Backup não foi criado corretamente.', 'error')
+            return redirect(url_for('relatorios.index'))
+            
     except Exception as e:
         flash(f'Erro ao gerar backup: {str(e)}', 'error')
         return redirect(url_for('relatorios.index'))
@@ -2615,91 +2640,6 @@ def load_dashboard_layout():
             {'id': 'top-fornecedores', 'x': 0, 'y': 4, 'w': 8, 'h': 3},
             {'id': 'calendario-vencimentos', 'x': 8, 'y': 4, 'w': 4, 'h': 3}
         ]
-        
-        return jsonify({
-            'success': True,
-            'layout': default_layout
-        })
-        
-    except Exception as e:
-        logger.error(f"Erro ao carregar layout: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Erro ao carregar layout do dashboard'
-        }), 500
-
-# ======================= RELATÓRIO ORÇAMENTÁRIO =======================
-
-@relatorios_bp.route('/orcamento')
-@login_required
-def relatorio_orcamento():
-    """Relatório orçamentário detalhado"""
-    if not ORCAMENTO_DISPONIVEL:
-        flash('Módulo orçamentário não disponível', 'warning')
-        return redirect(url_for('relatorios.index'))
-    
-    try:
-        ano = int(request.args.get('ano', datetime.now().year))
-        categoria = request.args.get('categoria', '')
-        
-        # Buscar dados orçamentários
-        service = OrcamentoService()
-        resumo = service.gerar_resumo(ano=ano, categoria=categoria or None)
-        
-        # Construir linhas detalhadas
-        linhas = []
-        query = db.session.query(Orcamento)
-        
-        if ano:
-            query = query.filter(Orcamento.ano == ano)
-        if categoria:
-            query = query.filter(Orcamento.categoria == categoria)
-            
-        orcamentos = query.order_by(Orcamento.orgao, Orcamento.unidade).all()
-        
-        for orc in orcamentos:
-            empenhado = sum(emp.valor_empenhado or 0 for emp in orc.empenhos)
-            liquidado = sum(emp.valor_liquidado or 0 for emp in orc.empenhos)
-            pago = sum(emp.valor_pago or 0 for emp in orc.empenhos)
-            
-            linhas.append({
-                'orgao': orc.orgao,
-                'unidade': orc.unidade,
-                'fonte': orc.fonte,
-                'dotado': orc.valor_dotado or 0,
-                'atualizado': orc.valor_atualizado or 0,
-                'empenhado': empenhado,
-                'liquidado': liquidado,
-                'pago': pago,
-                'saldo_empenhar': (orc.valor_atualizado or 0) - empenhado
-            })
-        
-        return render_template('rel_orcamento.html',
-            ano=ano,
-            categoria=categoria,
-            total=resumo.get('total', {}),
-            linhas=linhas
-        )
-        
-    except Exception as e:
-        logger.error(f"Erro no relatório orçamentário: {e}")
-        flash(f'Erro ao gerar relatório: {str(e)}', 'error')
-        return redirect(url_for('relatorios.index'))
-
-# ======================= RELATÓRIO DE CONTRATOS =======================
-
-@relatorios_bp.route('/contratos')
-@login_required
-def rel_contratos():
-    """Relatório de contratos imprimível"""
-    try:
-        from models import ContratoOtimizado as Contrato
-        contratos = Contrato.query.order_by(Contrato.fornecedor.asc()).all()
-        return render_template("rel_contratos.html", contratos=contratos)
-    except Exception as e:
-        logger.error(f"Erro no relatório de contratos: {e}")
-        flash(f'Erro ao gerar relatório: {str(e)}', 'error')
-        return redirect(url_for('relatorios.index'))
         
         return jsonify({'layout': default_layout})
         

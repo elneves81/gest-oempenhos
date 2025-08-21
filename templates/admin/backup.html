@@ -1,0 +1,810 @@
+{% extends "base.html" %}
+
+{% block title %}Sistema de Backup - Admin{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+.backup-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.backup-header {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.backup-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.backup-card-header {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    color: white;
+    padding: 20px;
+    font-weight: 600;
+}
+
+.backup-card-body {
+    padding: 30px;
+}
+
+.create-backup-section {
+    text-align: center;
+    padding: 40px;
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white;
+    border-radius: 15px;
+    margin-bottom: 30px;
+}
+
+.btn-backup {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    border-radius: 50px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-backup:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(231,76,60,0.3);
+    color: white;
+}
+
+.btn-backup:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.backup-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.backup-item:hover {
+    background: #e9ecef;
+    border-color: #3498db;
+    transform: translateX(5px);
+}
+
+.backup-info {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 2fr;
+    align-items: center;
+    gap: 20px;
+}
+
+.backup-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 16px;
+}
+
+.backup-date {
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+.backup-size {
+    background: #3498db;
+    color: white;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.backup-actions {
+    text-align: right;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.btn-download {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 12px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.btn-download:hover {
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(39,174,96,0.3);
+}
+
+.btn-restore {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 12px;
+    margin-left: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-restore:hover {
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(243,156,18,0.3);
+}
+
+.btn-delete {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 12px;
+    margin-left: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-delete:hover {
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(231,76,60,0.3);
+}
+
+.upload-area {
+    border: 2px dashed #3498db;
+    border-radius: 10px;
+    padding: 40px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: #2980b9;
+    background: #f8f9fa;
+}
+
+.upload-area.dragover {
+    border-color: #27ae60;
+    background: #e8f5e8;
+}
+
+.progress {
+    width: 100%;
+    height: 20px;
+    background-color: #f3f3f3;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    transition: width 0.3s ease;
+}
+
+.upload-status {
+    margin-top: 10px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.backup-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2em;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: #7f8c8d;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.loading-spinner {
+    display: none;
+    text-align: center;
+    padding: 20px;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px;
+    color: #7f8c8d;
+}
+
+.empty-state i {
+    font-size: 4em;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .backup-info {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .backup-actions {
+        text-align: left;
+    }
+    
+    .backup-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    border: none;
+}
+
+.backup-tips {
+    background: #f8f9fa;
+    border-left: 4px solid #3498db;
+    padding: 20px;
+    margin-top: 30px;
+    border-radius: 5px;
+}
+
+.backup-tips h5 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.backup-tips ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.backup-tips li {
+    color: #7f8c8d;
+    margin-bottom: 5px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="backup-container">
+    <!-- Header -->
+    <div class="backup-header">
+        <h1><i class="fas fa-shield-alt"></i> Sistema de Backup</h1>
+        <p>Gerencie backups do sistema de forma segura e eficiente</p>
+    </div>
+
+    <!-- Alertas -->
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <strong>Importante:</strong> O backup inclui o banco de dados completo, configurações e logs do sistema.
+        Recomenda-se fazer backups regulares antes de atualizações importantes.
+    </div>
+
+    <!-- Criar Backup -->
+    <div class="create-backup-section">
+        <h3><i class="fas fa-plus-circle"></i> Criar Novo Backup</h3>
+        <p>Gere um backup completo do sistema atual</p>
+        <button id="createBackupBtn" class="btn-backup" onclick="createBackup()">
+            <i class="fas fa-download"></i> Criar Backup Agora
+        </button>
+    </div>
+
+    <!-- Upload de Backup -->
+    <div class="backup-card">
+        <div class="backup-card-header">
+            <i class="fas fa-upload"></i> Importar Backup
+        </div>
+        <div class="backup-card-body">
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Atenção:</strong> Apenas faça upload de backups confiáveis. 
+                O arquivo deve ser um backup válido do sistema (formato: backup_empenhos_AAAAMMDD_HHMMSS.zip).
+            </div>
+            
+            <form id="uploadForm" enctype="multipart/form-data" style="text-align: center;">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 3em; color: #3498db; margin-bottom: 15px;"></i>
+                    <p>Arraste o arquivo de backup aqui ou clique para selecionar</p>
+                    <input type="file" id="backupFile" name="backup_file" accept=".zip" style="display: none;">
+                    <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('backupFile').click()">
+                        <i class="fas fa-folder-open"></i> Selecionar Arquivo
+                    </button>
+                </div>
+                <div id="uploadProgress" style="display: none; margin-top: 20px;">
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <p class="upload-status">Enviando...</p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Criando backup... Aguarde</p>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="backup-stats" id="backupStats" style="display: none;">
+        <div class="stat-card">
+            <div class="stat-number" id="totalBackups">0</div>
+            <div class="stat-label">Total de Backups</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="totalSize">0 MB</div>
+            <div class="stat-label">Tamanho Total</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="lastBackupDate">-</div>
+            <div class="stat-label">Último Backup</div>
+        </div>
+    </div>
+
+    <!-- Lista de Backups -->
+    <div class="backup-card">
+        <div class="backup-card-header">
+            <i class="fas fa-history"></i> Backups Disponíveis
+        </div>
+        <div class="backup-card-body">
+            <div id="backupsList">
+                {% if backups %}
+                    {% for backup in backups %}
+                    <div class="backup-item">
+                        <div class="backup-info">
+                            <div>
+                                <div class="backup-name">
+                                    <i class="fas fa-file-archive"></i> {{ backup.filename }}
+                                </div>
+                                <div class="backup-date">
+                                    <i class="fas fa-calendar"></i> {{ backup.created_str }}
+                                </div>
+                            </div>
+                            <div class="backup-size">
+                                <i class="fas fa-hdd"></i> {{ backup.size_mb }} MB
+                            </div>
+                            <div>
+                                {% if backup.info and 'tables_count' in backup.info %}
+                                <small class="text-muted">
+                                    <i class="fas fa-table"></i> {{ backup.info.tables_count }} tabelas
+                                </small>
+                                {% endif %}
+                            </div>
+                            <div class="backup-actions">
+                                <a href="{{ url_for('admin_backup_download', filename=backup.filename) }}" 
+                                   class="btn-download">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                                <button class="btn-restore" onclick="restoreBackup('{{ backup.filename }}')">
+                                    <i class="fas fa-undo"></i> Restaurar
+                                </button>
+                                <button class="btn-delete" onclick="deleteBackup('{{ backup.filename }}')">
+                                    <i class="fas fa-trash"></i> Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <h4>Nenhum backup encontrado</h4>
+                    <p>Crie seu primeiro backup clicando no botão acima</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Dicas -->
+    <div class="backup-tips">
+        <h5><i class="fas fa-lightbulb"></i> Dicas de Backup</h5>
+        <ul>
+            <li>Faça backups regulares, especialmente antes de atualizações</li>
+            <li>Mantenha pelo menos 3 backups recentes para segurança</li>
+            <li>Armazene backups em local seguro, fora do servidor principal</li>
+            <li>Teste a restauração de backups periodicamente</li>
+            <li>Backups são compactados automaticamente para economizar espaço</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function createBackup() {
+    const btn = document.getElementById('createBackupBtn');
+    const spinner = document.getElementById('loadingSpinner');
+    
+    // Mostrar loading
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    
+    // Fazer requisição
+    fetch('/admin/backup/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            include_logs: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mostrar sucesso
+            showMessage('Backup criado com sucesso!', 'success');
+            
+            // Recarregar página após 2 segundos
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            showMessage('Erro ao criar backup: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showMessage('Erro de conexão: ' + error.message, 'error');
+    })
+    .finally(() => {
+        // Esconder loading
+        btn.disabled = false;
+        spinner.style.display = 'none';
+    });
+}
+
+function showMessage(message, type) {
+    // Criar elemento de alerta
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    
+    // Definir cores baseadas no tipo
+    let bgColor, icon;
+    switch(type) {
+        case 'success':
+            bgColor = '#27ae60';
+            icon = 'check-circle';
+            break;
+        case 'error':
+        case 'danger':
+            bgColor = '#e74c3c';
+            icon = 'exclamation-circle';
+            break;
+        case 'warning':
+            bgColor = '#f39c12';
+            icon = 'exclamation-triangle';
+            break;
+        case 'info':
+            bgColor = '#3498db';
+            icon = 'info-circle';
+            break;
+        default:
+            bgColor = '#3498db';
+            icon = 'info-circle';
+    }
+    
+    alert.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        padding: 15px 25px;
+        border-radius: 10px;
+        background: ${bgColor};
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        max-width: 400px;
+    `;
+    alert.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
+    
+    document.body.appendChild(alert);
+    
+    // Animar entrada
+    setTimeout(() => {
+        alert.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Remover após 5 segundos (8 segundos para mensagens de sucesso)
+    const duration = type === 'success' ? 8000 : 5000;
+    setTimeout(() => {
+        alert.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (document.body.contains(alert)) {
+                document.body.removeChild(alert);
+            }
+        }, 300);
+    }, duration);
+}
+
+// Carregar estatísticas
+function loadStats() {
+    fetch('/admin/backup/list')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.backups.length > 0) {
+            const stats = document.getElementById('backupStats');
+            const totalBackups = document.getElementById('totalBackups');
+            const totalSize = document.getElementById('totalSize');
+            const lastBackupDate = document.getElementById('lastBackupDate');
+            
+            // Calcular estatísticas
+            const backups = data.backups;
+            const totalSizeMB = backups.reduce((sum, backup) => sum + backup.size_mb, 0);
+            const lastBackup = backups[0]; // Já ordenado por data
+            
+            totalBackups.textContent = backups.length;
+            totalSize.textContent = totalSizeMB.toFixed(1) + ' MB';
+            lastBackupDate.textContent = lastBackup.created_str.split(' ')[0]; // Apenas a data
+            
+            stats.style.display = 'grid';
+        }
+    })
+    .catch(error => {
+        console.log('Erro ao carregar estatísticas:', error);
+    });
+}
+
+// Carregar estatísticas quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    setupUpload();
+});
+
+// Configurar upload de arquivos
+function setupUpload() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('backupFile');
+    
+    // Drag and drop
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            uploadBackup();
+        }
+    });
+    
+    // Seleção de arquivo
+    fileInput.addEventListener('change', function() {
+        if (fileInput.files.length > 0) {
+            uploadBackup();
+        }
+    });
+}
+
+// Upload de backup
+function uploadBackup() {
+    const fileInput = document.getElementById('backupFile');
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressBar = progressDiv.querySelector('.progress-bar');
+    const statusText = progressDiv.querySelector('.upload-status');
+    
+    if (!fileInput.files[0]) {
+        showMessage('Selecione um arquivo de backup', 'error');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    
+    // Validar arquivo
+    if (!file.name.endsWith('.zip')) {
+        showMessage('Apenas arquivos .zip são aceitos', 'error');
+        return;
+    }
+    
+    if (!file.name.startsWith('backup_empenhos_')) {
+        showMessage('Nome de arquivo inválido. Use: backup_empenhos_AAAAMMDD_HHMMSS.zip', 'error');
+        return;
+    }
+    
+    // Mostrar progresso
+    progressDiv.style.display = 'block';
+    progressBar.style.width = '0%';
+    statusText.textContent = 'Enviando arquivo...';
+    
+    // Preparar FormData
+    const formData = new FormData();
+    formData.append('backup_file', file);
+    
+    // Upload com progresso
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percent = (e.loaded / e.total) * 100;
+            progressBar.style.width = percent + '%';
+            statusText.textContent = `Enviando... ${Math.round(percent)}%`;
+        }
+    });
+    
+    xhr.addEventListener('load', function() {
+        if (xhr.status === 200) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                    showMessage(response.message, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showMessage('Erro: ' + response.error, 'error');
+                }
+            } catch (e) {
+                showMessage('Erro ao processar resposta', 'error');
+            }
+        } else {
+            showMessage('Erro de conexão', 'error');
+        }
+        
+        // Esconder progresso
+        progressDiv.style.display = 'none';
+        fileInput.value = '';
+    });
+    
+    xhr.addEventListener('error', function() {
+        showMessage('Erro de conexão', 'error');
+        progressDiv.style.display = 'none';
+        fileInput.value = '';
+    });
+    
+    xhr.open('POST', '/admin/backup/upload');
+    xhr.send(formData);
+}
+
+// Restaurar backup
+function restoreBackup(filename) {
+    if (!confirm('ATENÇÃO: Esta operação irá SUBSTITUIR o banco de dados atual.\n\n' +
+                'Todos os dados não salvos serão perdidos.\n\n' +
+                'Tem certeza que deseja continuar?')) {
+        return;
+    }
+    
+    if (!confirm('CONFIRMAÇÃO FINAL:\n\n' +
+                'Esta ação é IRREVERSÍVEL e irá sobrescrever o banco atual.\n\n' +
+                'Clique OK apenas se tiver certeza absoluta.')) {
+        return;
+    }
+    
+    showMessage('Restaurando backup... Aguarde', 'info');
+    
+    fetch(`/admin/backup/restore/${filename}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            confirm: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('Backup restaurado com sucesso! Reinicie o sistema.', 'success');
+            setTimeout(() => {
+                if (confirm('Deseja recarregar a página agora?')) {
+                    window.location.reload();
+                }
+            }, 3000);
+        } else {
+            showMessage('Erro ao restaurar: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showMessage('Erro de conexão: ' + error.message, 'error');
+    });
+}
+
+// Excluir backup
+function deleteBackup(filename) {
+    if (!confirm(`Tem certeza que deseja excluir o backup "${filename}"?\n\nEsta ação não pode ser desfeita.`)) {
+        return;
+    }
+    
+    fetch(`/admin/backup/delete/${filename}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            confirm: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            showMessage('Erro: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showMessage('Erro de conexão: ' + error.message, 'error');
+    });
+}
+</script>
+{% endblock %}

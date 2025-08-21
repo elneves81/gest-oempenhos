@@ -13,6 +13,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///empenhos.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
+# Configurações para Chat com anexos PDF
+app.config["UPLOAD_FOLDER"] = os.path.join(app.instance_path, "chat_uploads")
+app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024  # 20 MB
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+ALLOWED_MIMES = {"application/pdf"}
+ALLOWED_EXTS = {".pdf"}
+
 # Configurações WTForms
 app.config['WTF_CSRF_ENABLED'] = True
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB para uploads
@@ -120,6 +128,13 @@ print("📊 Importando modelos...")
 from models import db, User, Empenho, Contrato, AditivoContratual
 print("✅ Modelos principais importados")
 
+# Importar modelos de chat
+try:
+    from models_chat import ChatRoom, ChatMember, ChatRoomMessage, ChatAttachment
+    print("✅ Modelos de chat interno importados")
+except ImportError as e:
+    print(f"⚠️ Erro ao importar modelos de chat: {e}")
+
 # Tentar importar NotaFiscal se existir
 try:
     from models import NotaFiscal
@@ -132,28 +147,6 @@ except ImportError:
 print("⚙️ Inicializando extensões...")
 # Inicialização das extensões
 db.init_app(app)
-
-# Hotfix para garantir colunas necessárias no SQLite
-from sqlalchemy import text
-
-def ensure_empenhos_columns():
-    """Garante que a tabela empenhos tem todas as colunas necessárias"""
-    try:
-        with db.engine.begin() as conn:
-            cols = {row[1] for row in conn.execute(text("PRAGMA table_info(empenhos)"))}
-            if "contrato_otimizado_id" not in cols:
-                print("🔧 Adicionando coluna contrato_otimizado_id...")
-                # adiciona a coluna como INTEGER NULL (SQLite não suporta ADD COLUMN com FK)
-                conn.execute(text("ALTER TABLE empenhos ADD COLUMN contrato_otimizado_id INTEGER"))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_empenhos_contrato_otimizado ON empenhos(contrato_otimizado_id)"))
-                print("✅ Coluna contrato_otimizado_id adicionada com sucesso!")
-    except Exception as e:
-        print(f"⚠️ Erro ao verificar/adicionar colunas: {e}")
-
-# Aplicar hotfix
-with app.app_context():
-    ensure_empenhos_columns()
-
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
@@ -194,36 +187,6 @@ try:
     from routes.contratos_original_backup import contratos_original_bp
     from routes.relatorios import relatorios_bp
     from routes.notas import notas_bp
-    print("✅ Blueprints principais das rotas importados")
-    
-    # Tentar importar blueprints orçamentários separadamente
-    try:
-        from routes.orcamento import orc_bp  # Blueprint orçamentário
-        from setup_orcamentos import setup_bp  # Setup orçamentos
-        ORCAMENTO_DISPONIVEL = True
-        print("✅ Blueprints orçamentários importados")
-    except ImportError as e_orc:
-        print(f"⚠️ Blueprints orçamentários não disponíveis: {e_orc}")
-        ORCAMENTO_DISPONIVEL = False
-        # Criar blueprints vazios para evitar erros
-        from flask import Blueprint
-        orc_bp = Blueprint('orcamento', __name__, url_prefix='/api/orcamentos')
-        setup_bp = Blueprint('setup', __name__, url_prefix='/setup')
-    
-    # Tentar importar blueprints de contratos
-    try:
-        from routes_contratos import contr_bp  # Blueprint API contratos
-        from routes_contr_ui import ui_contr  # Blueprint UI contratos
-        CONTRATOS_DISPONIVEL = True
-        print("✅ Blueprints de contratos importados")
-    except ImportError as e_contr:
-        print(f"⚠️ Blueprints de contratos não disponíveis: {e_contr}")
-        CONTRATOS_DISPONIVEL = False
-        # Criar blueprints vazios para evitar erros
-        from flask import Blueprint
-        contr_bp = Blueprint('contratos_api', __name__, url_prefix='/api/contratos')
-        ui_contr = Blueprint('contratos_ui', __name__, url_prefix='/contratos')
-        
     print("✅ Usando blueprints das rotas existentes")
 except ImportError as e:
     print(f"⚠️ Erro ao importar rotas existentes: {e}")
@@ -243,9 +206,6 @@ except ImportError as e:
         contratos_wtf_bp = Blueprint('contratos_wtf', __name__, url_prefix='/contratos-wtf')
         relatorios_bp = Blueprint('relatorios', __name__, url_prefix='/relatorios')
         notas_bp = Blueprint('notas', __name__, url_prefix='/notas')
-        orc_bp = Blueprint('orcamento', __name__, url_prefix='/api/orcamentos')
-        setup_bp = Blueprint('setup', __name__, url_prefix='/setup')
-        ORCAMENTO_DISPONIVEL = False
         print("⚠️ Usando blueprints vazios como fallback")
 
 print("📋 Registrando blueprints principais...")
@@ -257,10 +217,6 @@ app.register_blueprint(contratos_wtf_bp)  # já tem url_prefix no blueprint
 app.register_blueprint(relatorios_bp, url_prefix='/relatorios')
 app.register_blueprint(notas_bp, url_prefix='/notas')
 app.register_blueprint(workflow_bp, url_prefix='/workflow')
-app.register_blueprint(orc_bp, url_prefix='/api/orcamentos')  # API orçamentária
-app.register_blueprint(setup_bp, url_prefix='/setup')  # Setup orçamentos
-app.register_blueprint(contr_bp, url_prefix='/api/contratos')  # API contratos
-app.register_blueprint(ui_contr)  # UI contratos (sem prefix, já definido)
 
 # Registrar o contratos_original_bp apenas se existir
 try:
@@ -288,6 +244,21 @@ try:
 except Exception as e:
     print(f"⚠️ Erro ao registrar chat offline: {e}")
 
+# Importar e registrar blueprints da Base de Conhecimento da IA
+try:
+    from routes_ai_kb_admin import ai_kb_admin
+    app.register_blueprint(ai_kb_admin)
+    print("✅ KB Admin blueprint registrado com sucesso!")
+except Exception as e:
+    print(f"⚠️ Erro ao registrar KB Admin blueprint: {e}")
+
+try:
+    from routes_ai_kb_api import ai_kb_api
+    app.register_blueprint(ai_kb_api)
+    print("✅ KB API blueprint registrado com sucesso!")
+except Exception as e:
+    print(f"⚠️ Erro ao registrar KB API blueprint: {e}")
+
 # Rota de debug temporária
 try:
     from debug_relatorios_route import debug_bp
@@ -297,19 +268,6 @@ except Exception as e:
     print(f"⚠️ Erro ao registrar debug relatorios: {e}")
 
 print("✅ Todos os blueprints processados")
-
-# ======================= ENDPOINTS DE STATS (ALIAS) =======================
-
-@app.get("/api/stats/contratos")
-def stats_contratos_alias():
-    """Alias para stats de contratos (compatibilidade com KPIs existentes)"""
-    try:
-        from services.contrato import get_stats_contratos
-        return jsonify(get_stats_contratos())
-    except Exception as e:
-        return jsonify({"total": 0, "valor_total": 0})
-
-print("✅ Endpoints de stats registrados")
 
 # ==========================
 # Rotas simples e navegação
@@ -343,12 +301,12 @@ def painel():
     """Painel Principal Executivo"""
     print("DEBUG PAINEL: Iniciando função painel()")
     try:
-        from sqlalchemy import func, select
+        from sqlalchemy import func
         print("DEBUG PAINEL: Imports realizados com sucesso")
 
-        # Estatísticas básicas (usando padrão otimizado para evitar conflitos de colunas)
-        total_empenhos = db.session.scalar(select(func.count()).select_from(Empenho))
-        total_contratos = db.session.scalar(select(func.count()).select_from(Contrato))
+        # Estatísticas básicas
+        total_empenhos = Empenho.query.count()
+        total_contratos = Contrato.query.count()
 
         # Normaliza status para ATIVO (independente de caixa)
         contratos_ativos = Contrato.query.filter(func.upper(Contrato.status) == 'ATIVO').count()
@@ -431,8 +389,8 @@ def painel():
         # Fallback para dashboard simples em caso de erro
         try:
             context = {
-                'total_empenhos': db.session.scalar(select(func.count()).select_from(Empenho)) if 'Empenho' in globals() else 0,
-                'total_contratos': db.session.scalar(select(func.count()).select_from(Contrato)) if 'Contrato' in globals() else 0,
+                'total_empenhos': Empenho.query.count() if 'Empenho' in globals() else 0,
+                'total_contratos': Contrato.query.count() if 'Contrato' in globals() else 0,
                 'contratos_criticos': [],
                 'contratos_atencao': [],
                 'contratos_ok': [],
@@ -481,6 +439,12 @@ def painel():
 def test_doctype():
     """Página de teste para DOCTYPE"""
     return render_template('test.html', now=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
+
+@app.route('/admin/backup')
+@login_required
+def admin_backup_redirect():
+    """Redirecionamento de /admin/backup para /relatorios/backup"""
+    return redirect(url_for('relatorios.backup'))
 
 @app.route('/simple')
 def simple_test():
@@ -558,9 +522,9 @@ def debug_login():
 def api_stats_empenhos():
     """API para estatísticas de empenhos"""
     try:
-        from sqlalchemy import func, select
+        from sqlalchemy import func
         
-        total = db.session.scalar(select(func.count()).select_from(Empenho))
+        total = Empenho.query.count()
         valor_total = (db.session.query(func.sum(Empenho.valor_empenhado))
                       .scalar()) or 0
         
@@ -592,9 +556,9 @@ def api_stats_empenhos():
 def api_stats_contratos():
     """API para estatísticas de contratos"""
     try:
-        from sqlalchemy import func, select
+        from sqlalchemy import func
         
-        total = db.session.scalar(select(func.count()).select_from(Contrato))
+        total = Contrato.query.count()
         ativos = Contrato.query.filter(func.upper(Contrato.status) == 'ATIVO').count()
         
         # Valor total dos contratos ativos
@@ -663,7 +627,7 @@ def api_empenhos_recentes():
 def api_widget_data(widget_id):
     """API genérica para dados de widgets do dashboard"""
     try:
-        from sqlalchemy import func, select
+        from sqlalchemy import func
         
         if widget_id == 'acoes-rapidas':
             # Widget de ações rápidas não precisa de dados, só links
@@ -673,7 +637,7 @@ def api_widget_data(widget_id):
             })
         
         elif widget_id == 'kpi-empenhos':
-            total = db.session.scalar(select(func.count()).select_from(Empenho))
+            total = Empenho.query.count()
             valor_total = (db.session.query(func.sum(Empenho.valor_empenhado))
                           .scalar()) or 0
             return jsonify({
@@ -682,7 +646,7 @@ def api_widget_data(widget_id):
             })
         
         elif widget_id == 'kpi-contratos':
-            total = db.session.scalar(select(func.count()).select_from(Contrato))
+            total = Contrato.query.count()
             ativos = Contrato.query.filter(func.upper(Contrato.status) == 'ATIVO').count()
             valor_total = (db.session.query(func.sum(Contrato.valor_total))
                            .filter(func.upper(Contrato.status) == 'ATIVO')
@@ -732,10 +696,9 @@ def api_widget_data(widget_id):
 def debug_dashboard():
     """Debug específico do dashboard"""
     try:
-        from sqlalchemy import func, select
         # Testar consultas básicas
-        total_empenhos = db.session.scalar(select(func.count()).select_from(Empenho))
-        total_contratos = db.session.scalar(select(func.count()).select_from(Contrato))
+        total_empenhos = Empenho.query.count()
+        total_contratos = Contrato.query.count()
 
         # Dados básicos para o dashboard
         context = {
@@ -769,9 +732,8 @@ def debug_dashboard():
 def dashboard_simple():
     """Dashboard simples para teste"""
     try:
-        from sqlalchemy import func, select
-        total_empenhos = db.session.scalar(select(func.count()).select_from(Empenho))
-        total_contratos = db.session.scalar(select(func.count()).select_from(Contrato))
+        total_empenhos = Empenho.query.count()
+        total_contratos = Contrato.query.count()
 
         return render_template('dashboard_simple.html',
                                total_empenhos=total_empenhos,
@@ -797,11 +759,11 @@ def dashboard_simple():
 def dashboard_executivo():
     """Dashboard Executivo Completo com Análise de Contratos"""
     try:
-        from sqlalchemy import func, select
+        from sqlalchemy import func
 
         # Estatísticas básicas
-        total_empenhos = db.session.scalar(select(func.count()).select_from(Empenho))
-        total_contratos = db.session.scalar(select(func.count()).select_from(Contrato))
+        total_empenhos = Empenho.query.count()
+        total_contratos = Contrato.query.count()
         contratos_ativos = Contrato.query.filter(func.upper(Contrato.status) == 'ATIVO').count()
 
         # Cálculo do valor total (sum of valor_total)
@@ -936,6 +898,16 @@ def create_tables():
             db.session.add(admin)
             db.session.commit()
             print("Usuário admin criado - Login: admin, Senha: admin123")
+
+        # Configurar Base de Conhecimento da IA
+        print("🧠 Configurando Base de Conhecimento da IA...")
+        try:
+            from ai_kb_setup import ensure_ai_kb_schema, populate_initial_kb
+            ensure_ai_kb_schema()
+            populate_initial_kb()
+            print("✅ Base de Conhecimento configurada!")
+        except Exception as e:
+            print(f"⚠️ Erro ao configurar KB da IA: {e}")
 
 # Rota de teste para JavaScript
 @app.route('/teste-js')

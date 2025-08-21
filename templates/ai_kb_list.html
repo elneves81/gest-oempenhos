@@ -1,0 +1,165 @@
+{# templates/ai_kb_list.html #}
+{% extends "base.html" %}
+{% block title %}Base de Conhecimento da IA{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-brain me-2"></i>Base de Conhecimento (Chat IA)
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+  <a href="{{ url_for('ai_kb_admin.kb_new') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Nova Entrada
+  </a>
+  <a href="{{ url_for('ai_kb_admin.kb_stats') }}" class="btn btn-outline-info btn-sm">
+    <i class="bi bi-graph-up me-1"></i>Estatísticas
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <!-- Busca FTS5 -->
+    <form class="row g-2 mb-4">
+      <div class="col-md-8">
+        <input name="q" value="{{ q or '' }}" class="form-control" 
+               placeholder="Buscar na KB (ex: 'empenho NEAR valor', 'contrato OR fornecedor')">
+        <small class="form-text text-muted">
+          Busca avançada FTS5: use NEAR, OR, AND, aspas para frases exatas
+        </small>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-outline-secondary">
+          <i class="bi bi-search me-1"></i>Buscar
+        </button>
+      </div>
+      {% if q %}
+      <div class="col-auto">
+        <a href="{{ url_for('ai_kb_admin.kb_list') }}" class="btn btn-outline-danger">
+          <i class="bi bi-x me-1"></i>Limpar
+        </a>
+      </div>
+      {% endif %}
+    </form>
+
+    <!-- Resultados -->
+    <div class="table-responsive">
+      <table class="table table-sm table-hover">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 60px;">ID</th>
+            <th>Pergunta</th>
+            <th style="width: 200px;">Palavras-chave</th>
+            <th style="width: 80px;">Status</th>
+            <th style="width: 140px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>
+              <span class="badge bg-secondary">{{ r.id }}</span>
+            </td>
+            <td>
+              <div class="text-truncate" style="max-width: 420px;" title="{{ r.question }}">
+                <strong>{{ r.question }}</strong>
+              </div>
+              <small class="text-muted">{{ r.answer[:100] }}{% if r.answer|length > 100 %}...{% endif %}</small>
+            </td>
+            <td>
+              {% if r.keywords %}
+                {% for keyword in r.keywords.split(',') %}
+                  <span class="badge bg-light text-dark me-1">{{ keyword.strip() }}</span>
+                {% endfor %}
+              {% endif %}
+            </td>
+            <td>
+              {% if r.is_active %}
+                <span class="badge bg-success">Ativo</span>
+              {% else %}
+                <span class="badge bg-secondary">Inativo</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm">
+                <a class="btn btn-outline-secondary" href="{{ url_for('ai_kb_admin.kb_edit', id=r.id) }}" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a class="btn btn-outline-info" href="{{ url_for('ai_kb_admin.kb_links', id=r.id) }}" title="Ver Links">
+                  <i class="bi bi-link"></i>
+                </a>
+                <form method="post" action="{{ url_for('ai_kb_admin.kb_delete', id=r.id) }}" 
+                      class="d-inline" onsubmit="return confirm('Remover esta entrada da KB?')">
+                  <button class="btn btn-outline-danger" title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-center text-muted py-4">
+              {% if q %}
+                <i class="bi bi-search"></i> Nenhum resultado encontrado para "{{ q }}"
+              {% else %}
+                <i class="bi bi-database"></i> Nenhuma entrada na base de conhecimento
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if rows %}
+    <div class="mt-3">
+      <small class="text-muted">
+        <i class="bi bi-info-circle me-1"></i>
+        Mostrando {{ rows|length }} resultado(s)
+        {% if q %} para "{{ q }}"{% endif %}
+      </small>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if not q %}
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card border-info">
+      <div class="card-header bg-info text-white">
+        <i class="bi bi-lightbulb me-1"></i>Dicas de Busca FTS5
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled mb-0">
+          <li><code>empenho contrato</code> - busca palavras (AND implícito)</li>
+          <li><code>"novo empenho"</code> - frase exata</li>
+          <li><code>empenho NEAR valor</code> - palavras próximas</li>
+          <li><code>contrato OR fornecedor</code> - qualquer uma das palavras</li>
+          <li><code>status NOT rejeitado</code> - excluir palavra</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card border-success">
+      <div class="card-header bg-success text-white">
+        <i class="bi bi-gear me-1"></i>Ações Rápidas
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('ai_kb_admin.kb_new') }}" class="btn btn-outline-primary">
+            <i class="bi bi-plus me-1"></i>Adicionar Nova Entrada
+          </a>
+          <a href="{{ url_for('ai_kb_admin.kb_stats') }}" class="btn btn-outline-info">
+            <i class="bi bi-graph-up me-1"></i>Ver Estatísticas
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

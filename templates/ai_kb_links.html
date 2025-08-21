@@ -1,0 +1,242 @@
+{# templates/ai_kb_links.html #}
+{% extends "base.html" %}
+
+{% block title %}Links - {{ entry.question[:50] }}...{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-link me-2"></i>Links Relacionados
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+  <a href="{{ url_for('ai_kb_admin.kb_edit', id=entry.id) }}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-pencil me-1"></i>Editar Entrada
+  </a>
+  <a href="{{ url_for('ai_kb_admin.kb_list') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Voltar à Lista
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Entrada principal -->
+<div class="card mb-4">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0">
+      <i class="bi bi-question-circle me-2"></i>
+      Entrada #{{ entry.id }}
+    </h5>
+  </div>
+  <div class="card-body">
+    <h6>{{ entry.question }}</h6>
+    <p class="text-muted mb-0">{{ entry.answer[:200] }}{% if entry.answer|length > 200 %}...{% endif %}</p>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Links de saída (esta entrada aponta para...) -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-info text-white">
+        <h6 class="mb-0">
+          <i class="bi bi-arrow-right me-1"></i>
+          Links de Saída ({{ outgoing|length }})
+        </h6>
+        <small>Esta entrada aponta para...</small>
+      </div>
+      <div class="card-body">
+        {% if outgoing %}
+          {% for link in outgoing %}
+          <div class="border rounded p-2 mb-2">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <span class="badge bg-{{ 'success' if link.relation == 'related' else 'warning' if link.relation == 'followup' else 'secondary' }}">
+                  {{ link.relation }}
+                </span>
+                <a href="{{ url_for('ai_kb_admin.kb_edit', id=link.target_id) }}" class="text-decoration-none">
+                  #{{ link.target_id }}
+                </a>
+              </div>
+              <form method="post" action="{{ url_for('ai_kb_admin.kb_delete_link', link_id=link.id) }}" 
+                    class="d-inline" onsubmit="return confirm('Remover este link?')">
+                <button class="btn btn-outline-danger btn-sm">
+                  <i class="bi bi-x"></i>
+                </button>
+              </form>
+            </div>
+            <small class="text-muted">{{ link.target_question }}</small>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center text-muted">
+            <i class="bi bi-link"></i>
+            <p class="mb-0">Nenhum link de saída</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Links de entrada (outras entradas apontam para esta) -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-success text-white">
+        <h6 class="mb-0">
+          <i class="bi bi-arrow-left me-1"></i>
+          Links de Entrada ({{ incoming|length }})
+        </h6>
+        <small>Outras entradas apontam para esta...</small>
+      </div>
+      <div class="card-body">
+        {% if incoming %}
+          {% for link in incoming %}
+          <div class="border rounded p-2 mb-2">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <span class="badge bg-{{ 'success' if link.relation == 'related' else 'warning' if link.relation == 'followup' else 'secondary' }}">
+                  {{ link.relation }}
+                </span>
+                <a href="{{ url_for('ai_kb_admin.kb_edit', id=link.source_id) }}" class="text-decoration-none">
+                  #{{ link.source_id }}
+                </a>
+              </div>
+            </div>
+            <small class="text-muted">{{ link.source_question }}</small>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center text-muted">
+            <i class="bi bi-link"></i>
+            <p class="mb-0">Nenhum link de entrada</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Criar novo link -->
+<div class="card mt-4">
+  <div class="card-header bg-warning text-dark">
+    <h6 class="mb-0">
+      <i class="bi bi-plus me-1"></i>
+      Criar Novo Link
+    </h6>
+  </div>
+  <div class="card-body">
+    <form id="create-link-form">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Buscar Entrada para Linkar</label>
+          <input type="text" id="search-input" class="form-control" 
+                 placeholder="Digite para buscar...">
+          <div id="search-results" class="mt-2"></div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Tipo de Relação</label>
+          <select id="relation-select" class="form-select">
+            <option value="related">Relacionado</option>
+            <option value="duplicate">Duplicado</option>
+            <option value="followup">Seguimento</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">&nbsp;</label>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-link me-1"></i>Criar Link
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Busca e criação de links
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('search-input');
+  const searchResults = document.getElementById('search-results');
+  const relationSelect = document.getElementById('relation-select');
+  let selectedEntryId = null;
+  
+  // Busca em tempo real
+  searchInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    if (query.length < 2) {
+      searchResults.innerHTML = '';
+      return;
+    }
+    
+    fetch(`/api/ai/kb/suggest?q=${encodeURIComponent(query)}&exclude_id={{ entry.id }}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.suggestions && data.suggestions.length > 0) {
+          let html = '<div class="list-group">';
+          data.suggestions.forEach(entry => {
+            html += `
+              <a href="#" class="list-group-item list-group-item-action" 
+                 onclick="selectEntry(${entry.id}, '${entry.question}')">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <strong>#${entry.id}</strong> ${entry.question}
+                  </div>
+                </div>
+              </a>
+            `;
+          });
+          html += '</div>';
+          searchResults.innerHTML = html;
+        } else {
+          searchResults.innerHTML = '<small class="text-muted">Nenhuma entrada encontrada</small>';
+        }
+      })
+      .catch(error => {
+        console.error('Erro na busca:', error);
+        searchResults.innerHTML = '<small class="text-danger">Erro na busca</small>';
+      });
+  });
+  
+  // Criar link
+  document.getElementById('create-link-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!selectedEntryId) {
+      alert('Selecione uma entrada para linkar');
+      return;
+    }
+    
+    const relation = relationSelect.value;
+    
+    fetch('/api/ai/kb/link', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        'source_id': {{ entry.id }},
+        'target_id': selectedEntryId,
+        'relation': relation
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.ok) {
+        location.reload(); // Recarrega para mostrar o novo link
+      } else {
+        alert('Erro ao criar link: ' + (data.error || 'Erro desconhecido'));
+      }
+    })
+    .catch(error => {
+      console.error('Erro:', error);
+      alert('Erro ao criar link');
+    });
+  });
+});
+
+function selectEntry(id, question) {
+  selectedEntryId = id;
+  document.getElementById('search-input').value = `#${id} - ${question}`;
+  document.getElementById('search-results').innerHTML = '';
+}
+</script>
+{% endblock %}

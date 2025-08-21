@@ -1,146 +1,236 @@
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, send_from_directory, abort
 from flask_login import login_required, current_user
-from models import db, User
+from sqlalchemy import select, and_, or_, func
+from werkzeug.utils import secure_filename
 from datetime import datetime
-import uuid
+import os, uuid
 
-# Blueprint para chat offline
+from models import db, User
+from models_chat import ChatRoom, ChatMember, ChatRoomMessage, ChatAttachment
+
 chat_offline = Blueprint('chat_offline', __name__, url_prefix='/chat-offline')
 
-# Armazenamento em memória para mensagens (simples para demonstração)
-chat_rooms = {}
-user_sessions = {}
+def is_admin():
+    return bool(getattr(current_user, "is_admin", False))
+
+def member_role(room_id, user_id):
+    rec = db.session.execute(
+        select(ChatMember.role).where(and_(ChatMember.room_id==room_id, ChatMember.user_id==user_id))
+    ).scalar()
+    return rec
+
+def ensure_member(room_id, user_id, role_if_create="member"):
+    role = member_role(room_id, user_id)
+    if role: 
+        return role
+    # adiciona automaticamente se for grupo público (aqui consideramos todos os groups como públicos)
+    db.session.add(ChatMember(room_id=room_id, user_id=user_id, role=role_if_create))
+    db.session.commit()
+    return role_if_create
 
 @chat_offline.route('/')
 @login_required
 def index():
-    """Página principal do chat offline"""
-    # Criar sala geral se não existir
-    if 'geral' not in chat_rooms:
-        chat_rooms['geral'] = {
-            'name': 'Chat Geral',
-            'messages': [],
-            'users': set()
-        }
-    
-    # Adicionar usuário à sala geral
-    chat_rooms['geral']['users'].add(current_user.id)
-    
-    # Buscar usuários online
-    online_users = []
-    for user_id in chat_rooms['geral']['users']:
-        user = User.query.get(user_id)
-        if user:
-            online_users.append({
-                'id': user.id,
-                'username': user.username
-            })
-    
-    return render_template('chat_offline/fixed.html', 
-                         messages=chat_rooms['geral']['messages'],
-                         online_users=online_users,
-                         current_room='geral')
+    """Lista salas do usuário + UI do chat."""
+    # salas que o user participa
+    rooms = db.session.execute(
+        select(ChatRoom, ChatMember.role)
+        .join(ChatMember, ChatMember.room_id==ChatRoom.id)
+        .where(ChatMember.user_id==current_user.id)
+        .order_by(ChatRoom.created_at.desc())
+    ).all()
 
-@chat_offline.route('/send_message', methods=['POST'])
+    # usuários (para iniciar DM ou criar grupo)
+    users = db.session.execute(select(User.id, User.username)
+               .where(User.id != current_user.id)
+               .order_by(User.username.asc())).all()
+
+    return render_template(
+        'chat_offline/advanced.html',
+        rooms=rooms,
+        users=users
+    )
+
+# ---------- Salas ----------
+@chat_offline.post('/rooms')
+@login_required
+def create_room():
+    """Cria um grupo."""
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"success": False, "error": "Nome é obrigatório."}), 400
+
+    room = ChatRoom(name=name, kind="group", created_by=current_user.id)
+    db.session.add(room)
+    db.session.flush()
+    db.session.add(ChatMember(room_id=room.id, user_id=current_user.id, role="owner"))
+    db.session.commit()
+    return jsonify({"success": True, "room_id": room.id, "name": room.name, "kind": room.kind})
+
+@chat_offline.post('/dm')
+@login_required
+def start_dm():
+    """Abre/obtém DM (conversa particular) com outro usuário."""
+    data = request.get_json() or {}
+    uid = int(data.get("user_id", 0))
+    if uid <= 0 or uid == current_user.id:
+        return jsonify({"success": False, "error": "Usuário inválido."}), 400
+
+    pair = sorted([current_user.id, uid])
+    dm_key = f"{pair[0]}:{pair[1]}"
+
+    room = db.session.execute(select(ChatRoom).where(and_(ChatRoom.kind=="dm", ChatRoom.dm_key==dm_key))).scalar()
+    if not room:
+        room = ChatRoom(name="Conversa privada", kind="dm", created_by=current_user.id, dm_key=dm_key)
+        db.session.add(room)
+        db.session.flush()
+        db.session.add_all([
+            ChatMember(room_id=room.id, user_id=pair[0], role="member"),
+            ChatMember(room_id=room.id, user_id=pair[1], role="member"),
+        ])
+        db.session.commit()
+
+    return jsonify({"success": True, "room_id": room.id, "kind": "dm"})
+
+@chat_offline.get('/rooms')
+@login_required
+def list_rooms():
+    rows = db.session.execute(
+        select(ChatRoom.id, ChatRoom.name, ChatRoom.kind, ChatMember.role)
+        .join(ChatMember, ChatMember.room_id==ChatRoom.id)
+        .where(ChatMember.user_id==current_user.id)
+        .order_by(ChatRoom.created_at.desc())
+    ).mappings().all()
+    return jsonify({"rooms": [dict(r) for r in rows]})
+
+# ---------- Mensagens ----------
+@chat_offline.post('/send_message')
 @login_required
 def send_message():
-    """Enviar mensagem no chat"""
-    data = request.get_json()
-    message_text = data.get('message', '').strip()
-    room = data.get('room', 'geral')
-    
-    if not message_text:
-        return jsonify({'success': False, 'error': 'Mensagem vazia'}), 400
-    
-    # Criar sala se não existir
-    if room not in chat_rooms:
-        chat_rooms[room] = {
-            'name': f'Chat {room.title()}',
-            'messages': [],
-            'users': set()
-        }
-    
-    # Criar mensagem
-    message = {
-        'id': str(uuid.uuid4()),
-        'user_id': current_user.id,
-        'username': current_user.username,
-        'message': message_text,
-        'timestamp': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
-        'room': room
-    }
-    
-    # Adicionar à sala
-    chat_rooms[room]['messages'].append(message)
-    chat_rooms[room]['users'].add(current_user.id)
-    
-    # Manter apenas últimas 100 mensagens por sala
-    if len(chat_rooms[room]['messages']) > 100:
-        chat_rooms[room]['messages'] = chat_rooms[room]['messages'][-100:]
-    
-    return jsonify({
-        'success': True,
-        'message': message
-    })
+    """Envia texto e/ou anexo PDF para uma sala. Usuário comum não pode apagar/limpar."""
+    room_id = int(request.form.get("room_id") or request.json.get("room") or 0)
+    text = (request.form.get("text") or (request.json or {}).get("message") or "").strip()
 
-@chat_offline.route('/get_messages')
+    room = db.session.get(ChatRoom, room_id)
+    if not room:
+        return jsonify({"success": False, "error": "Sala não encontrada."}), 404
+
+    role = ensure_member(room.id, current_user.id)  # garante participação
+
+    msg = ChatRoomMessage(room_id=room.id, user_id=current_user.id, text=text or None)
+    db.session.add(msg)
+    db.session.flush()
+
+    # Anexo (PDF apenas)
+    files = request.files.getlist("file")
+    ann = []
+    for f in files:
+        if not f.filename:
+            continue
+        name = secure_filename(f.filename)
+        ext = os.path.splitext(name)[1].lower()
+        mime = f.mimetype or "application/octet-stream"
+        if ext not in {".pdf"} or mime not in {"application/pdf"}:
+            continue  # ignora não‑PDF (ou retorne 400, se preferir)
+
+        stored = f"{uuid.uuid4().hex}{ext}"
+        path = os.path.join(request.app.config["UPLOAD_FOLDER"], stored)
+        f.save(path)
+        size = os.path.getsize(path)
+        a = ChatAttachment(message_id=msg.id, filename=name, stored_name=stored, mime_type="application/pdf", size_bytes=size)
+        db.session.add(a)
+        ann.append(a)
+
+    db.session.commit()
+
+    payload = {
+        "id": msg.id,
+        "user_id": msg.user_id,
+        "username": current_user.username,
+        "text": msg.text,
+        "created_at": msg.created_at.isoformat(),
+        "room_id": room.id,
+        "attachments": [{"id": a.id, "filename": a.filename, "size": a.size_bytes} for a in ann]
+    }
+    return jsonify({"success": True, "message": payload})
+
+@chat_offline.get('/messages')
 @login_required
 def get_messages():
-    """Buscar mensagens recentes"""
-    room = request.args.get('room', 'geral')
-    
-    if room not in chat_rooms:
-        return jsonify({'messages': []})
-    
-    messages = chat_rooms[room]['messages']
-    return jsonify({'messages': messages})
+    """Lista mensagens de uma sala (paginações simples)."""
+    room_id = int(request.args.get("room_id") or 0)
+    page = max(int(request.args.get("page") or 1), 1)
+    per = min(max(int(request.args.get("per") or 30), 10), 100)
 
-@chat_offline.route('/get_users')
+    room = db.session.get(ChatRoom, room_id)
+    if not room:
+        return jsonify({"messages": []})
+
+    if not member_role(room.id, current_user.id):
+        return jsonify({"messages": []}), 403
+
+    q = (db.session.query(ChatRoomMessage)
+         .filter(ChatRoomMessage.room_id==room.id, ChatRoomMessage.deleted==False)
+         .order_by(ChatRoomMessage.created_at.desc()))
+    total = q.count()
+    msgs = q.offset((page-1)*per).limit(per).all()
+    msgs = list(reversed(msgs))  # mais antigos primeiro
+
+    # carrega anexos
+    ids = [m.id for m in msgs]
+    atts = db.session.query(ChatAttachment).filter(ChatAttachment.message_id.in_(ids)).all()
+    by_msg = {}
+    for a in atts:
+        by_msg.setdefault(a.message_id, []).append({"id": a.id, "filename": a.filename, "size": a.size_bytes})
+
+    out = []
+    users = {u.id: u.username for u in db.session.query(User).filter(User.id.in_([m.user_id for m in msgs])).all()}
+    for m in msgs:
+        out.append({
+            "id": m.id,
+            "user_id": m.user_id,
+            "username": users.get(m.user_id, f"u{m.user_id}"),
+            "text": m.text,
+            "created_at": m.created_at.isoformat(),
+            "attachments": by_msg.get(m.id, [])
+        })
+
+    return jsonify({"messages": out, "total": total, "page": page, "per": per})
+
+# ---------- Download de anexo ----------
+@chat_offline.get('/file/<int:att_id>')
 @login_required
-def get_users():
-    """Buscar usuários online"""
-    room = request.args.get('room', 'geral')
-    
-    if room not in chat_rooms:
-        return jsonify({'users': []})
-    
-    online_users = []
-    for user_id in chat_rooms[room]['users']:
-        user = User.query.get(user_id)
-        if user:
-            online_users.append({
-                'id': user.id,
-                'username': user.username,
-                'is_current': user.id == current_user.id
-            })
-    
-    return jsonify({'users': online_users})
+def download_file(att_id):
+    a = db.session.get(ChatAttachment, att_id)
+    if not a:
+        abort(404)
+    msg = db.session.get(ChatRoomMessage, a.message_id)
+    if not msg:
+        abort(404)
+    if not member_role(msg.room_id, current_user.id):
+        abort(403)
+    folder = request.app.config["UPLOAD_FOLDER"]
+    return send_from_directory(folder, a.stored_name, as_attachment=True, download_name=a.filename, mimetype=a.mime_type)
 
-@chat_offline.route('/leave_room', methods=['POST'])
-@login_required
-def leave_room():
-    """Sair de uma sala"""
-    data = request.get_json()
-    room = data.get('room', 'geral')
-    
-    if room in chat_rooms and current_user.id in chat_rooms[room]['users']:
-        chat_rooms[room]['users'].discard(current_user.id)
-    
-    return jsonify({'success': True})
-
-@chat_offline.route('/clear_room', methods=['POST'])
+# ---------- Ações administrativas ----------
+@chat_offline.post('/clear_room')
 @login_required
 def clear_room():
-    """Limpar mensagens de uma sala (apenas para admin)"""
-    # Verificar se é admin de forma segura
-    is_admin = getattr(current_user, 'is_admin', False)
-    if not is_admin:
-        return jsonify({'success': False, 'error': 'Apenas administradores podem limpar o chat'}), 403
-    
-    data = request.get_json()
-    room = data.get('room', 'geral')
-    
-    if room in chat_rooms:
-        chat_rooms[room]['messages'] = []
-    
+    """Limpa mensagens – apenas admin OU dono da sala."""
+    data = request.get_json() or {}
+    room_id = int(data.get('room') or 0)
+    room = db.session.get(ChatRoom, room_id)
+    if not room:
+        return jsonify({'success': False, 'error': 'Sala não encontrada'}), 404
+
+    role = member_role(room.id, current_user.id)
+    if not (is_admin() or role == "owner"):
+        return jsonify({'success': False, 'error': 'Sem permissão para limpar'}), 403
+
+    db.session.query(ChatAttachment).filter(
+        ChatAttachment.message_id.in_(db.session.query(ChatRoomMessage.id).filter(ChatRoomMessage.room_id==room.id))
+    ).delete(synchronize_session=False)
+    db.session.query(ChatRoomMessage).filter(ChatRoomMessage.room_id==room.id).delete(synchronize_session=False)
+    db.session.commit()
     return jsonify({'success': True})

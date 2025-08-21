@@ -437,6 +437,11 @@ document.addEventListener('gridstack-ready', function () {
         <a href="/workflow/" class="btn btn-outline-dark">
           <i class="bi bi-diagram-3 me-1"></i>Workflow
         </a>
+        {% if current_user.username == 'admin' %}
+        <a href="/admin/backup" class="btn btn-outline-warning">
+          <i class="bi bi-shield-check me-1"></i>Backup Sistema
+        </a>
+        {% endif %}
         <a href="/auth/logout" class="btn btn-outline-danger">
           <i class="bi bi-box-arrow-right me-1"></i>Sair
         </a>

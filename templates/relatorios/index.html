@@ -309,6 +309,11 @@
         <button class="btn btn-primary" onclick="exportarDashboard()">
           <i class="bi bi-download me-1"></i>Exportar
         </button>
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('relatorios.backup') }}" class="btn btn-outline-warning" title="Fazer backup do banco de dados">
+          <i class="bi bi-shield-check me-1"></i>Backup
+        </a>
+        {% endif %}
       </div>
     </div>
 

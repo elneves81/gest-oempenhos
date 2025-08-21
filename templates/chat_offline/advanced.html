@@ -1,0 +1,482 @@
+{% extends "base.html" %}
+{% block title %}Chat Interno - Sistema Municipal{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="row h-100">
+        <!-- Sidebar com salas e usuários -->
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-chat-square-dots me-2"></i>Chat Interno</h6>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="showCreateGroupModal()">
+                                <i class="bi bi-people me-2"></i>Novo Grupo
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="px-3 py-2"><small class="text-muted">Iniciar conversa privada:</small></li>
+                            {% for user in users %}
+                            <li><a class="dropdown-item" href="#" onclick="startDM({{ user.id }})">
+                                <i class="bi bi-person me-2"></i>{{ user.username }}
+                            </a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    <!-- Lista de salas -->
+                    <div class="list-group list-group-flush" id="roomsList">
+                        {% for room, role in rooms %}
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center room-item" 
+                           data-room-id="{{ room.id }}" data-room-kind="{{ room.kind }}">
+                            <div>
+                                <div class="fw-semibold">
+                                    {% if room.kind == 'dm' %}
+                                        <i class="bi bi-person-circle me-1"></i>{{ room.name }}
+                                    {% else %}
+                                        <i class="bi bi-people me-1"></i>{{ room.name }}
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ role }}</small>
+                            </div>
+                            <div>
+                                {% if role == 'owner' or current_user.is_admin %}
+                                <button class="btn btn-sm btn-outline-danger" onclick="clearRoom({{ room.id }})" title="Limpar sala">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </a>
+                        {% else %}
+                        <div class="p-3 text-center text-muted">
+                            <p>Nenhuma conversa ainda</p>
+                            <small>Crie um grupo ou inicie uma conversa</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área principal do chat -->
+        <div class="col-md-9">
+            <div class="card h-100 d-flex flex-column">
+                <!-- Cabeçalho da sala atual -->
+                <div class="card-header" id="chatHeader">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0" id="currentRoomName">Selecione uma conversa</h6>
+                            <small class="text-muted" id="currentRoomInfo"></small>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="refreshMessages()" title="Atualizar">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Área de mensagens -->
+                <div class="card-body flex-grow-1 overflow-auto" id="messagesArea" style="max-height: 500px;">
+                    <div id="messagesList">
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-chat-dots fs-1"></i>
+                            <p>Selecione uma conversa para começar</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Área de envio -->
+                <div class="card-footer" id="sendArea" style="display: none;">
+                    <form id="messageForm" enctype="multipart/form-data">
+                        <div class="input-group">
+                            <textarea class="form-control" id="messageInput" placeholder="Digite sua mensagem..." 
+                                     rows="1" style="resize: none;"></textarea>
+                            <input type="file" id="fileInput" accept=".pdf" multiple style="display: none;">
+                            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('fileInput').click()" title="Anexar PDF">
+                                <i class="bi bi-paperclip"></i>
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i>
+                            </button>
+                        </div>
+                        <div id="filePreview" class="mt-2"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para criar grupo -->
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Criar Novo Grupo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createGroupForm">
+                    <div class="mb-3">
+                        <label for="groupName" class="form-label">Nome do Grupo</label>
+                        <input type="text" class="form-control" id="groupName" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="createGroup()">Criar Grupo</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.room-item.active {
+    background-color: var(--bs-primary) !important;
+    color: white !important;
+}
+
+.room-item.active .text-muted {
+    color: rgba(255,255,255,0.8) !important;
+}
+
+.message-bubble {
+    max-width: 70%;
+    word-wrap: break-word;
+}
+
+.message-own {
+    margin-left: auto;
+    background-color: var(--bs-primary);
+    color: white;
+}
+
+.message-other {
+    margin-right: auto;
+    background-color: var(--bs-light);
+}
+
+.attachment-item {
+    display: inline-block;
+    margin: 2px;
+    padding: 4px 8px;
+    background-color: rgba(13, 110, 253, 0.1);
+    border: 1px solid rgba(13, 110, 253, 0.3);
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.875em;
+}
+
+.attachment-item:hover {
+    background-color: rgba(13, 110, 253, 0.2);
+}
+
+#messagesArea {
+    scroll-behavior: smooth;
+}
+</style>
+
+<script>
+let currentRoomId = null;
+let currentRoomKind = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Evento para seleção de salas
+    document.querySelectorAll('.room-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            selectRoom(this.dataset.roomId, this.dataset.roomKind, this.querySelector('.fw-semibold').textContent.trim());
+        });
+    });
+
+    // Evento para envio de mensagem
+    document.getElementById('messageForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+
+    // Auto-resize do textarea
+    document.getElementById('messageInput').addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    // Preview de arquivos
+    document.getElementById('fileInput').addEventListener('change', function() {
+        showFilePreview();
+    });
+
+    // Enter para enviar (Ctrl+Enter para nova linha)
+    document.getElementById('messageInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.ctrlKey) {
+            e.preventDefault();
+            document.getElementById('messageForm').dispatchEvent(new Event('submit'));
+        }
+    });
+});
+
+function selectRoom(roomId, roomKind, roomName) {
+    currentRoomId = roomId;
+    currentRoomKind = roomKind;
+    
+    // Atualizar interface
+    document.querySelectorAll('.room-item').forEach(item => item.classList.remove('active'));
+    document.querySelector(`[data-room-id="${roomId}"]`).classList.add('active');
+    
+    document.getElementById('currentRoomName').textContent = roomName;
+    document.getElementById('currentRoomInfo').textContent = roomKind === 'dm' ? 'Conversa privada' : 'Grupo';
+    document.getElementById('sendArea').style.display = 'block';
+    
+    // Carregar mensagens
+    loadMessages(roomId);
+}
+
+async function loadMessages(roomId, page = 1) {
+    try {
+        const response = await fetch(`/chat-offline/messages?room_id=${roomId}&page=${page}&per=50`);
+        const data = await response.json();
+        
+        const messagesList = document.getElementById('messagesList');
+        messagesList.innerHTML = '';
+        
+        data.messages.forEach(msg => {
+            const messageDiv = createMessageElement(msg);
+            messagesList.appendChild(messageDiv);
+        });
+        
+        // Scroll para o final
+        document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
+        
+    } catch (error) {
+        console.error('Erro ao carregar mensagens:', error);
+        showToast('Erro ao carregar mensagens', 'error');
+    }
+}
+
+function createMessageElement(msg) {
+    const isOwn = msg.user_id === {{ current_user.id }};
+    const div = document.createElement('div');
+    div.className = `d-flex mb-3 ${isOwn ? 'justify-content-end' : ''}`;
+    
+    const bubble = document.createElement('div');
+    bubble.className = `message-bubble p-3 rounded ${isOwn ? 'message-own' : 'message-other'}`;
+    
+    let content = '';
+    if (!isOwn) {
+        content += `<div class="fw-semibold mb-1">${msg.username}</div>`;
+    }
+    
+    if (msg.text) {
+        content += `<div>${escapeHtml(msg.text)}</div>`;
+    }
+    
+    if (msg.attachments && msg.attachments.length > 0) {
+        content += '<div class="mt-2">';
+        msg.attachments.forEach(att => {
+            content += `<a href="/chat-offline/file/${att.id}" class="attachment-item me-1" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i>${att.filename}
+                <small>(${formatFileSize(att.size)})</small>
+            </a>`;
+        });
+        content += '</div>';
+    }
+    
+    const timestamp = new Date(msg.created_at).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    content += `<div class="text-end mt-1"><small class="opacity-75">${timestamp}</small></div>`;
+    
+    bubble.innerHTML = content;
+    div.appendChild(bubble);
+    
+    return div;
+}
+
+async function sendMessage() {
+    if (!currentRoomId) return;
+    
+    const messageInput = document.getElementById('messageInput');
+    const fileInput = document.getElementById('fileInput');
+    const text = messageInput.value.trim();
+    
+    if (!text && fileInput.files.length === 0) return;
+    
+    const formData = new FormData();
+    formData.append('room_id', currentRoomId);
+    if (text) formData.append('text', text);
+    
+    for (let file of fileInput.files) {
+        formData.append('file', file);
+    }
+    
+    try {
+        const response = await fetch('/chat-offline/send_message', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            messageInput.value = '';
+            fileInput.value = '';
+            document.getElementById('filePreview').innerHTML = '';
+            messageInput.style.height = 'auto';
+            
+            // Adicionar mensagem à lista
+            const messageDiv = createMessageElement(data.message);
+            document.getElementById('messagesList').appendChild(messageDiv);
+            
+            // Scroll para o final
+            document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
+            
+        } else {
+            showToast(data.error || 'Erro ao enviar mensagem', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao enviar mensagem:', error);
+        showToast('Erro de conexão', 'error');
+    }
+}
+
+function showCreateGroupModal() {
+    new bootstrap.Modal(document.getElementById('createGroupModal')).show();
+}
+
+async function createGroup() {
+    const name = document.getElementById('groupName').value.trim();
+    if (!name) return;
+    
+    try {
+        const response = await fetch('/chat-offline/rooms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            location.reload(); // Recarregar para mostrar o novo grupo
+        } else {
+            showToast(data.error || 'Erro ao criar grupo', 'error');
+        }
+    } catch (error) {
+        showToast('Erro de conexão', 'error');
+    }
+}
+
+async function startDM(userId) {
+    try {
+        const response = await fetch('/chat-offline/dm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            location.reload(); // Recarregar para mostrar a conversa
+        } else {
+            showToast(data.error || 'Erro ao iniciar conversa', 'error');
+        }
+    } catch (error) {
+        showToast('Erro de conexão', 'error');
+    }
+}
+
+async function clearRoom(roomId) {
+    if (!confirm('Tem certeza que deseja limpar todas as mensagens desta sala?')) return;
+    
+    try {
+        const response = await fetch('/chat-offline/clear_room', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ room: roomId })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            if (currentRoomId == roomId) {
+                document.getElementById('messagesList').innerHTML = '<div class="text-center text-muted py-4">Sala limpa</div>';
+            }
+            showToast('Sala limpa com sucesso', 'success');
+        } else {
+            showToast(data.error || 'Erro ao limpar sala', 'error');
+        }
+    } catch (error) {
+        showToast('Erro de conexão', 'error');
+    }
+}
+
+function refreshMessages() {
+    if (currentRoomId) {
+        loadMessages(currentRoomId);
+    }
+}
+
+function showFilePreview() {
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('filePreview');
+    
+    preview.innerHTML = '';
+    for (let file of fileInput.files) {
+        const div = document.createElement('div');
+        div.className = 'attachment-item me-2';
+        div.innerHTML = `
+            <i class="bi bi-file-earmark-pdf me-1"></i>${file.name}
+            <small>(${formatFileSize(file.size)})</small>
+        `;
+        preview.appendChild(div);
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showToast(message, type = 'info') {
+    // Toast simples - você pode melhorar com Bootstrap Toast
+    const alertClass = type === 'error' ? 'alert-danger' : type === 'success' ? 'alert-success' : 'alert-info';
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+        }
+    }, 5000);
+}
+
+// Auto-refresh das mensagens a cada 10 segundos
+setInterval(() => {
+    if (currentRoomId) {
+        loadMessages(currentRoomId);
+    }
+}, 10000);
+</script>
+{% endblock %}

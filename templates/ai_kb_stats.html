@@ -1,0 +1,276 @@
+{# templates/ai_kb_stats.html #}
+{% extends "base.html" %}
+
+{% block title %}Estatísticas - Base de Conhecimento{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-graph-up me-2"></i>Estatísticas da Base de Conhecimento
+{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('ai_kb_admin.kb_list') }}" class="btn btn-outline-secondary btn-sm">
+  <i class="bi bi-arrow-left me-1"></i>Voltar à Lista
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <!-- Cards de estatísticas gerais -->
+  <div class="col-md-3">
+    <div class="card text-center border-primary">
+      <div class="card-body">
+        <i class="bi bi-database text-primary" style="font-size: 2rem;"></i>
+        <h3 class="mt-2 mb-1">{{ stats.total_entries }}</h3>
+        <p class="text-muted mb-0">Total de Entradas</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="card text-center border-success">
+      <div class="card-body">
+        <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+        <h3 class="mt-2 mb-1">{{ stats.active_entries }}</h3>
+        <p class="text-muted mb-0">Entradas Ativas</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="card text-center border-info">
+      <div class="card-body">
+        <i class="bi bi-link text-info" style="font-size: 2rem;"></i>
+        <h3 class="mt-2 mb-1">{{ stats.total_links }}</h3>
+        <p class="text-muted mb-0">Links Criados</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="card text-center border-warning">
+      <div class="card-body">
+        <i class="bi bi-percent text-warning" style="font-size: 2rem;"></i>
+        <h3 class="mt-2 mb-1">
+          {% if stats.total_entries > 0 %}
+            {{ "%.1f"|format((stats.active_entries / stats.total_entries) * 100) }}%
+          {% else %}
+            0%
+          {% endif %}
+        </h3>
+        <p class="text-muted mb-0">Taxa de Ativação</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Entradas mais populares (mais linkadas) -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+          <i class="bi bi-star me-2"></i>
+          Entradas Mais Populares (com mais links)
+        </h5>
+      </div>
+      <div class="card-body">
+        {% if stats.popular_entries %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Pergunta</th>
+                <th class="text-center">Links</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in stats.popular_entries %}
+              <tr>
+                <td>
+                  <span class="badge bg-secondary">#{{ entry.id }}</span>
+                </td>
+                <td>
+                  <div class="text-truncate" style="max-width: 400px;">
+                    {{ entry.question }}
+                  </div>
+                </td>
+                <td class="text-center">
+                  {% if entry.link_count > 0 %}
+                    <span class="badge bg-success">{{ entry.link_count }}</span>
+                  {% else %}
+                    <span class="badge bg-secondary">0</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <div class="btn-group btn-group-sm">
+                    <a href="{{ url_for('ai_kb_admin.kb_edit', id=entry.id) }}" 
+                       class="btn btn-outline-primary" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{{ url_for('ai_kb_admin.kb_links', id=entry.id) }}" 
+                       class="btn btn-outline-info" title="Ver Links">
+                      <i class="bi bi-link"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+          <i class="bi bi-inbox"></i>
+          <p class="mb-0">Nenhuma entrada encontrada</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Gráfico simples de distribuição -->
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-success text-white">
+        <h6 class="mb-0">
+          <i class="bi bi-pie-chart me-1"></i>
+          Distribuição por Status
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="progress mb-2" style="height: 25px;">
+          {% set total = stats.total_entries %}
+          {% if total > 0 %}
+            {% set active_percent = (stats.active_entries / total) * 100 %}
+            {% set inactive_percent = ((total - stats.active_entries) / total) * 100 %}
+            <div class="progress-bar bg-success" style="width: {{ active_percent }}%">
+              Ativas ({{ stats.active_entries }})
+            </div>
+            <div class="progress-bar bg-secondary" style="width: {{ inactive_percent }}%">
+              Inativas ({{ total - stats.active_entries }})
+            </div>
+          {% endif %}
+        </div>
+        <div class="d-flex justify-content-between">
+          <small class="text-success">
+            <i class="bi bi-check-circle me-1"></i>
+            {{ stats.active_entries }} Ativas
+          </small>
+          <small class="text-muted">
+            <i class="bi bi-x-circle me-1"></i>
+            {{ stats.total_entries - stats.active_entries }} Inativas
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-warning text-dark">
+        <h6 class="mb-0">
+          <i class="bi bi-graph-up me-1"></i>
+          Métricas de Qualidade
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-6">
+            <div class="border-end">
+              <h4 class="text-info mb-1">
+                {% if stats.total_entries > 0 %}
+                  {{ "%.1f"|format(stats.total_links / stats.total_entries) }}
+                {% else %}
+                  0
+                {% endif %}
+              </h4>
+              <small class="text-muted">Links por Entrada</small>
+            </div>
+          </div>
+          <div class="col-6">
+            <h4 class="text-warning mb-1">
+              {% if stats.active_entries > 0 %}
+                {{ "%.1f"|format(stats.total_links / stats.active_entries) }}
+              {% else %}
+                0
+              {% endif %}
+            </h4>
+            <small class="text-muted">Links por Entrada Ativa</small>
+          </div>
+        </div>
+        <hr>
+        <div class="text-center">
+          <small class="text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            Maior conectividade indica melhor qualidade da KB
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ações administrativas -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card border-primary">
+      <div class="card-header bg-primary text-white">
+        <h6 class="mb-0">
+          <i class="bi bi-tools me-1"></i>
+          Ações Administrativas
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3">
+            <div class="d-grid">
+              <a href="{{ url_for('ai_kb_admin.kb_new') }}" class="btn btn-outline-primary">
+                <i class="bi bi-plus me-1"></i>Nova Entrada
+              </a>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="d-grid">
+              <a href="{{ url_for('ai_kb_admin.kb_list') }}" class="btn btn-outline-info">
+                <i class="bi bi-list me-1"></i>Listar Todas
+              </a>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="d-grid">
+              <button class="btn btn-outline-success" onclick="testSearch()">
+                <i class="bi bi-search me-1"></i>Testar Busca
+              </button>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="d-grid">
+              <button class="btn btn-outline-warning" onclick="exportKB()">
+                <i class="bi bi-download me-1"></i>Exportar KB
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function testSearch() {
+  const query = prompt('Digite um termo para testar a busca FTS5:');
+  if (query) {
+    window.open(`{{ url_for('ai_kb_admin.kb_list') }}?q=${encodeURIComponent(query)}`, '_blank');
+  }
+}
+
+function exportKB() {
+  // TODO: implementar exportação CSV/JSON
+  alert('Funcionalidade de exportação será implementada em breve');
+}
+</script>
+{% endblock %}
