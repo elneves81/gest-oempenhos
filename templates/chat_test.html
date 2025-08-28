@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Chat Offline - Rotas Padronizadas</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>🔧 Teste das Rotas Padronizadas do Chat</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h3>📝 Enviar Mensagem</h3>
+                <div class="mb-3">
+                    <label for="roomId" class="form-label">Room ID:</label>
+                    <input type="number" class="form-control" id="roomId" value="1" placeholder="ID da sala">
+                </div>
+                <div class="mb-3">
+                    <label for="messageText" class="form-label">Mensagem:</label>
+                    <textarea class="form-control" id="messageText" rows="3" placeholder="Digite sua mensagem..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="sendMessage()">📤 Enviar Mensagem</button>
+                <button class="btn btn-secondary" onclick="sendMessageOldRoute()">📤 Enviar (Rota Antiga)</button>
+            </div>
+            
+            <div class="col-md-6">
+                <h3>📋 Carregar Mensagens</h3>
+                <div class="mb-3">
+                    <label for="loadRoomId" class="form-label">Room ID:</label>
+                    <input type="number" class="form-control" id="loadRoomId" value="1" placeholder="ID da sala">
+                </div>
+                <button class="btn btn-success" onclick="loadMessages()">📥 Carregar Mensagens</button>
+                <button class="btn btn-secondary" onclick="loadMessagesOldRoute()">📥 Carregar (Rota Antiga)</button>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>📊 Resultados</h3>
+                <pre id="results" class="bg-light p-3 border rounded" style="height: 300px; overflow-y: auto;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const log = (msg) => {
+            const results = document.getElementById('results');
+            results.textContent += new Date().toLocaleTimeString() + ': ' + msg + '\\n';
+            results.scrollTop = results.scrollHeight;
+        };
+
+        // 🔥 Teste das novas rotas padronizadas
+        async function sendMessage() {
+            const roomId = document.getElementById('roomId').value;
+            const content = document.getElementById('messageText').value.trim();
+            
+            if (!content) {
+                log('❌ Mensagem vazia');
+                return;
+            }
+            
+            try {
+                log(`📤 Enviando mensagem para sala ${roomId}...`);
+                
+                const response = await fetch(`/chat-offline/rooms/${roomId}/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ content: content })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ Mensagem enviada! ID: ${data.id}`);
+                    log(`📝 Conteúdo: ${data.content}`);
+                    document.getElementById('messageText').value = '';
+                } else {
+                    log(`❌ Erro: ${data.error || 'Erro desconhecido'}`);
+                }
+            } catch (error) {
+                log(`❌ Erro na requisição: ${error.message}`);
+            }
+        }
+
+        async function loadMessages() {
+            const roomId = document.getElementById('loadRoomId').value;
+            
+            try {
+                log(`📥 Carregando mensagens da sala ${roomId}...`);
+                
+                const response = await fetch(`/chat-offline/rooms/${roomId}/messages`, {
+                    credentials: 'same-origin'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ ${data.messages.length} mensagens carregadas:`);
+                    data.messages.forEach(msg => {
+                        log(`  💬 ${msg.username}: ${msg.content}`);
+                    });
+                } else {
+                    log(`❌ Erro: ${data.error || 'Erro desconhecido'}`);
+                }
+            } catch (error) {
+                log(`❌ Erro na requisição: ${error.message}`);
+            }
+        }
+
+        // 🔄 Teste das rotas antigas para compatibilidade  
+        async function sendMessageOldRoute() {
+            const roomId = document.getElementById('roomId').value;
+            const content = document.getElementById('messageText').value.trim();
+            
+            if (!content) {
+                log('❌ Mensagem vazia');
+                return;
+            }
+            
+            try {
+                log(`📤 [ANTIGA] Enviando mensagem para sala ${roomId}...`);
+                
+                const response = await fetch('/chat-offline/send_message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ 
+                        room_id: roomId,
+                        message: content 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✅ [ANTIGA] Mensagem enviada! ID: ${data.message.id}`);
+                    log(`📝 [ANTIGA] Conteúdo: ${data.message.content}`);
+                    document.getElementById('messageText').value = '';
+                } else {
+                    log(`❌ [ANTIGA] Erro: ${data.error || 'Erro desconhecido'}`);
+                }
+            } catch (error) {
+                log(`❌ [ANTIGA] Erro na requisição: ${error.message}`);
+            }
+        }
+
+        async function loadMessagesOldRoute() {
+            const roomId = document.getElementById('loadRoomId').value;
+            
+            try {
+                log(`📥 [ANTIGA] Carregando mensagens da sala ${roomId}...`);
+                
+                const response = await fetch(`/chat-offline/messages?room_id=${roomId}`, {
+                    credentials: 'same-origin'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ [ANTIGA] ${data.messages.length} mensagens carregadas:`);
+                    data.messages.forEach(msg => {
+                        log(`  💬 [ANTIGA] ${msg.username}: ${msg.content}`);
+                    });
+                } else {
+                    log(`❌ [ANTIGA] Erro: ${data.error || 'Erro desconhecido'}`);
+                }
+            } catch (error) {
+                log(`❌ [ANTIGA] Erro na requisição: ${error.message}`);
+            }
+        }
+
+        // Log inicial
+        log('🚀 Sistema de teste carregado!');
+        log('📡 Testando rotas: /chat-offline/rooms/<id>/messages');
+        log('🔄 Compatibilidade: /chat-offline/messages e /chat-offline/send_message');
+    </script>
+</body>
+</html>

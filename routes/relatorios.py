@@ -1230,45 +1230,11 @@ def backup():
         return redirect(url_for('relatorios.index'))
     
     try:
-        import shutil
-        import os
-        from datetime import datetime
-        
-        # Caminho do banco atual
-        db_path = os.path.join(os.getcwd(), 'empenhos.db')
-        
-        if not os.path.exists(db_path):
-            flash('Banco de dados não encontrado!', 'error')
-            return redirect(url_for('relatorios.index'))
-        
-        # Criar diretório de backup se não existir
-        backup_dir = os.path.join(os.getcwd(), 'instance', 'backups')
-        os.makedirs(backup_dir, exist_ok=True)
-        
-        # Nome do arquivo de backup
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_filename = f'backup_empenhos_{timestamp}.db'
-        backup_path = os.path.join(backup_dir, backup_filename)
-        
-        # Copiar arquivo do banco
-        shutil.copy2(db_path, backup_path)
-        
-        # Verificar se o backup foi criado com sucesso
-        if os.path.exists(backup_path):
-            file_size = os.path.getsize(backup_path) // 1024  # Tamanho em KB
-            flash(f'✅ Backup criado com sucesso! Arquivo: {backup_filename} ({file_size} KB)', 'success')
-            
-            # Enviar arquivo para download
-            return send_file(
-                backup_path, 
-                as_attachment=True, 
-                download_name=backup_filename,
-                mimetype='application/octet-stream'
-            )
-        else:
-            flash('Erro: Backup não foi criado corretamente.', 'error')
-            return redirect(url_for('relatorios.index'))
-            
+        # TEMPORARIAMENTE DESABILITADO
+        # filename = ExportUtils.create_backup()
+        # return send_file(filename, as_attachment=True, download_name=f'backup_empenhos_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx')
+        flash('Backup temporariamente desabilitado', 'warning')
+        return redirect(url_for('relatorios.index'))
     except Exception as e:
         flash(f'Erro ao gerar backup: {str(e)}', 'error')
         return redirect(url_for('relatorios.index'))

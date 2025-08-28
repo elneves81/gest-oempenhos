@@ -1,0 +1,933 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+/* MSN Style Chat - Estilo Nostálgico */
+:root {
+    --msn-blue: #4285f4;
+    --msn-blue-dark: #3367d6;
+    --msn-green: #34a853;
+    --msn-red: #ea4335;
+    --msn-yellow: #fbbc04;
+    --msn-light-blue: #e8f0fe;
+    --msn-border: #dadce0;
+    --msn-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.msn-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: var(--msn-shadow);
+    overflow: hidden;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.msn-header {
+    background: linear-gradient(90deg, var(--msn-blue) 0%, var(--msn-blue-dark) 100%);
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--msn-blue-dark);
+}
+
+.msn-header h3 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.msn-header .controls {
+    display: flex;
+    gap: 10px;
+}
+
+.msn-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+}
+
+.msn-btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-1px);
+}
+
+.msn-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.msn-sidebar {
+    width: 250px;
+    background: #f8f9fa;
+    border-right: 2px solid var(--msn-border);
+    display: flex;
+    flex-direction: column;
+}
+
+.online-users {
+    padding: 15px;
+    border-bottom: 1px solid var(--msn-border);
+}
+
+.online-users h6 {
+    color: var(--msn-blue);
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 2px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+.user-item:hover {
+    background: var(--msn-light-blue);
+}
+
+.user-item.online {
+    color: var(--msn-green);
+}
+
+.user-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    background: var(--msn-green);
+    box-shadow: 0 0 4px rgba(52, 168, 83, 0.5);
+}
+
+.chat-rooms {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.room-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    margin: 4px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    border: 1px solid transparent;
+}
+
+.room-item:hover {
+    background: var(--msn-light-blue);
+    border-color: var(--msn-blue);
+}
+
+.room-item.active {
+    background: var(--msn-blue);
+    color: white;
+    font-weight: 600;
+}
+
+.msn-chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: white;
+}
+
+.messages-container {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
+    position: relative;
+}
+
+.message-bubble {
+    margin-bottom: 15px;
+    display: flex;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message-bubble.own {
+    justify-content: flex-end;
+}
+
+.message-content {
+    max-width: 70%;
+    position: relative;
+}
+
+.message-content.own .bubble {
+    background: linear-gradient(135deg, var(--msn-blue) 0%, var(--msn-blue-dark) 100%);
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+}
+
+.message-content.other .bubble {
+    background: #e9ecef;
+    color: #333;
+    border-radius: 18px 18px 18px 4px;
+    border: 1px solid var(--msn-border);
+}
+
+.bubble {
+    padding: 12px 16px;
+    word-wrap: break-word;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.message-info {
+    font-size: 11px;
+    margin-top: 5px;
+    opacity: 0.7;
+}
+
+.message-info.own {
+    text-align: right;
+    color: #666;
+}
+
+.message-info.other {
+    text-align: left;
+    color: #666;
+}
+
+.attachment-preview {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid var(--msn-border);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.attachment-preview:hover {
+    background: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.attachment-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--msn-red);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.attachment-info {
+    flex: 1;
+}
+
+.attachment-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+}
+
+.attachment-size {
+    font-size: 11px;
+    color: #666;
+}
+
+.msn-input-area {
+    padding: 20px;
+    border-top: 2px solid var(--msn-border);
+    background: #f8f9fa;
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.message-input {
+    flex: 1;
+    border: 2px solid var(--msn-border);
+    border-radius: 20px;
+    padding: 12px 20px;
+    resize: none;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+    max-height: 100px;
+    min-height: 44px;
+}
+
+.message-input:focus {
+    border-color: var(--msn-blue);
+    box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+}
+
+.input-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 16px;
+}
+
+.attach-btn {
+    background: var(--msn-yellow);
+    color: white;
+}
+
+.attach-btn:hover {
+    background: #f9ab00;
+    transform: scale(1.05);
+}
+
+.send-btn {
+    background: var(--msn-green);
+    color: white;
+}
+
+.send-btn:hover {
+    background: #2d7d32;
+    transform: scale(1.05);
+}
+
+.send-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Upload Progress */
+.upload-progress {
+    margin: 10px 0;
+    padding: 12px;
+    background: var(--msn-light-blue);
+    border-radius: 8px;
+    border: 1px solid var(--msn-blue);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: #e0e0e0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--msn-blue);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 13px;
+    color: #666;
+    font-style: italic;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 3px;
+}
+
+.dot {
+    width: 4px;
+    height: 4px;
+    background: var(--msn-blue);
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-8px); }
+}
+
+/* Scroll customizado */
+.messages-container::-webkit-scrollbar,
+.chat-rooms::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track,
+.chat-rooms::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.messages-container::-webkit-scrollbar-thumb,
+.chat-rooms::-webkit-scrollbar-thumb {
+    background: var(--msn-blue);
+    border-radius: 3px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .msn-container {
+        margin: 10px;
+        height: 85vh;
+        border-radius: 10px;
+    }
+    
+    .msn-sidebar {
+        width: 200px;
+    }
+    
+    .message-content {
+        max-width: 85%;
+    }
+}
+
+/* Drag and drop */
+.drag-over {
+    background: rgba(66, 133, 244, 0.1);
+    border: 2px dashed var(--msn-blue);
+}
+
+.file-drop-zone {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(66, 133, 244, 0.05);
+    border: 3px dashed var(--msn-blue);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.file-drop-zone.active {
+    display: flex;
+}
+
+.drop-message {
+    text-align: center;
+    color: var(--msn-blue);
+    font-size: 18px;
+    font-weight: 600;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="msn-container">
+    <!-- Header -->
+    <div class="msn-header">
+        <h3>
+            <i class="bi bi-messenger"></i>
+            Chat MSN Style - {{ current_room_name or 'Chat Geral' }}
+        </h3>
+        <div class="controls">
+            <button class="msn-btn" onclick="toggleSidebar()">
+                <i class="bi bi-list"></i>
+            </button>
+            <button class="msn-btn" onclick="refreshChat()">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <button class="msn-btn" onclick="clearChat()">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="msn-body">
+        <!-- Sidebar -->
+        <div class="msn-sidebar" id="sidebar">
+            <!-- Usuários Online -->
+            <div class="online-users">
+                <h6><i class="bi bi-people"></i> Usuários Online ({{ online_users|length }})</h6>
+                <div id="users-list">
+                    {% for user in online_users %}
+                    <div class="user-item online" data-user-id="{{ user.id }}">
+                        <div class="user-status"></div>
+                        <span>{{ user.username }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Salas de Chat -->
+            <div class="chat-rooms">
+                <h6><i class="bi bi-chat-dots"></i> Salas</h6>
+                <div class="room-item active" data-room="geral">
+                    <i class="bi bi-hash me-2"></i>
+                    Chat Geral
+                </div>
+                <div class="room-item" data-room="suporte">
+                    <i class="bi bi-tools me-2"></i>
+                    Suporte
+                </div>
+                <div class="room-item" data-room="anuncios">
+                    <i class="bi bi-megaphone me-2"></i>
+                    Anúncios
+                </div>
+            </div>
+        </div>
+
+        <!-- Área do Chat -->
+        <div class="msn-chat-area">
+            <!-- Mensagens -->
+            <div class="messages-container" id="messages-container">
+                <!-- Drop zone para arquivos -->
+                <div class="file-drop-zone" id="file-drop-zone">
+                    <div class="drop-message">
+                        <i class="bi bi-cloud-upload display-1"></i><br>
+                        Solte seus arquivos aqui para enviar
+                    </div>
+                </div>
+
+                <!-- Mensagens carregadas do servidor -->
+                {% for message in messages %}
+                <div class="message-bubble {% if message.user_id == current_user.id %}own{% endif %}" 
+                     data-message-id="{{ message.id }}">
+                    <div class="message-content {% if message.user_id == current_user.id %}own{% else %}other{% endif %}">
+                        <div class="bubble">
+                            {% if message.user_id != current_user.id %}
+                                <strong>{{ message.username }}:</strong><br>
+                            {% endif %}
+                            {{ message.message }}
+                            
+                            <!-- Anexos -->
+                            {% if message.attachments %}
+                                {% for attachment in message.attachments %}
+                                <div class="attachment-preview" onclick="downloadAttachment({{ attachment.id }})">
+                                    <div class="attachment-icon">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </div>
+                                    <div class="attachment-info">
+                                        <div class="attachment-name">{{ attachment.original_filename }}</div>
+                                        <div class="attachment-size">{{ (attachment.file_size / 1024) | round(1) }} KB</div>
+                                    </div>
+                                    <i class="bi bi-download"></i>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="message-info {% if message.user_id == current_user.id %}own{% else %}other{% endif %}">
+                            {{ message.timestamp }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Indicador de digitação -->
+            <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                <span id="typing-user">Alguém</span> está digitando
+                <div class="typing-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+
+            <!-- Área de Input -->
+            <div class="msn-input-area">
+                <!-- Progress bar para upload -->
+                <div class="upload-progress" id="upload-progress" style="display: none;">
+                    <div>Enviando arquivo: <span id="upload-filename"></span></div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <textarea class="message-input" 
+                              id="message-input" 
+                              placeholder="Digite sua mensagem... (Enter para enviar, Shift+Enter para nova linha)"
+                              rows="1"></textarea>
+                    
+                    <div class="input-actions">
+                        <button class="action-btn attach-btn" onclick="triggerFileUpload()" title="Anexar arquivo">
+                            <i class="bi bi-paperclip"></i>
+                        </button>
+                        <button class="action-btn send-btn" id="send-btn" onclick="sendMessage()" title="Enviar mensagem">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input file oculto -->
+                <input type="file" id="file-input" accept=".pdf,.doc,.docx,.jpg,.png,.gif" multiple style="display: none;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variáveis globais
+let currentRoom = 'geral';
+let currentRoomId = {{ current_room_id or 1 }};
+let typingTimer;
+let isTyping = false;
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+    scrollToBottom();
+    startPeriodicRefresh();
+    setupDragAndDrop();
+});
+
+function setupEventListeners() {
+    // Input de mensagem
+    const messageInput = document.getElementById('message-input');
+    messageInput.addEventListener('keydown', handleKeyDown);
+    messageInput.addEventListener('input', handleTyping);
+    
+    // Upload de arquivos
+    document.getElementById('file-input').addEventListener('change', handleFileSelect);
+    
+    // Auto-resize do textarea
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    });
+}
+
+function handleKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+    }
+}
+
+function handleTyping() {
+    if (!isTyping) {
+        isTyping = true;
+        // Aqui poderia enviar sinal de "está digitando" via WebSocket
+    }
+    
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+        isTyping = false;
+        // Aqui poderia parar o sinal de "está digitando"
+    }, 1000);
+}
+
+function setupDragAndDrop() {
+    const container = document.getElementById('messages-container');
+    const dropZone = document.getElementById('file-drop-zone');
+    
+    container.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.classList.add('active');
+    });
+    
+    container.addEventListener('dragleave', function(e) {
+        if (!container.contains(e.relatedTarget)) {
+            dropZone.classList.remove('active');
+        }
+    });
+    
+    container.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('active');
+        
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+            uploadFiles(files);
+        }
+    });
+}
+
+async function sendMessage() {
+    const messageInput = document.getElementById('message-input');
+    const content = messageInput.value.trim();
+    
+    if (!content) return;
+    
+    const sendBtn = document.getElementById('send-btn');
+    sendBtn.disabled = true;
+    messageInput.disabled = true;
+    
+    try {
+        const response = await fetch(`/chat-offline/rooms/${currentRoomId}/messages`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                content: content
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            addMessageToUI(result, true);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            scrollToBottom();
+        } else {
+            throw new Error('Erro ao enviar mensagem');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao enviar mensagem', 'error');
+    } finally {
+        sendBtn.disabled = false;
+        messageInput.disabled = false;
+        messageInput.focus();
+    }
+}
+
+function addMessageToUI(message, isOwn = false) {
+    const messagesContainer = document.getElementById('messages-container');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message-bubble ${isOwn ? 'own' : ''}`;
+    messageDiv.setAttribute('data-message-id', message.id);
+    
+    const timestamp = new Date(message.created_at).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    let attachmentsHtml = '';
+    if (message.attachments && message.attachments.length > 0) {
+        attachmentsHtml = message.attachments.map(att => `
+            <div class="attachment-preview" onclick="downloadAttachment(${att.id})">
+                <div class="attachment-icon">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                </div>
+                <div class="attachment-info">
+                    <div class="attachment-name">${att.original_filename}</div>
+                    <div class="attachment-size">${(att.file_size / 1024).toFixed(1)} KB</div>
+                </div>
+                <i class="bi bi-download"></i>
+            </div>
+        `).join('');
+    }
+    
+    messageDiv.innerHTML = `
+        <div class="message-content ${isOwn ? 'own' : 'other'}">
+            <div class="bubble">
+                ${!isOwn ? `<strong>${message.username}:</strong><br>` : ''}
+                ${message.content}
+                ${attachmentsHtml}
+            </div>
+            <div class="message-info ${isOwn ? 'own' : 'other'}">
+                ${timestamp}
+            </div>
+        </div>
+    `;
+    
+    messagesContainer.appendChild(messageDiv);
+}
+
+function triggerFileUpload() {
+    document.getElementById('file-input').click();
+}
+
+function handleFileSelect(event) {
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+        uploadFiles(files);
+    }
+}
+
+async function uploadFiles(files) {
+    for (const file of files) {
+        await uploadSingleFile(file);
+    }
+}
+
+async function uploadSingleFile(file) {
+    const progressContainer = document.getElementById('upload-progress');
+    const progressFill = document.getElementById('progress-fill');
+    const filenameSpan = document.getElementById('upload-filename');
+    
+    progressContainer.style.display = 'block';
+    filenameSpan.textContent = file.name;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('room_id', currentRoomId);
+    
+    try {
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+                const percentComplete = (e.loaded / e.total) * 100;
+                progressFill.style.width = percentComplete + '%';
+            }
+        });
+        
+        xhr.addEventListener('load', function() {
+            if (xhr.status === 200) {
+                const result = JSON.parse(xhr.responseText);
+                addMessageToUI(result, true);
+                scrollToBottom();
+                showNotification('Arquivo enviado com sucesso!', 'success');
+            } else {
+                throw new Error('Erro no upload');
+            }
+        });
+        
+        xhr.addEventListener('error', function() {
+            throw new Error('Erro de conexão');
+        });
+        
+        xhr.open('POST', `/chat-offline/rooms/${currentRoomId}/upload`);
+        xhr.send(formData);
+        
+    } catch (error) {
+        console.error('Erro no upload:', error);
+        showNotification('Erro ao enviar arquivo', 'error');
+    } finally {
+        setTimeout(() => {
+            progressContainer.style.display = 'none';
+            progressFill.style.width = '0%';
+        }, 1000);
+    }
+}
+
+async function downloadAttachment(attachmentId) {
+    try {
+        const response = await fetch(`/chat-offline/attachments/${attachmentId}/download`);
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = ''; // O servidor deve definir o nome
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+    } catch (error) {
+        console.error('Erro no download:', error);
+        showNotification('Erro ao baixar arquivo', 'error');
+    }
+}
+
+async function refreshChat() {
+    try {
+        const response = await fetch(`/chat-offline/rooms/${currentRoomId}/messages`);
+        if (response.ok) {
+            const data = await response.json();
+            updateMessagesUI(data.messages);
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar chat:', error);
+    }
+}
+
+function updateMessagesUI(messages) {
+    const container = document.getElementById('messages-container');
+    const existingMessages = Array.from(container.querySelectorAll('[data-message-id]'));
+    const existingIds = existingMessages.map(el => parseInt(el.getAttribute('data-message-id')));
+    
+    messages.forEach(message => {
+        if (!existingIds.includes(message.id)) {
+            addMessageToUI(message, message.user_id === {{ current_user.id }});
+        }
+    });
+    
+    scrollToBottom();
+}
+
+function scrollToBottom() {
+    const container = document.getElementById('messages-container');
+    container.scrollTop = container.scrollHeight;
+}
+
+function startPeriodicRefresh() {
+    setInterval(refreshChat, 3000); // Atualiza a cada 3 segundos
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
+}
+
+function clearChat() {
+    if (confirm('Tem certeza que deseja limpar o chat?')) {
+        document.getElementById('messages-container').innerHTML = `
+            <div class="file-drop-zone" id="file-drop-zone">
+                <div class="drop-message">
+                    <i class="bi bi-cloud-upload display-1"></i><br>
+                    Solte seus arquivos aqui para enviar
+                </div>
+            </div>
+        `;
+        showNotification('Chat limpo!', 'success');
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Implementar sistema de notificação toast
+    console.log(`${type.toUpperCase()}: ${message}`);
+}
+
+// Auto-focus no input
+document.getElementById('message-input').focus();
+</script>
+{% endblock %}

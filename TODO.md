@@ -1,65 +1,56 @@
-# TODO - Modernização do Sistema de Relatórios
+# TODO - Correção Dashboard e Relatórios
 
-## ✅ Concluído
-- [x] Análise do sistema atual
-- [x] Criação do plano de modernização
-- [x] **1. Dashboard Principal Aprimorado**
-  - [x] Criar novo template com drag-and-drop (`templates/relatorios/index_moderno.html`)
-  - [x] Implementar sistema de widgets
-  - [x] Adicionar funcionalidade de personalização
-  
-- [x] **2. Sistema de Drag-and-Drop**
-  - [x] Criar componentes de widgets arrastáveis
-  - [x] Implementar sistema de layout em grid (GridStack.js)
-  - [x] Adicionar modal de configuração de widgets
-  - [x] Salvar preferências do usuário (localStorage)
-  
-- [x] **3. Melhorias no CSS**
-  - [x] Adicionar estilos específicos para drag-and-drop
-  - [x] Melhorar design responsivo
-  - [x] Adicionar animações profissionais
-  
-- [x] **4. Funcionalidades JavaScript**
-  - [x] Implementar biblioteca de drag-and-drop (`static/js/dashboard-drag-drop.js`)
-  - [x] Sistema de gerenciamento de widgets
-  - [x] Atualizações de gráficos em tempo real
-  - [x] Controles de personalização do dashboard
-  
-- [x] **5. Melhorias no Backend**
-  - [x] Endpoints para salvar configurações do dashboard
-  - [x] APIs de dados dos widgets (`/api/widget-data/<widget_id>`)
-  - [x] Sistema de cache aprimorado
-  - [x] Nova rota `/relatorios/moderno` para dashboard moderno
+## Problemas Identificados:
+- [x] Erro GridStack: `grid.setStatic is not a function` na linha 246
+- [x] Relatórios especializados aparecem em branco na parte inferior
 
-## 🔄 Em Progresso
-- [ ] **6. Testes e Validação**
-  - [ ] Testes de funcionalidade
-  - [ ] Verificação de design responsivo
-  - [ ] Testes de performance
-  - [ ] Validação de salvamento de preferências
+## Plano de Correção:
 
-## 📋 Próximos Passos
-- [ ] Testar o dashboard moderno no navegador
-- [ ] Verificar se todas as dependências estão carregando
-- [ ] Ajustar estilos se necessário
-- [ ] Implementar gráficos Chart.js nos widgets
-- [ ] Adicionar mais tipos de widgets conforme necessário
+### 1. Corrigir GridStack
+- [x] Adicionar método `setStatic` no gridstack-basic.js
+- [x] Adicionar verificações de compatibilidade no dashboard_interativo.html
+- [x] Recriar template dashboard_interativo.html sem conflitos
+- [ ] Testar funcionamento do dashboard
 
-## 📁 Arquivos Criados/Modificados
-- ✅ `static/js/dashboard-drag-drop.js` - Sistema completo de drag-and-drop
-- ✅ `static/css/relatorios.css` - Estilos aprimorados com suporte a drag-and-drop
-- ✅ `templates/relatorios/index_moderno.html` - Template do dashboard moderno
-- ✅ `routes/relatorios.py` - Novas rotas e APIs para widgets
+### 2. Corrigir Relatórios em Branco
+- [x] Verificar rotas dos relatórios especializados (routes/relatorios.py)
+- [x] Verificar se as APIs estão funcionando (APIs implementadas)
+- [ ] Verificar se templates dos relatórios especializados existem
+- [ ] Testar carregamento dos relatórios
 
-## 🎯 Funcionalidades Implementadas
-- **Drag-and-Drop**: Widgets podem ser arrastados e reorganizados
-- **Widgets Personalizáveis**: 8 tipos diferentes de widgets disponíveis
-- **Layout Responsivo**: Funciona em desktop, tablet e mobile
-- **Biblioteca de Widgets**: Modal para adicionar novos widgets
-- **Persistência**: Layouts salvos no localStorage do usuário
-- **APIs de Dados**: Endpoints para dados em tempo real dos widgets
-- **Design Moderno**: Interface profissional com animações suaves
+### 3. Testes Finais
+- [ ] Testar dashboard interativo completo
+- [ ] Verificar se todos os widgets funcionam
+- [ ] Confirmar que relatórios carregam corretamente
 
----
-**Status Atual**: ✅ Implementação Concluída - Pronto para Testes
-**Última Atualização**: Dezembro 2024
+## Correções Aplicadas:
+
+### GridStack
+1. **Adicionado método `setStatic` no gridstack-basic.js**:
+   - Implementado método faltante com funcionalidade básica
+   - Adicionado método `compact()` também
+   - Melhorada compatibilidade entre versão completa e básica
+
+2. **Corrigido dashboard_interativo.html**:
+   - Adicionada verificação de compatibilidade: `if (typeof grid.setStatic === 'function')`
+   - Fallback para modo básico quando método não existe
+   - Removidos marcadores de conflito e duplicações
+   - Corrigido link para voltar aos relatórios
+
+### Próximos Passos:
+- [x] Testar o dashboard no navegador
+- [x] Corrigir erro de rota BuildError no dashboard
+- [x] Corrigir link "Base de Conhecimento" na navbar
+- [ ] Verificar se os relatórios especializados carregam
+- [ ] Confirmar funcionamento das APIs de widgets
+
+## Correções Adicionais Aplicadas:
+
+### Link Base de Conhecimento
+**Problema**: Link "Base de Conhecimento" na navbar direcionava incorretamente para `/painel` em vez do sistema de IA KB.
+
+**Solução**: 
+- **Arquivo**: `templates/base.html` (linha 149)
+- Alterado de: `href="{{ url_for('painel') }}"`
+- Para: `href="{{ url_for('ai_kb_admin') if has_endpoint('ai_kb_admin') else '/ai-kb/' }}"`
+- Agora direciona corretamente para o sistema de Base de Conhecimento IA

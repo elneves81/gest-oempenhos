@@ -42,7 +42,6 @@
 
     #dashboard-grid { width: 100%; }
     .grid-stack{ background: transparent; min-height:70vh; }
-    /* .grid-stack-item{ min-width:200px; min-height:120px; } */
     .grid-stack-item-content{
       background:#fff; height:100%; border-radius:14px; padding:16px;
       box-shadow:0 6px 24px rgba(0,0,0,.08); border:1px solid rgba(0,0,0,.06);
@@ -142,7 +141,7 @@
       </div>
       <div class="d-flex gap-2">
         <button id="btnAddWidgets" class="btn-glass"><i class="bi bi-plus-circle me-1"></i>Adicionar Widgets</button>
-        <a href="{{ url_for('relatorios.index') }}" class="btn-glass"><i class="bi bi-arrow-left me-1"></i>Central de Relatórios</a>
+        <a href="/relatorios/" class="btn-glass"><i class="bi bi-arrow-left me-1"></i>Central de Relatórios</a>
         <button class="btn-glass" onclick="resetLayout()"><i class="bi bi-arrow-clockwise me-1"></i>Reset Layout</button>
         <button class="btn-glass" onclick="saveLayout()"><i class="bi bi-save me-1"></i>Salvar Layout</button>
         <button class="btn-glass" onclick="refreshData()"><i class="bi bi-arrow-repeat me-1"></i>Atualizar</button>
@@ -177,12 +176,12 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack-all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // ======== Proteções contra layout/canvas quebrados ========
     const LS_KEY = 'dashboard-layout-v4';              // nova chave
     localStorage.removeItem('dashboard-layout');       // limpa antigas
     localStorage.removeItem('dashboard-layout-v2');
@@ -202,8 +201,13 @@
       dragInOptions: { revert: 'invalid', helper: 'clone', appendTo: 'body', scroll: false }
     }, '#dashboard-grid');
 
+    // Habilita movimentação e redimensionamento dos widgets (GridStack v5+)
     grid.enableMove(true);
     grid.enableResize(true);
+      // Em modo básico, habilita interações manualmente
+      if (grid.enableMove) grid.enableMove(true);
+      if (grid.enableResize) grid.enableResize(true);
+    }
 
     // ======== Utilitários: ID único + fábrica de HTML com botão "remover" ========
     
@@ -478,7 +482,9 @@
       addWidgetByType('report-operacional');
       addWidgetByType('report-analytics');
       addWidgetByType('report-filtrado');
-      grid.compact(); // empacota bonitinho sem sobreposição
+      if (typeof grid.compact === 'function') {
+        grid.compact(); // empacota bonitinho sem sobreposição
+      }
     };
 
     // nunca deixe widgets antigos "fantasmas"
@@ -542,55 +548,13 @@
 
     // Rotas dos cards
     window.openReport = (tipo) => {
-      const map = { financeiro:'/relatorios/financeiro', operacional:'/relatorios/operacional',
-                    analytics:'/relatorios/analytics', filtrado:'/relatorios/filtrado' };
+      const map = { 
+        financeiro:'/relatorios/financeiro', 
+        operacional:'/relatorios/operacional',
+        analytics:'/relatorios/analytics', 
+        filtrado:'/relatorios/filtrado' 
+      };
       location.href = map[tipo] || '/relatorios';
-    };
-
-    // ======== Funções dos botões ========
-    window.saveLayout = () => {
-      try {
-        const layout = grid.save();
-        localStorage.setItem(LS_KEY, JSON.stringify(layout));
-        // Feedback visual
-        const btn = document.querySelector('[onclick="saveLayout()"]');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Salvo!';
-        btn.classList.add('btn-success');
-        setTimeout(() => {
-          btn.innerHTML = originalText;
-          btn.classList.remove('btn-success');
-        }, 2000);
-      } catch (e) {
-        console.error('Erro ao salvar layout:', e);
-      }
-    };
-
-    window.resetLayout = () => {
-      if (confirm('Deseja realmente restaurar o layout padrão? Isso irá remover suas personalizações.')) {
-        localStorage.removeItem(LS_KEY);
-        grid.removeAll();
-        buildDefault();
-        // Feedback visual
-        const btn = document.querySelector('[onclick="resetLayout()"]');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Reset!';
-        setTimeout(() => {
-          btn.innerHTML = originalText;
-        }, 2000);
-      }
-    };
-
-    window.refreshData = () => {
-      const btn = document.querySelector('[onclick="refreshData()"]');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<div class="loading-indicator"></div>Atualizando...';
-      btn.disabled = true;
-      
-      loadKPIs().finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-      });
     };
 
     // limpeza
@@ -604,4 +568,3 @@
   });
   </script>
 </body>
-</html>

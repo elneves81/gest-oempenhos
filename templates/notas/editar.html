@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Nota Fiscal{% endblock title %}
+{% block page_title %}Editar Nota Fiscal{% endblock page_title %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Header da página -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="h4 mb-0 text-gray-800">
+        <i class="bi bi-receipt me-2"></i>Editar Nota Fiscal
+      </h2>
+      <p class="text-muted mt-1">Alterar dados da nota fiscal {{ nota.numero }}</p>
+    </div>
+    <div>
+      <a href="{{ url_for('notas_index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Card do formulário -->
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0">
+            <i class="bi bi-pencil-square me-2"></i>Editar Dados da Nota Fiscal
+          </h6>
+        </div>
+        
+        <div class="card-body">
+          <form method="POST" id="formNotaFiscal">
+            <div class="row">
+              <!-- Número da Nota -->
+              <div class="col-md-6 mb-3">
+                <label for="numero" class="form-label">
+                  <i class="bi bi-hash text-primary me-1"></i>Número da Nota <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" id="numero" name="numero" required
+                       value="{{ nota.numero }}" placeholder="Ex: NF-001234">
+              </div>
+
+              <!-- Empenho -->
+              <div class="col-md-6 mb-3">
+                <label for="empenho_id" class="form-label">
+                  <i class="bi bi-file-earmark-text text-primary me-1"></i>Empenho <span class="text-danger">*</span>
+                </label>
+                <select class="form-select" id="empenho_id" name="empenho_id" required>
+                  <option value="">Selecione um empenho</option>
+                  {% for empenho in empenhos %}
+                  <option value="{{ empenho.id }}" {{ 'selected' if empenho.id == nota.empenho_id else '' }}>
+                    {{ empenho.numero }} - {{ empenho.fornecedor }} (R$ {{ (empenho.valor_empenhado|default(0))|brl }})
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <!-- Fornecedor -->
+            <div class="mb-3">
+              <label for="fornecedor" class="form-label">
+                <i class="bi bi-building text-primary me-1"></i>Fornecedor <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control" id="fornecedor" name="fornecedor" required
+                     value="{{ nota.fornecedor }}" placeholder="Nome do fornecedor">
+            </div>
+
+            <div class="row">
+              <!-- Valor -->
+              <div class="col-md-4 mb-3">
+                <label for="valor" class="form-label">
+                  <i class="bi bi-currency-dollar text-primary me-1"></i>Valor <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  <input type="number" class="form-control" id="valor" name="valor" 
+                         step="0.01" min="0" required value="{{ nota.valor }}" placeholder="0,00">
+                </div>
+              </div>
+
+              <!-- Data de Emissão -->
+              <div class="col-md-4 mb-3">
+                <label for="data_emissao" class="form-label">
+                  <i class="bi bi-calendar-check text-primary me-1"></i>Data de Emissão <span class="text-danger">*</span>
+                </label>
+                <input type="date" class="form-control" id="data_emissao" name="data_emissao" 
+                       required value="{{ nota.data_emissao.strftime('%Y-%m-%d') if nota.data_emissao else '' }}">
+              </div>
+
+              <!-- Data de Vencimento -->
+              <div class="col-md-4 mb-3">
+                <label for="data_vencimento" class="form-label">
+                  <i class="bi bi-calendar-x text-primary me-1"></i>Data de Vencimento <span class="text-danger">*</span>
+                </label>
+                <input type="date" class="form-control" id="data_vencimento" name="data_vencimento" 
+                       required value="{{ nota.data_vencimento.strftime('%Y-%m-%d') if nota.data_vencimento else '' }}">
+              </div>
+            </div>
+
+            <!-- Informações do Empenho Selecionado -->
+            <div id="info-empenho" class="alert alert-info">
+              <h6><i class="bi bi-info-circle me-2"></i>Informações do Empenho Atual:</h6>
+              <div id="empenho-details">
+                {% if nota.empenho %}
+                <div class="row">
+                  <div class="col-md-6">
+                    <strong>Número:</strong> {{ nota.empenho.numero }}<br>
+                    <strong>Fornecedor:</strong> {{ nota.empenho.fornecedor }}
+                  </div>
+                  <div class="col-md-6">
+                    <strong>Valor Empenhado:</strong> R$ {{ (nota.empenho.valor_empenhado|default(0))|brl }}
+                  </div>
+                </div>
+                {% else %}
+                <p class="mb-0">Nenhum empenho selecionado</p>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Informações extras -->
+            <div class="row">
+              <div class="col-md-6">
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle me-2"></i>
+                  <strong>Criada em:</strong> {{ nota.created_at.strftime('%d/%m/%Y %H:%M') if nota.created_at else 'N/A' }}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="alert alert-secondary">
+                  <i class="bi bi-clock me-2"></i>
+                  <strong>Última atualização:</strong> {{ nota.updated_at.strftime('%d/%m/%Y %H:%M') if nota.updated_at else 'N/A' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Botões -->
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{{ url_for('notas_index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i>Cancelar
+              </a>
+              <button type="submit" class="btn btn-warning">
+                <i class="bi bi-check-circle me-1"></i>Atualizar Nota Fiscal
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Preencher fornecedor automaticamente quando selecionar empenho
+document.getElementById('empenho_id').addEventListener('change', function() {
+  const select = this;
+  const fornecedorInput = document.getElementById('fornecedor');
+  const empenhoDetails = document.getElementById('empenho-details');
+  
+  if (select.value) {
+    const selectedOption = select.options[select.selectedIndex];
+    const text = selectedOption.text;
+    
+    // Extrair fornecedor do texto da opção
+    const parts = text.split(' - ');
+    if (parts.length >= 2) {
+      const fornecedor = parts[1].split(' (R$')[0];
+      fornecedorInput.value = fornecedor;
+    }
+    
+    // Atualizar informações do empenho
+    empenhoDetails.innerHTML = `
+      <div class="row">
+        <div class="col-md-6">
+          <strong>Número:</strong> ${parts[0]}<br>
+          <strong>Fornecedor:</strong> ${parts[1].split(' (R$')[0]}
+        </div>
+        <div class="col-md-6">
+          <strong>Valor Empenhado:</strong> ${parts[1].match(/R\$ (.*?)\)/)?.[1] || 'N/A'}
+        </div>
+      </div>
+    `;
+  } else {
+    empenhoDetails.innerHTML = '<p class="mb-0">Nenhum empenho selecionado</p>';
+  }
+});
+
+// Validação adicional
+document.getElementById('formNotaFiscal').addEventListener('submit', function(e) {
+  const dataEmissao = new Date(document.getElementById('data_emissao').value);
+  const dataVencimento = new Date(document.getElementById('data_vencimento').value);
+  
+  if (dataVencimento < dataEmissao) {
+    e.preventDefault();
+    alert('A data de vencimento não pode ser anterior à data de emissão!');
+    return false;
+  }
+});
+
+// Formatação automática do valor
+document.getElementById('valor').addEventListener('input', function(e) {
+  let value = e.target.value;
+  if (value) {
+    // Limitar a 2 casas decimais
+    if (value.includes('.')) {
+      const parts = value.split('.');
+      if (parts[1] && parts[1].length > 2) {
+        e.target.value = parts[0] + '.' + parts[1].substring(0, 2);
+      }
+    }
+  }
+});
+</script>
+{% endblock content %}

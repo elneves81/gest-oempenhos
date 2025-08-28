@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Aditivos do Contrato - {{ contrato.numero_contrato }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.contract-header {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.contract-info {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.aditivos-table {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.table th {
+    background-color: #495057;
+    color: white;
+    border: none;
+    font-weight: 600;
+}
+
+.table td {
+    vertical-align: middle;
+    border-color: #dee2e6;
+}
+
+.btn-action {
+    margin: 0 2px;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-ativo {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inativo {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.valor-display {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.no-aditivos {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+}
+
+.breadcrumb-custom {
+    background: none;
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+.breadcrumb-custom .breadcrumb-item a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb-custom .breadcrumb-item.active {
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb breadcrumb-custom">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('notas.dashboard') }}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('contratos.index') }}">
+                    <i class="fas fa-file-contract"></i> Contratos
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}">
+                    {{ contrato.numero_contrato }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Aditivos</li>
+        </ol>
+    </nav>
+
+    <!-- Header do Contrato -->
+    <div class="contract-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h3 class="mb-1">
+                    <i class="fas fa-file-contract me-2"></i>
+                    Aditivos do Contrato
+                </h3>
+                <p class="mb-0 opacity-75">
+                    {{ contrato.numero_contrato }} - {{ contrato.objeto[:100] }}{% if contrato.objeto|length > 100 %}...{% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('contratos.novo_aditivo', contrato_id=contrato.id) }}" 
+                   class="btn btn-light btn-lg">
+                    <i class="fas fa-plus me-2"></i>
+                    Novo Aditivo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações do Contrato -->
+    <div class="contract-info">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Contratado:</strong><br>
+                {{ contrato.fornecedor }}
+            </div>
+            <div class="col-md-3">
+                <strong>Valor Original:</strong><br>
+                <span class="valor-display">
+                    R$ {{ "{:,.2f}".format(contrato.valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') if contrato.valor_total else '0,00' }}
+                </span>
+            </div>
+            <div class="col-md-3">
+                <strong>Data Início:</strong><br>
+                {{ contrato.data_inicio.strftime('%d/%m/%Y') if contrato.data_inicio else 'N/A' }}
+            </div>
+            <div class="col-md-3">
+                <strong>Data Fim:</strong><br>
+                {{ contrato.data_fim.strftime('%d/%m/%Y') if contrato.data_fim else 'N/A' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Aditivos -->
+    <div class="aditivos-table">
+        {% if aditivos %}
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Nº</th>
+                    <th>Tipo</th>
+                    <th>Finalidade</th>
+                    <th style="width: 120px;">Valor</th>
+                    <th style="width: 120px;">Data</th>
+                    <th style="width: 140px;" class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aditivo in aditivos %}
+                <tr>
+                    <td>
+                        <span class="badge bg-primary">
+                            #{{ aditivo.numero_aditivo }}
+                        </span>
+                    </td>
+                    <td>
+                        <strong>{{ aditivo.tipo.replace('_', ' ').title() }}</strong>
+                    </td>
+                    <td>
+                        {{ aditivo.finalidade[:80] }}{% if aditivo.finalidade|length > 80 %}...{% endif %}
+                    </td>
+                    <td>
+                        {% if aditivo.valor_financeiro %}
+                        <span class="valor-display">
+                            R$ {{ "{:,.2f}".format(aditivo.valor_financeiro).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ aditivo.data_assinatura.strftime('%d/%m/%Y') if aditivo.data_assinatura else 'N/A' }}
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('contratos.editar_aditivo', contrato_id=contrato.id, aditivo_id=aditivo.id) }}" 
+                               class="btn btn-sm btn-outline-primary btn-action" 
+                               title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" 
+                                    class="btn btn-sm btn-outline-danger btn-action" 
+                                    title="Excluir"
+                                    onclick="confirmarExclusao({{ aditivo.id }}, '{{ aditivo.numero_aditivo }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="no-aditivos">
+            <i class="fas fa-file-contract fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Nenhum aditivo encontrado</h5>
+            <p class="text-muted">Este contrato ainda não possui aditivos contratuais.</p>
+            <a href="{{ url_for('contratos.novo_aditivo', contrato_id=contrato.id) }}" 
+               class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>
+                Criar Primeiro Aditivo
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Botões de Navegação -->
+    <div class="mt-4">
+        <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" 
+           class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Voltar ao Contrato
+        </a>
+        
+        <a href="{{ url_for('contratos.index') }}" 
+           class="btn btn-outline-secondary ms-2">
+            <i class="fas fa-list me-2"></i>
+            Lista de Contratos
+        </a>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o <strong>Aditivo #<span id="aditivoNumero"></span></strong>?</p>
+                <p class="text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="POST" class="d-inline">
+                                                    <!-- CSRF token será incluído quando necessário -->
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmarExclusao(aditivoId, numeroAditivo) {
+    // Atualizar o número do aditivo no modal
+    document.getElementById('aditivoNumero').textContent = numeroAditivo;
+    
+    // Configurar o formulário de exclusão
+    const deleteForm = document.getElementById('deleteForm');
+    deleteForm.action = `{{ url_for('contratos.excluir_aditivo', contrato_id=contrato.id, aditivo_id=0) }}`.replace('0', aditivoId);
+    
+    // Mostrar o modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    modal.show();
+}
+
+// Adicionar tooltips aos botões
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

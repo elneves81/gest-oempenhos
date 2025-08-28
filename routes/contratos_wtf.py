@@ -5,10 +5,16 @@ import json
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory, jsonify
 from flask_login import login_required
 from werkzeug.utils import secure_filename
-from models import db, Contrato, ItemContrato
 from forms.contrato import ContratoForm
 
 contratos_wtf_bp = Blueprint('contratos_wtf', __name__, url_prefix='/contratos-wtf')
+
+# Dependências que serão injetadas pelo app principal
+Contrato = None
+Empenho = None
+AditivoContratual = None
+db = None
+ItemContrato = None
 
 def _upload_dir():
     d = os.path.join(current_app.instance_path, 'uploads', 'contratos')

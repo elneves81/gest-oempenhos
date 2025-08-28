@@ -365,6 +365,17 @@ def excluir_ajax(id):
         })
 
 # Rotas para Aditivos Contratuais
+@contratos_bp.route('/<int:contrato_id>/aditivos', methods=['GET'])
+@login_required
+def listar_aditivos(contrato_id):
+    """Listar aditivos de um contrato"""
+    contrato = Contrato.query.get_or_404(contrato_id)
+    aditivos = AditivoContratual.query.filter_by(contrato_id=contrato_id).order_by(AditivoContratual.numero_aditivo).all()
+    
+    return render_template('contratos/aditivos_list.html', 
+                         contrato=contrato, 
+                         aditivos=aditivos)
+
 @contratos_bp.route('/<int:contrato_id>/aditivos/novo', methods=['GET', 'POST'])
 @login_required
 def novo_aditivo(contrato_id):

@@ -37,7 +37,7 @@
                             Total de Empenhos
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            {{ total_empenhos if total_empenhos is defined else 0 }}
+                            {{ total_empenhos|ptnum }}
                         </div>
                     </div>
                     <div class="col-auto">
@@ -58,7 +58,7 @@
                             Total de Contratos
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            {{ total_contratos if total_contratos is defined else 0 }}
+                            {{ total_contratos|ptnum }}
                         </div>
                     </div>
                     <div class="col-auto">
@@ -79,7 +79,7 @@
                             Valor Total
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            R$ {{ "{:,.2f}".format(valor_total_empenhos) if valor_total_empenhos is defined else "0,00" }}
+                            {{ valor_total_empenhos|brl }}
                         </div>
                     </div>
                     <div class="col-auto">
@@ -100,7 +100,7 @@
                             Contratos Ativos
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            {{ contratos_ativos if contratos_ativos is defined else 0 }}
+                            {{ contratos_ativos|ptnum }}
                         </div>
                     </div>
                     <div class="col-auto">

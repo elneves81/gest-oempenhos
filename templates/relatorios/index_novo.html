@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block title %}Central de Relatórios{% endblock %}
+{% block page_title %}Central de Relatórios{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Dashboard moderno */
+.dashboard-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.card-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.card-gradient-success {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+}
+
+.card-gradient-warning {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  color: #333;
+}
+
+.card-gradient-info {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #333;
+}
+
+.card-gradient-danger {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  color: #333;
+}
+
+.metric-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
+.report-section {
+  background: #f8f9fc;
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.report-button {
+  background: white;
+  border: 2px solid #e3e6f0;
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-decoration: none;
+  color: #5a5c69;
+  transition: all 0.3s ease;
+  display: block;
+  height: 100%;
+}
+
+.report-button:hover {
+  border-color: #667eea;
+  color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.report-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #667eea;
+}
+
+.chart-container {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.period-selector {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.btn-period {
+  border: 2px solid #e3e6f0;
+  background: white;
+  color: #5a5c69;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
+  transition: all 0.3s ease;
+}
+
+.btn-period:hover,
+.btn-period.active {
+  border-color: #667eea;
+  background: #667eea;
+  color: white;
+}
+
+.insight-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.quick-actions {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.action-btn {
+  background: #f8f9fc;
+  border: 2px solid #e3e6f0;
+  border-radius: 8px;
+  padding: 1rem;
+  text-decoration: none;
+  color: #5a5c69;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 120px;
+}
+
+.action-btn:hover {
+  border-color: #667eea;
+  background: #667eea;
+  color: white;
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .metric-value {
+    font-size: 2rem;
+  }
+  
+  .report-section {
+    padding: 1rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Cabeçalho da Página -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-0 text-gray-800">
+        <i class="bi bi-graph-up-arrow me-2"></i>Central de Relatórios
+      </h1>
+      <p class="text-muted mt-1">Dashboard executivo e relatórios gerenciais</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary" onclick="atualizarDados()">
+        <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+      </button>
+      <button class="btn btn-primary" onclick="exportarDashboard()">
+        <i class="bi bi-download me-1"></i>Exportar
+      </button>
+    </div>
+  </div>
+
+  <!-- Seletor de Período -->
+  <div class="period-selector">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+      <h6 class="mb-0 fw-bold">Período de Análise:</h6>
+      <div class="btn-group" role="group">
+        <button class="btn btn-period active" data-period="30">30 dias</button>
+        <button class="btn btn-period" data-period="90">90 dias</button>
+        <button class="btn btn-period" data-period="180">6 meses</button>
+        <button class="btn btn-period" data-period="365">1 ano</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards de Métricas Principais -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card dashboard-card card-gradient-primary">
+        <div class="card-body text-center">
+          <i class="bi bi-file-earmark-text fa-3x mb-3 opacity-75"></i>
+          <div class="metric-value">{{ total_empenhos or 0 }}</div>
+          <div class="metric-label">Total de Empenhos</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card dashboard-card card-gradient-success">
+        <div class="card-body text-center">
+          <i class="bi bi-currency-dollar fa-3x mb-3 opacity-75"></i>
+          <div class="metric-value">R$ {{ "%.2f"|format(valor_total_empenhado or 0)|replace(',', '.') }}</div>
+          <div class="metric-label">Valor Empenhado</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card dashboard-card card-gradient-warning">
+        <div class="card-body text-center">
+          <i class="bi bi-receipt fa-3x mb-3 opacity-75"></i>
+          <div class="metric-value">{{ total_notas or 0 }}</div>
+          <div class="metric-label">Notas Fiscais</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card dashboard-card card-gradient-info">
+        <div class="card-body text-center">
+          <i class="bi bi-check-circle fa-3x mb-3 opacity-75"></i>
+          <div class="metric-value">R$ {{ "%.2f"|format(valor_notas_pagas or 0)|replace(',', '.') }}</div>
+          <div class="metric-label">Notas Pagas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Coluna Esquerda - Gráficos -->
+    <div class="col-lg-8 mb-4">
+      <!-- Evolução Mensal -->
+      <div class="chart-container mb-4">
+        <h5 class="fw-bold mb-3">
+          <i class="bi bi-graph-up me-2 text-primary"></i>Evolução dos Empenhos
+        </h5>
+        <canvas id="chartEvolucao" height="80"></canvas>
+      </div>
+
+      <!-- Status dos Empenhos -->
+      <div class="chart-container">
+        <h5 class="fw-bold mb-3">
+          <i class="bi bi-pie-chart me-2 text-success"></i>Distribuição por Status
+        </h5>
+        <div class="row">
+          <div class="col-md-6">
+            <canvas id="chartStatusEmpenhos"></canvas>
+            <p class="text-center mt-2 fw-semibold">Empenhos</p>
+          </div>
+          <div class="col-md-6">
+            <canvas id="chartStatusNotas"></canvas>
+            <p class="text-center mt-2 fw-semibold">Notas Fiscais</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna Direita - Insights e Ações -->
+    <div class="col-lg-4">
+      <!-- Insights Inteligentes -->
+      <div class="mb-4">
+        <h5 class="fw-bold mb-3">
+          <i class="bi bi-lightbulb me-2 text-warning"></i>Insights
+        </h5>
+        {% if insights %}
+          {% for insight in insights %}
+          <div class="insight-card">
+            <i class="bi bi-{{ insight.icon }} me-2"></i>
+            {{ insight.texto }}
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="insight-card">
+          <i class="bi bi-info-circle me-2"></i>
+          Carregando insights...
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Ações Rápidas -->
+      <div class="quick-actions">
+        <h5 class="fw-bold mb-3">
+          <i class="bi bi-lightning me-2 text-primary"></i>Ações Rápidas
+        </h5>
+        <div class="row g-3">
+          <div class="col-6">
+            <a href="{{ url_for('relatorios.filtrado') }}" class="action-btn">
+              <i class="bi bi-funnel fs-3 mb-2"></i>
+              <small>Relatório Filtrado</small>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="{{ url_for('relatorios.financeiro') }}" class="action-btn">
+              <i class="bi bi-calculator fs-3 mb-2"></i>
+              <small>Financeiro</small>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="{{ url_for('relatorios.operacional') }}" class="action-btn">
+              <i class="bi bi-gear fs-3 mb-2"></i>
+              <small>Operacional</small>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="{{ url_for('relatorios.analytics') }}" class="action-btn">
+              <i class="bi bi-bar-chart fs-3 mb-2"></i>
+              <small>Analytics</small>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seção de Relatórios Especializados -->
+  <div class="report-section">
+    <h4 class="fw-bold mb-4">
+      <i class="bi bi-folder-open me-2"></i>Relatórios Especializados
+    </h4>
+    <div class="row">
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a href="/relatorios/demonstrativo/periodo" class="report-button">
+          <div class="text-center">
+            <i class="bi bi-calendar-range report-icon"></i>
+            <h6 class="fw-bold">Por Período</h6>
+            <p class="small mb-0">Análise temporal detalhada</p>
+          </div>
+        </a>
+      </div>
+      
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a href="/relatorios/demonstrativo/fornecedores" class="report-button">
+          <div class="text-center">
+            <i class="bi bi-building report-icon"></i>
+            <h6 class="fw-bold">Por Fornecedor</h6>
+            <p class="small mb-0">Ranking e desempenho</p>
+          </div>
+        </a>
+      </div>
+      
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a href="/relatorios/demonstrativo/orcamentario" class="report-button">
+          <div class="text-center">
+            <i class="bi bi-pie-chart-fill report-icon"></i>
+            <h6 class="fw-bold">Orçamentário</h6>
+            <p class="small mb-0">Execução orçamentária</p>
+          </div>
+        </a>
+      </div>
+      
+      <div class="col-lg-3 col-md-6 mb-3">
+        <a href="/relatorios/demonstrativo/auditoria" class="report-button">
+          <div class="text-center">
+            <i class="bi bi-shield-check report-icon"></i>
+            <h6 class="fw-bold">Auditoria</h6>
+            <p class="small mb-0">Trilha de auditoria</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Dados do backend
+const dadosEvolucao = {{ evolucao_mensal|tojson|safe }};
+const dadosStatusEmpenhos = {{ empenhos_por_status|tojson|safe }};
+const dadosStatusNotas = {{ notas_por_status|tojson|safe }};
+
+// Configuração de cores
+const cores = {
+  primary: '#667eea',
+  success: '#11998e',
+  warning: '#fcb69f',
+  danger: '#ff9a9e',
+  info: '#a8edea'
+};
+
+// Gráfico de Evolução Mensal
+const ctxEvolucao = document.getElementById('chartEvolucao').getContext('2d');
+new Chart(ctxEvolucao, {
+  type: 'line',
+  data: {
+    labels: dadosEvolucao.map(d => d.mes),
+    datasets: [{
+      label: 'Valor Empenhado (R$)',
+      data: dadosEvolucao.map(d => d.valor),
+      borderColor: cores.primary,
+      backgroundColor: cores.primary + '20',
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value) {
+            return 'R$ ' + value.toLocaleString('pt-BR');
+          }
+        }
+      }
+    }
+  }
+});
+
+// Gráfico de Status dos Empenhos
+const ctxStatusEmpenhos = document.getElementById('chartStatusEmpenhos').getContext('2d');
+new Chart(ctxStatusEmpenhos, {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(dadosStatusEmpenhos),
+    datasets: [{
+      data: Object.values(dadosStatusEmpenhos),
+      backgroundColor: [cores.success, cores.warning, cores.danger, cores.info],
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        position: 'bottom'
+      }
+    }
+  }
+});
+
+// Gráfico de Status das Notas
+const ctxStatusNotas = document.getElementById('chartStatusNotas').getContext('2d');
+new Chart(ctxStatusNotas, {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(dadosStatusNotas),
+    datasets: [{
+      data: Object.values(dadosStatusNotas),
+      backgroundColor: [cores.primary, cores.warning, cores.danger],
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        position: 'bottom'
+      }
+    }
+  }
+});
+
+// Seletor de período
+document.querySelectorAll('.btn-period').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    
+    const periodo = this.dataset.period;
+    atualizarDadosPeriodo(periodo);
+  });
+});
+
+// Funções auxiliares
+function atualizarDados() {
+  const btn = event.target;
+  const originalText = btn.innerHTML;
+  
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1 spinner-border spinner-border-sm"></i>Atualizando...';
+  
+  setTimeout(() => {
+    window.location.reload();
+  }, 1000);
+}
+
+function exportarDashboard() {
+  const btn = event.target;
+  const originalText = btn.innerHTML;
+  
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-download me-1 spinner-border spinner-border-sm"></i>Exportando...';
+  
+  // Simular export
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    
+    // Aqui você pode implementar a exportação real
+    alert('Funcionalidade de export será implementada em breve!');
+  }, 2000);
+}
+
+function atualizarDadosPeriodo(periodo) {
+  console.log('Atualizando dados para período:', periodo);
+  // Implementar atualização dinâmica via AJAX
+}
+
+// Animações de entrada
+document.addEventListener('DOMContentLoaded', function() {
+  const cards = document.querySelectorAll('.dashboard-card');
+  cards.forEach((card, index) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+      card.style.transition = 'all 0.5s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, index * 100);
+  });
+});
+</script>
+{% endblock %}

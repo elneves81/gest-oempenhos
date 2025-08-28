@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Contrato{% endblock title %}
+{% block page_title %}Novo Contrato{% endblock page_title %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Header da página -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="h4 mb-0 text-gray-800">
+        <i class="bi bi-file-earmark-plus me-2"></i>Novo Contrato
+      </h2>
+      <p class="text-muted mt-1">Cadastrar um novo contrato no sistema</p>
+    </div>
+    <div>
+      <a href="{{ url_for('contratos_index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Card do formulário -->
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h6 class="mb-0">
+            <i class="bi bi-file-earmark-text me-2"></i>Dados do Contrato
+          </h6>
+        </div>
+        
+        <div class="card-body">
+          <form method="POST" id="formContrato">
+            <div class="row">
+              <!-- Número do Contrato -->
+              <div class="col-md-6 mb-3">
+                <label for="numero" class="form-label">
+                  <i class="bi bi-hash text-primary me-1"></i>Número do Contrato <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" id="numero" name="numero" required
+                       placeholder="Ex: CONT-2024-001">
+              </div>
+
+              <!-- Fornecedor -->
+              <div class="col-md-6 mb-3">
+                <label for="fornecedor" class="form-label">
+                  <i class="bi bi-building text-primary me-1"></i>Fornecedor <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" id="fornecedor" name="fornecedor" required
+                       placeholder="Nome do fornecedor">
+              </div>
+            </div>
+
+            <!-- Objeto do Contrato -->
+            <div class="mb-3">
+              <label for="objeto" class="form-label">
+                <i class="bi bi-journal-text text-primary me-1"></i>Objeto do Contrato <span class="text-danger">*</span>
+              </label>
+              <textarea class="form-control" id="objeto" name="objeto" rows="3" required
+                        placeholder="Descreva o objeto do contrato..."></textarea>
+            </div>
+
+            <div class="row">
+              <!-- Valor -->
+              <div class="col-md-4 mb-3">
+                <label for="valor" class="form-label">
+                  <i class="bi bi-currency-dollar text-primary me-1"></i>Valor <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  <input type="number" class="form-control" id="valor" name="valor" 
+                         step="0.01" min="0" required placeholder="0,00">
+                </div>
+              </div>
+
+              <!-- Data de Início -->
+              <div class="col-md-4 mb-3">
+                <label for="data_inicio" class="form-label">
+                  <i class="bi bi-calendar-check text-primary me-1"></i>Data de Início <span class="text-danger">*</span>
+                </label>
+                <input type="date" class="form-control" id="data_inicio" name="data_inicio" required>
+              </div>
+
+              <!-- Data de Fim -->
+              <div class="col-md-4 mb-3">
+                <label for="data_fim" class="form-label">
+                  <i class="bi bi-calendar-x text-primary me-1"></i>Data de Fim <span class="text-danger">*</span>
+                </label>
+                <input type="date" class="form-control" id="data_fim" name="data_fim" required>
+              </div>
+            </div>
+
+            <!-- Botões -->
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{{ url_for('contratos_index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i>Cancelar
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Salvar Contrato
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Validação adicional
+document.getElementById('formContrato').addEventListener('submit', function(e) {
+  const dataInicio = new Date(document.getElementById('data_inicio').value);
+  const dataFim = new Date(document.getElementById('data_fim').value);
+  
+  if (dataFim <= dataInicio) {
+    e.preventDefault();
+    alert('A data de fim deve ser posterior à data de início!');
+    return false;
+  }
+});
+
+// Formatação automática do valor
+document.getElementById('valor').addEventListener('input', function(e) {
+  let value = e.target.value;
+  if (value) {
+    // Limitar a 2 casas decimais
+    if (value.includes('.')) {
+      const parts = value.split('.');
+      if (parts[1] && parts[1].length > 2) {
+        e.target.value = parts[0] + '.' + parts[1].substring(0, 2);
+      }
+    }
+  }
+});
+</script>
+{% endblock content %}

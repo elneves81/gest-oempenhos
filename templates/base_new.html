@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Sistema Municipal{% endblock %}</title>
+
+  <!-- Bootstrap + Icons (globais) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  {% block extra_head %}{% endblock %}
+  {% block extra_css %}{% endblock %}
+
+  <style>
+    body { background-color:#f8f9fa; }
+    .sidebar { min-height:100vh; background: linear-gradient(135deg,#20b2aa,#48d1cc); }
+    .sidebar .nav-link { color: #fff; opacity:.9; }
+    .sidebar .nav-link.active, .sidebar .nav-link:hover { background: rgba(255,255,255,.18); color:#fff; }
+  </style>
+</head>
+<body>
+  {% if current_user.is_authenticated %}
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3">
+        <h5 class="text-white fw-bold mb-3">Sistema Municipal</h5>
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint=='painel' %}active{% endif %}" href="{{ url_for('painel') }}">
+              <i class="bi bi-speedometer2 me-2"></i>Painel Principal
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('empenhos') %}active{% endif %}" href="{{ url_for('empenhos.index') }}">
+              <i class="bi bi-file-earmark-text me-2"></i>Empenhos
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('contratos') %}active{% endif %}" href="{{ url_for('contratos.index') }}">
+              <i class="bi bi-file-earmark-ruled me-2"></i>Contratos
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('relatorios') %}active{% endif %}" href="{{ url_for('relatorios.index') }}">
+              <i class="bi bi-graph-up me-2"></i>Relatórios
+            </a>
+          </li>
+          {% if current_user.is_admin %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint=='auth.users' %}active{% endif %}" href="{{ url_for('auth.users') }}">
+              <i class="bi bi-people me-2"></i>Usuários
+            </a>
+          </li>
+          {% endif %}
+          <li class="nav-item mt-2">
+            <form method="POST" action="{{ url_for('auth.logout') }}">
+              {{ csrf_token() if csrf_token is defined else '' }}
+              <button type="submit" class="btn btn-outline-light w-100">
+                <i class="bi bi-box-arrow-right me-2"></i>Sair
+              </button>
+            </form>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Main -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-3 py-3">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+          <h1 class="h3 m-0">{% block page_title %}{% endblock %}</h1>
+          <div>{% block page_actions %}{% endblock %}</div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category=='error' else category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+  {% else %}
+    {% block auth_content %}{% endblock %}
+  {% endif %}
+
+  <!-- Bootstrap JS (global) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Espaço para scripts por página -->
+  {% block extra_js %}{% endblock %}
+
+<!-- 🔧 CONTORNO DE ERROS DE PROXY -->
+<script>
+
+// 🔧 CONTORNO DE ERROS DE PROXY - DASHBOARD INTERATIVO
+// ===================================================
+
+// Configuração global para requisições AJAX
+$.ajaxSetup({
+    timeout: 30000, // 30 segundos
+    cache: false,
+    beforeSend: function(xhr, settings) {
+        // Headers para contornar proxy
+        xhr.setRequestHeader('Cache-Control', 'no-cache');
+        xhr.setRequestHeader('Pragma', 'no-cache');
+        
+        // Log da requisição
+        console.log('🌐 Requisição:', settings.url);
+    }
+});
+
+// Função de retry automático
+function requisicaoComRetry(url, opcoes = {}, tentativas = 3) {
+    const configuracao = {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+        },
+        ...opcoes
+    };
+    
+    return new Promise((resolve, reject) => {
+        function tentar(tentativaAtual) {
+            fetch(url, configuracao)
+                .then(response => {
+                    if (response.ok) {
+                        console.log(`✅ Sucesso na tentativa ${tentativaAtual}: ${url}`);
+                        resolve(response);
+                    } else if (response.status === 302) {
+                        console.log(`🔄 Redirecionamento (login): ${url}`);
+                        window.location.href = '/login';
+                    } else {
+                        throw new Error(`Status ${response.status}`);
+                    }
+                })
+                .catch(error => {
+                    console.warn(`⚠️ Tentativa ${tentativaAtual} falhou:`, error.message);
+                    
+                    if (tentativaAtual < tentativas) {
+                        const delay = Math.pow(2, tentativaAtual) * 1000; // Backoff exponencial
+                        console.log(`🔄 Retry em ${delay}ms...`);
+                        setTimeout(() => tentar(tentativaAtual + 1), delay);
+                    } else {
+                        console.error(`❌ Falha após ${tentativas} tentativas: ${url}`);
+                        reject(error);
+                    }
+                });
+        }
+        tentar(1);
+    });
+}
+
+// KPIs com múltiplos fallbacks
+async function loadKPIsComFallback() {
+    const endpoints = [
+        '/relatorios/api/widget-data/kpi-empenhos',
+        '/api/kpis',
+        '/api/integracoes/dashboard-summary'
+    ];
+    
+    for (const endpoint of endpoints) {
+        try {
+            console.log(`🔄 Tentando endpoint: ${endpoint}`);
+            const response = await requisicaoComRetry(endpoint);
+            const data = await response.json();
+            
+            // Sucesso - processa dados
+            console.log(`✅ Dados carregados de: ${endpoint}`);
+            processarKPIs(data);
+            return;
+            
+        } catch (error) {
+            console.warn(`⚠️ Falha no endpoint ${endpoint}:`, error.message);
+            continue;
+        }
+    }
+    
+    // Se todos falharam, mostra dados offline
+    console.log('📱 Modo offline - carregando dados em cache');
+    carregarDadosOffline();
+}
+
+// Processa KPIs de diferentes APIs
+function processarKPIs(data) {
+    // Mapeia campos de diferentes estruturas de API
+    const mapping = {
+        total_empenhos: data.total_empenhos || data.total || data.empenhos_count || 0,
+        valor_total: data.valor_total_empenhos || data.valor_total || data.total_value || 0,
+        total_contratos: data.total_contratos || data.contratos_count || 0,
+        total_notas: data.total_notas_fiscais || data.notas_count || 0
+    };
+    
+    // Atualiza elementos no DOM
+    document.querySelectorAll('[id^="emp-"]').forEach(el => 
+        el.textContent = mapping.total_empenhos.toLocaleString()
+    );
+    
+    document.querySelectorAll('[id^="fin-"]').forEach(el => 
+        el.textContent = `R$ ${Number(mapping.valor_total).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`
+    );
+    
+    document.querySelectorAll('[id^="ctr-"]').forEach(el => 
+        el.textContent = mapping.total_contratos.toLocaleString()
+    );
+    
+    document.querySelectorAll('[id^="nf-"]').forEach(el => 
+        el.textContent = mapping.total_notas.toLocaleString()
+    );
+}
+
+// Dados offline como fallback final
+function carregarDadosOffline() {
+    const dadosCache = {
+        total_empenhos: parseInt(localStorage.getItem('cache_total_empenhos') || '0'),
+        valor_total: parseFloat(localStorage.getItem('cache_valor_total') || '0'),
+        total_contratos: parseInt(localStorage.getItem('cache_total_contratos') || '0'),
+        total_notas: parseInt(localStorage.getItem('cache_total_notas') || '0')
+    };
+    
+    processarKPIs(dadosCache);
+    
+    // Mostra aviso de dados offline
+    const aviso = document.createElement('div');
+    aviso.className = 'alert alert-warning';
+    aviso.innerHTML = '📱 <strong>Modo Offline:</strong> Dados em cache. Verifique a conexão.';
+    document.querySelector('.container-fluid')?.prepend(aviso);
+}
+
+console.log('🔧 Sistema de contorno de proxy carregado!');
+
+</script>
+</body>
+</html>

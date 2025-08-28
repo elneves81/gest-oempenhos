@@ -155,62 +155,6 @@
       .sidebar { transform: translateX(-100%); position: fixed; z-index: 1000; }
       .sidebar.show { transform: translateX(0); }
     }
-
-    /* Submenu Styles */
-    .submenu {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      margin: 5px 15px;
-      padding: 8px 0;
-    }
-    
-    .submenu-item {
-      padding: 8px 20px !important;
-      font-size: 0.9rem;
-      border-radius: 6px;
-      margin: 2px 8px;
-      transition: all 0.2s ease;
-    }
-    
-    .submenu-item:hover {
-      background: rgba(255, 255, 255, 0.1);
-      transform: translateX(4px);
-    }
-    
-    .submenu-item.active {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-    
-    .submenu-item .icon-sm {
-      font-size: 0.9rem;
-      min-width: 20px;
-    }
-    
-    .dropdown-toggle::after {
-      content: "\F282"; /* bi-chevron-down */
-      font-family: "bootstrap-icons";
-      border: none;
-      font-size: 0.8rem;
-      margin-left: auto;
-      transition: transform 0.2s ease;
-      display: inline-block;
-    }
-    
-    .dropdown-toggle[aria-expanded="true"]::after {
-      transform: rotate(180deg);
-    }
-    
-    /* Remove a seta padrão do Bootstrap e garante que nossa seta customizada apareça */
-    .nav-link.dropdown-toggle::after {
-      vertical-align: 0;
-      margin-left: auto;
-    }
-    
-    /* Animação suave para o collapse */
-    .collapsing {
-      transition: height 0.25s ease;
-    }
   </style>
 </head>
 <body>
@@ -246,64 +190,78 @@
             </a>
 
             <a class="nav-link {% if request.endpoint and request.endpoint.startswith('empenhos') %}active{% endif %}"
-               href="{{ url_for('empenhos.index') }}">
+               href="{{ url_for('empenhos.index') if has_endpoint('empenhos.index') else url_for('painel') }}">
               <i class="bi bi-file-earmark-text icon"></i>
               <span class="text">Empenhos</span>
             </a>
 
-            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('contratos') %}active{% endif %}"
-               href="{{ url_for('contratos.index') }}">
+            <a class="nav-link {% if request.endpoint and (request.endpoint.startswith('contratos') or request.endpoint=='contratos_index') %}active{% endif %}"
+               href="{{
+                 url_for('contratos_index') if has_endpoint('contratos_index')
+                 else (url_for('contratos.index') if has_endpoint('contratos.index') else url_for('painel'))
+               }}">
               <i class="bi bi-file-earmark-ruled icon"></i>
               <span class="text">Contratos</span>
             </a>
 
-            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('chat.') %}active{% endif %}"
-               href="{{ url_for('chat.index') }}">
+            <a class="nav-link {% if request.endpoint and (request.endpoint.startswith('notas') or request.endpoint=='notas_index') %}active{% endif %}"
+               href="{{
+                 url_for('notas_index') if has_endpoint('notas_index')
+                 else (url_for('notas.index') if has_endpoint('notas.index') else url_for('painel'))
+               }}">
+              <i class="bi bi-receipt icon"></i>
+              <span class="text">Notas Fiscais</span>
+            </a>
+
+            <a class="nav-link {% if request.endpoint and (request.endpoint.startswith('relatorios') or request.endpoint=='relatorios_index') %}active{% endif %}"
+               href="{{
+                 url_for('relatorios_index') if has_endpoint('relatorios_index')
+                 else (url_for('relatorios.index') if has_endpoint('relatorios.index') else url_for('painel'))
+               }}">
+              <i class="bi bi-graph-up icon"></i>
+              <span class="text">Relatórios</span>
+            </a>
+
+            <!-- Chat IA -->
+            <a class="nav-link {% if request.endpoint == 'chat_index' %}active{% endif %}"
+               href="{{ url_for('chat_index') if has_endpoint('chat_index') else url_for('painel') }}">
               <i class="bi bi-robot icon"></i>
               <span class="text">Chat IA</span>
             </a>
 
-            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('chat_offline') %}active{% endif %}"
-               href="{{ url_for('chat_offline.index') }}">
+            <!-- Chat Interno -->
+            <a class="nav-link {% if request.endpoint == 'chat_offline_index' %}active{% endif %}"
+               href="{{
+                 url_for('chat_offline_index') if has_endpoint('chat_offline_index')
+                 else (url_for('chat_offline.index') if has_endpoint('chat_offline.index') else (url_for('chat_index') if has_endpoint('chat_index') else url_for('painel')))
+               }}">
               <i class="bi bi-chat-dots icon"></i>
               <span class="text">Chat Interno</span>
             </a>
 
-            <!-- Relatórios com Submenu -->
-            <div class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle {% if request.endpoint and (request.endpoint.startswith('relatorios') or 'ai_kb' in request.endpoint) %}active{% endif %}"
-                 href="#" id="relatoriosDropdown" role="button" data-bs-toggle="collapse" data-bs-target="#relatoriosSubmenu" 
-                 aria-expanded="{% if request.endpoint and (request.endpoint.startswith('relatorios') or 'ai_kb' in request.endpoint) %}true{% else %}false{% endif %}" aria-controls="relatoriosSubmenu">
-                <i class="bi bi-graph-up icon"></i>
-                <span class="text">Relatórios</span>
-              </a>
-              <div class="collapse {% if request.endpoint and (request.endpoint.startswith('relatorios') or 'ai_kb' in request.endpoint) %}show{% endif %}" id="relatoriosSubmenu">
-                <div class="submenu">
-                  <a class="nav-link submenu-item {% if request.endpoint == 'relatorios.index' %}active{% endif %}"
-                     href="{{ url_for('relatorios.index') }}">
-                    <i class="bi bi-bar-chart icon-sm"></i>
-                    <span class="text">Central de Relatórios</span>
-                  </a>
-                  <a class="nav-link submenu-item {% if request.endpoint == 'relatorios.dashboard_interativo' %}active{% endif %}"
-                     href="{{ url_for('relatorios.dashboard_interativo') }}">
-                    <i class="bi bi-speedometer2 icon-sm"></i>
-                    <span class="text">Dashboard Interativo</span>
-                  </a>
-                  {% if current_user.is_admin %}
-                  <a class="nav-link submenu-item {% if request.endpoint and 'ai_kb_admin' in request.endpoint %}active{% endif %}"
-                     href="{{ url_for('ai_kb_admin.kb_list') }}">
-                    <i class="bi bi-brain icon-sm"></i>
-                    <span class="text">Base de Conhecimento</span>
-                  </a>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
+            <!-- Chat MSN Style -->
+            <a class="nav-link {% if request.endpoint == 'chat_msn_index' %}active{% endif %}"
+               href="{{
+                 url_for('chat_msn_index') if has_endpoint('chat_msn_index')
+                 else (url_for('chat_msn.index') if has_endpoint('chat_msn.index') else (url_for('chat_index') if has_endpoint('chat_index') else url_for('painel')))
+               }}">
+              <i class="bi bi-messenger icon"></i>
+              <span class="text">Chat MSN</span>
+            </a>
+
+            <!-- Base de Conhecimento (IA) -->
+            {% if current_user.role == 'admin' %}
+            <a class="nav-link"
+               href="{{ url_for('ai_kb_admin.kb_list') if has_endpoint('ai_kb_admin.kb_list') else '/admin/ai/kb/' }}">
+              <i class="bi bi-brain icon"></i>
+              <span class="text">Base de Conhecimento</span>
+            </a>
+            {% endif %}
 
             <!-- Usuários (Admin apenas) -->
-            {% if current_user.is_admin %}
-            <a class="nav-link {% if request.endpoint=='auth.users' %}active{% endif %}"
-               href="{{ url_for('auth.users') }}">
+            {% if current_user.role == 'admin' %}
+            <a class="nav-link"
+               href="{{ url_for('painel') }}">
               <i class="bi bi-people icon"></i>
               <span class="text">Usuários</span>
             </a>
@@ -312,12 +270,9 @@
 
           <!-- rodapé -->
           <div class="sidebar-footer">
-            <form method="POST" action="{{ url_for('auth.logout') }}">
-              {{ csrf_token() if csrf_token is defined else '' }}
-              <button type="submit" class="btn btn-logout">
-                <i class="bi bi-box-arrow-right me-2"></i> <span>Sair</span>
-              </button>
-            </form>
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">
+              <i class="bi bi-box-arrow-right me-2"></i> <span>Sair</span>
+            </a>
           </div>
         </div>
       </nav>

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}Central de Relatórios{% endblock %}
-{% block page_title %}Central de Relatórios{% endblock %}
+{% block title %}Central de Relatórios{% endblock title %}
+{% block page_title %}Central de Relatórios{% endblock page_title %}
 
 {% block extra_css %}
 <style>
@@ -15,246 +15,64 @@
   position: relative;
   overflow: hidden;
 }
-
 .dashboard-header::before {
   content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: absolute; inset: 0;
   background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="3" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.08)"/><circle cx="80" cy="30" r="2.5" fill="rgba(255,255,255,0.06)"/><circle cx="30" cy="80" r="1.5" fill="rgba(255,255,255,0.08)"/><circle cx="70" cy="70" r="2" fill="rgba(255,255,255,0.05)"/></svg>');
   opacity: 0.3;
 }
-
-.dashboard-nav-cards {
-  position: relative;
-  z-index: 2;
-}
-
+.dashboard-nav-cards { position: relative; z-index: 2; }
 .nav-card {
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 1.5rem;
-  text-decoration: none;
-  color: white;
-  transition: all 0.3s ease;
-  display: block;
-  height: 100%;
+  border-radius: 12px; padding: 1.5rem;
+  text-decoration: none; color: white;
+  transition: all 0.3s ease; display: block; height: 100%;
 }
-
-.nav-card:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-  color: white;
-  text-decoration: none;
-}
-
-.nav-card-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  opacity: 0.9;
-}
-
-.nav-card-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.nav-card-desc {
-  font-size: 0.9rem;
-  opacity: 0.8;
-  line-height: 1.4;
-}
-
-.badge-new {
-  background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
-  font-size: 0.7rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: 20px;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
+.nav-card:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); color: white; text-decoration: none; }
+.nav-card-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: .9; }
+.nav-card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: .5rem; }
+.nav-card-desc { font-size: .9rem; opacity: .8; line-height: 1.4; }
+.badge-new { background: linear-gradient(45deg, #ff6b6b, #ff8e8e); font-size: .7rem; padding: .3rem .6rem; border-radius: 20px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)} }
 
 /* Dashboard moderno */
-.dashboard-card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-  transition: all 0.3s ease;
-  overflow: hidden;
-}
+.dashboard-card { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,.07); transition: all .3s ease; overflow: hidden; }
+.dashboard-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,.15); }
+.card-gradient-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.card-gradient-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
+.card-gradient-warning { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333; }
+.card-gradient-info { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
+.card-gradient-danger { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333; }
+.metric-value { font-size: 2.5rem; font-weight: 700; line-height: 1; margin-bottom: .5rem; }
+.metric-label { font-size: .875rem; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; opacity: .9; }
 
-.dashboard-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
+.report-section { background: #f8f9fc; border-radius: 15px; padding: 2rem; margin-bottom: 2rem; }
+.report-button { background: white; border: 2px solid #e3e6f0; border-radius: 10px; padding: 1.5rem; text-decoration: none; color: #5a5c69; transition: all .3s ease; display: block; height: 100%; }
+.report-button:hover { border-color: #667eea; color: #667eea; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(102,126,234,.2); }
+.report-icon { font-size: 2.5rem; margin-bottom: 1rem; color: #667eea; }
 
-.card-gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
+.chart-container { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,.05); }
+.period-selector { background: white; border-radius: 10px; padding: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,.05); margin-bottom: 2rem; }
+.btn-period { border: 2px solid #e3e6f0; background: white; color: #5a5c69; border-radius: 8px; padding: .5rem 1rem; margin: .25rem; transition: all .3s ease; }
+.btn-period:hover, .btn-period.active { border-color: #667eea; background: #667eea; color: white; }
 
-.card-gradient-success {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-  color: white;
-}
-
-.card-gradient-warning {
-  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-  color: #333;
-}
-
-.card-gradient-info {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  color: #333;
-}
-
-.card-gradient-danger {
-  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-  color: #333;
-}
-
-.metric-value {
-  font-size: 2.5rem;
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 0.5rem;
-}
-
-.metric-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.9;
-}
-
-.report-section {
-  background: #f8f9fc;
-  border-radius: 15px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-}
-
-.report-button {
-  background: white;
-  border: 2px solid #e3e6f0;
-  border-radius: 10px;
-  padding: 1.5rem;
-  text-decoration: none;
-  color: #5a5c69;
-  transition: all 0.3s ease;
-  display: block;
-  height: 100%;
-}
-
-.report-button:hover {
-  border-color: #667eea;
-  color: #667eea;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
-}
-
-.report-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  color: #667eea;
-}
-
-.chart-container {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.period-selector {
-  background: white;
-  border-radius: 10px;
-  padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  margin-bottom: 2rem;
-}
-
-.btn-period {
-  border: 2px solid #e3e6f0;
-  background: white;
-  color: #5a5c69;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  margin: 0.25rem;
-  transition: all 0.3s ease;
-}
-
-.btn-period:hover,
-.btn-period.active {
-  border-color: #667eea;
-  background: #667eea;
-  color: white;
-}
-
-.insight-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.quick-actions {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.action-btn {
-  background: #f8f9fc;
-  border: 2px solid #e3e6f0;
-  border-radius: 8px;
-  padding: 1rem;
-  text-decoration: none;
-  color: #5a5c69;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  min-height: 120px;
-}
-
-.action-btn:hover {
-  border-color: #667eea;
-  background: #667eea;
-  color: white;
-  transform: scale(1.05);
-}
+.insight-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+.quick-actions { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,.05); }
+.action-btn { background: #f8f9fc; border: 2px solid #e3e6f0; border-radius: 8px; padding: 1rem; text-decoration: none; color: #5a5c69; transition: all .3s ease; display: flex; align-items: center; justify-content: center; flex-direction: column; min-height: 120px; }
+.action-btn:hover { border-color: #667eea; background: #667eea; color: white; transform: scale(1.05); }
 
 @media (max-width: 768px) {
-  .metric-value {
-    font-size: 2rem;
-  }
-  
-  .report-section {
-    padding: 1rem;
-  }
+  .metric-value { font-size: 2rem; }
+  .report-section { padding: 1rem; }
 }
 </style>
-{% endblock %}
+{% endblock extra_css %}
 
 {% block content %}
 <div class="container-fluid">
-  
+
   <!-- Dashboard Navigation Header -->
   <div class="dashboard-header">
     <div class="row align-items-center">
@@ -267,22 +85,17 @@
       <div class="col-md-6">
         <div class="row dashboard-nav-cards">
           <div class="col-6">
-            <a href="#dashboard-tradicional" class="nav-card" onclick="scrollToDashboard()">
-              <div class="nav-card-icon">
-                <i class="bi bi-bar-chart-line"></i>
-              </div>
+            <a href="#dashboard-tradicional" class="nav-card" onclick="scrollToDashboard();return false;" aria-label="Ir para Relatórios Clássicos">
+              <div class="nav-card-icon"><i class="bi bi-bar-chart-line"></i></div>
               <div class="nav-card-title">Relatórios Clássicos</div>
               <div class="nav-card-desc">Visualização tradicional com métricas e gráficos</div>
             </a>
           </div>
           <div class="col-6">
-            <a href="{{ url_for('relatorios.dashboard_interativo') }}" class="nav-card">
-              <div class="nav-card-icon">
-                <i class="bi bi-grid-3x3-gap"></i>
-              </div>
+            <a href="{{ safe_url_for('relatorios.dashboard_interativo') }}" class="nav-card" aria-label="Abrir Dashboard Interativo">
+              <div class="nav-card-icon"><i class="bi bi-grid-3x3-gap"></i></div>
               <div class="nav-card-title">
-                Dashboard Interativo
-                <span class="badge badge-new ms-2">Novo</span>
+                Dashboard Interativo <span class="badge badge-new ms-2">Novo</span>
               </div>
               <div class="nav-card-desc">Widgets arrastáveis e experiência moderna</div>
             </a>
@@ -294,6 +107,7 @@
 
   <!-- Dashboard Tradicional -->
   <div id="dashboard-tradicional">
+
     <!-- Cabeçalho da Seção Tradicional -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
@@ -303,164 +117,163 @@
         <p class="text-muted mt-1">Dashboard executivo e relatórios gerenciais</p>
       </div>
       <div class="d-flex gap-2">
-        <button class="btn btn-outline-primary" onclick="atualizarDados()">
+        <button class="btn btn-outline-primary" onclick="atualizarDados(this)">
           <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
         </button>
-        <button class="btn btn-primary" onclick="exportarDashboard()">
+        <button class="btn btn-primary" onclick="exportarDashboard(this)">
           <i class="bi bi-download me-1"></i>Exportar
         </button>
-        {% if current_user.is_admin %}
-        <a href="{{ url_for('relatorios.backup') }}" class="btn btn-outline-warning" title="Fazer backup do banco de dados">
-          <i class="bi bi-shield-check me-1"></i>Backup
-        </a>
-        {% endif %}
       </div>
     </div>
 
-  <!-- Seletor de Período -->
-  <div class="period-selector">
-    <div class="d-flex align-items-center justify-content-between flex-wrap">
-      <h6 class="mb-0 fw-bold">Período de Análise:</h6>
-      <div class="btn-group" role="group">
-        <button class="btn btn-period active" data-period="30">30 dias</button>
-        <button class="btn btn-period" data-period="90">90 dias</button>
-        <button class="btn btn-period" data-period="180">6 meses</button>
-        <button class="btn btn-period" data-period="365">1 ano</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Cards de Métricas Principais -->
-  <div class="row mb-4">
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card dashboard-card card-gradient-primary">
-        <div class="card-body text-center">
-          <i class="bi bi-file-earmark-text fa-3x mb-3 opacity-75"></i>
-          <div class="metric-value">{{ total_empenhos or 0 }}</div>
-          <div class="metric-label">Total de Empenhos</div>
+    <!-- Seletor de Período -->
+    <div class="period-selector">
+      <div class="d-flex align-items-center justify-content-between flex-wrap">
+        <h6 class="mb-0 fw-bold">Período de Análise:</h6>
+        <div class="btn-group" role="group" aria-label="Selecionar período">
+          <button class="btn btn-period active" data-period="30" type="button">30 dias</button>
+          <button class="btn btn-period" data-period="90" type="button">90 dias</button>
+          <button class="btn btn-period" data-period="180" type="button">6 meses</button>
+          <button class="btn btn-period" data-period="365" type="button">1 ano</button>
         </div>
       </div>
     </div>
 
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card dashboard-card card-gradient-success">
-        <div class="card-body text-center">
-          <i class="bi bi-currency-dollar fa-3x mb-3 opacity-75"></i>
-          <div class="metric-value">R$ {{ "%.2f"|format(valor_total_empenhado or 0)|replace(',', '.') }}</div>
-          <div class="metric-label">Valor Empenhado</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card dashboard-card card-gradient-warning">
-        <div class="card-body text-center">
-          <i class="bi bi-receipt fa-3x mb-3 opacity-75"></i>
-          <div class="metric-value">{{ total_notas or 0 }}</div>
-          <div class="metric-label">Notas Fiscais</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card dashboard-card card-gradient-info">
-        <div class="card-body text-center">
-          <i class="bi bi-check-circle fa-3x mb-3 opacity-75"></i>
-          <div class="metric-value">R$ {{ "%.2f"|format(valor_notas_pagas or 0)|replace(',', '.') }}</div>
-          <div class="metric-label">Notas Pagas</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row">
-    <!-- Coluna Esquerda - Gráficos -->
-    <div class="col-lg-8 mb-4">
-      <!-- Evolução Mensal -->
-      <div class="chart-container mb-4">
-        <h5 class="fw-bold mb-3">
-          <i class="bi bi-graph-up me-2 text-primary"></i>Evolução dos Empenhos
-        </h5>
-        <canvas id="chartEvolucao" height="80"></canvas>
-      </div>
-
-      <!-- Status dos Empenhos -->
-      <div class="chart-container">
-        <h5 class="fw-bold mb-3">
-          <i class="bi bi-pie-chart me-2 text-success"></i>Distribuição por Status
-        </h5>
-        <div class="row">
-          <div class="col-md-6">
-            <canvas id="chartStatusEmpenhos"></canvas>
-            <p class="text-center mt-2 fw-semibold">Empenhos</p>
+    <!-- Cards de Métricas Principais -->
+    <div class="row mb-4">
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card dashboard-card card-gradient-primary">
+          <div class="card-body text-center">
+            <i class="bi bi-file-earmark-text fs-1 mb-3 opacity-75"></i>
+            <div class="metric-value">{{ total_empenhos|default(0) }}</div>
+            <div class="metric-label">Total de Empenhos</div>
           </div>
-          <div class="col-md-6">
-            <canvas id="chartStatusNotas"></canvas>
-            <p class="text-center mt-2 fw-semibold">Notas Fiscais</p>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card dashboard-card card-gradient-success">
+          <div class="card-body text-center">
+            <i class="bi bi-currency-dollar fs-1 mb-3 opacity-75"></i>
+            <div class="metric-value">{{ (valor_total_empenhado|default(0))|brl }}</div>
+            <div class="metric-label">Valor Empenhado</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card dashboard-card card-gradient-warning">
+          <div class="card-body text-center">
+            <i class="bi bi-receipt fs-1 mb-3 opacity-75"></i>
+            <div class="metric-value">{{ total_notas|default(0) }}</div>
+            <div class="metric-label">Notas Fiscais</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card dashboard-card card-gradient-info">
+          <div class="card-body text-center">
+            <i class="bi bi-check-circle fs-1 mb-3 opacity-75"></i>
+            <div class="metric-value">{{ (valor_notas_pagas|default(0))|brl }}</div>
+            <div class="metric-label">Notas Pagas</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Coluna Direita - Insights e Ações -->
-    <div class="col-lg-4">
-      <!-- Insights Inteligentes -->
-      <div class="mb-4">
-        <h5 class="fw-bold mb-3">
-          <i class="bi bi-lightbulb me-2 text-warning"></i>Insights
-        </h5>
-        {% if insights %}
-          {% for insight in insights %}
+    <div class="row">
+      <!-- Coluna Esquerda - Gráficos -->
+      <div class="col-lg-8 mb-4">
+        <!-- Evolução Mensal -->
+        <div class="chart-container mb-4">
+          <h5 class="fw-bold mb-3">
+            <i class="bi bi-graph-up me-2 text-primary"></i>Evolução dos Empenhos
+          </h5>
+          <div style="height: 320px">
+            <canvas id="chartEvolucao"></canvas>
+          </div>
+        </div>
+
+        <!-- Status dos Empenhos e Notas -->
+        <div class="chart-container">
+          <h5 class="fw-bold mb-3">
+            <i class="bi bi-pie-chart me-2 text-success"></i>Distribuição por Status
+          </h5>
+          <div class="row">
+            <div class="col-md-6">
+              <canvas id="chartStatusEmpenhos" aria-label="Status dos Empenhos"></canvas>
+              <p class="text-center mt-2 fw-semibold">Empenhos</p>
+            </div>
+            <div class="col-md-6">
+              <canvas id="chartStatusNotas" aria-label="Status das Notas Fiscais"></canvas>
+              <p class="text-center mt-2 fw-semibold">Notas Fiscais</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna Direita - Insights e Ações -->
+      <div class="col-lg-4">
+        <!-- Insights -->
+        <div class="mb-4">
+          <h5 class="fw-bold mb-3">
+            <i class="bi bi-lightbulb me-2 text-warning"></i>Insights
+          </h5>
+          {% set _insights = insights|default([]) %}
+          {% if _insights %}
+            {% for insight in _insights %}
+            <div class="insight-card">
+              <i class="bi bi-{{ insight.icon|default('info-circle') }} me-2"></i>
+              {{ insight.texto|default('Sem texto') }}
+            </div>
+            {% endfor %}
+          {% else %}
           <div class="insight-card">
-            <i class="bi bi-{{ insight.icon }} me-2"></i>
-            {{ insight.texto }}
+            <i class="bi bi-info-circle me-2"></i>
+            Carregando insights...
           </div>
-          {% endfor %}
-        {% else %}
-        <div class="insight-card">
-          <i class="bi bi-info-circle me-2"></i>
-          Carregando insights...
+          {% endif %}
         </div>
-        {% endif %}
-      </div>
 
-      <!-- Ações Rápidas -->
-      <div class="quick-actions">
-        <h5 class="fw-bold mb-3">
-          <i class="bi bi-lightning me-2 text-primary"></i>Ações Rápidas
-        </h5>
-        <div class="row g-3">
-          <div class="col-6">
-            <a href="{{ url_for('relatorios.filtrado') }}" class="action-btn">
-              <i class="bi bi-funnel fs-3 mb-2"></i>
-              <small>Relatório Filtrado</small>
-            </a>
-          </div>
-          <div class="col-6">
-            <a href="{{ url_for('relatorios.financeiro') }}" class="action-btn">
-              <i class="bi bi-calculator fs-3 mb-2"></i>
-              <small>Financeiro</small>
-            </a>
-          </div>
-          <div class="col-6">
-            <a href="{{ url_for('relatorios.operacional') }}" class="action-btn">
-              <i class="bi bi-gear fs-3 mb-2"></i>
-              <small>Operacional</small>
-            </a>
-          </div>
-          <div class="col-6">
-            <a href="{{ url_for('relatorios.analytics') }}" class="action-btn">
-              <i class="bi bi-bar-chart fs-3 mb-2"></i>
-              <small>Analytics</small>
-            </a>
+        <!-- Ações Rápidas -->
+        <div class="quick-actions">
+          <h5 class="fw-bold mb-3">
+            <i class="bi bi-lightning me-2 text-primary"></i>Ações Rápidas
+          </h5>
+          <div class="row g-3">
+            <div class="col-6">
+              <a href="{{ safe_url_for('relatorios.filtrado') }}" class="action-btn">
+                <i class="bi bi-funnel fs-3 mb-2"></i>
+                <small>Relatório Filtrado</small>
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="{{ safe_url_for('relatorios.financeiro') }}" class="action-btn">
+                <i class="bi bi-calculator fs-3 mb-2"></i>
+                <small>Financeiro</small>
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="{{ safe_url_for('relatorios.operacional') }}" class="action-btn">
+                <i class="bi bi-gear fs-3 mb-2"></i>
+                <small>Operacional</small>
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="{{ safe_url_for('relatorios.analytics') }}" class="action-btn">
+                <i class="bi bi-bar-chart fs-3 mb-2"></i>
+                <small>Analytics</small>
+              </a>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
+    </div><!-- row -->
+  </div><!-- /#dashboard-tradicional -->
 
   <!-- Seção de Relatórios Especializados -->
-  <div class="report-section">
+  <div class="report-section mt-4">
     <h4 class="fw-bold mb-4">
       <i class="bi bi-folder-open me-2"></i>Relatórios Especializados
     </h4>
@@ -474,7 +287,6 @@
           </div>
         </a>
       </div>
-      
       <div class="col-lg-3 col-md-6 mb-3">
         <a href="/relatorios/demonstrativo/fornecedores" class="report-button">
           <div class="text-center">
@@ -484,7 +296,6 @@
           </div>
         </a>
       </div>
-      
       <div class="col-lg-3 col-md-6 mb-3">
         <a href="/relatorios/demonstrativo/orcamentario" class="report-button">
           <div class="text-center">
@@ -494,7 +305,6 @@
           </div>
         </a>
       </div>
-      
       <div class="col-lg-3 col-md-6 mb-3">
         <a href="/relatorios/demonstrativo/auditoria" class="report-button">
           <div class="text-center">
@@ -506,107 +316,71 @@
       </div>
     </div>
   </div>
-</div>
+</div><!-- /.container-fluid -->
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Dados do backend
-const dadosEvolucao = {{ evolucao_mensal|tojson|safe }};
-const dadosStatusEmpenhos = {{ empenhos_por_status|tojson|safe }};
-const dadosStatusNotas = {{ notas_por_status|tojson|safe }};
+// Dados do backend (com fallbacks seguros)
+const dadosEvolucao       = {{ (evolucao_mensal   |default([]))|tojson|safe }};
+const dadosStatusEmpenhos = {{ (empenhos_por_status|default({}))|tojson|safe }};
+const dadosStatusNotas    = {{ (notas_por_status  |default({}))|tojson|safe }};
 
-// Configuração de cores
-const cores = {
-  primary: '#667eea',
-  success: '#11998e',
-  warning: '#fcb69f',
-  danger: '#ff9a9e',
-  info: '#a8edea'
-};
+// Cores
+const cores = { primary:'#667eea', success:'#11998e', warning:'#fcb69f', danger:'#ff9a9e', info:'#a8edea' };
+
+// Helpers defensivos
+function hasDataArray(arr){ return Array.isArray(arr) && arr.length > 0; }
+function hasDataObj(obj){ return obj && Object.keys(obj).length > 0; }
 
 // Gráfico de Evolução Mensal
 const ctxEvolucao = document.getElementById('chartEvolucao').getContext('2d');
+const labelsEvol = hasDataArray(dadosEvolucao) ? dadosEvolucao.map(d => d.mes) : [];
+const dataEvol   = hasDataArray(dadosEvolucao) ? dadosEvolucao.map(d => d.valor || 0) : [];
 new Chart(ctxEvolucao, {
   type: 'line',
   data: {
-    labels: dadosEvolucao.map(d => d.mes),
+    labels: labelsEvol,
     datasets: [{
       label: 'Valor Empenhado (R$)',
-      data: dadosEvolucao.map(d => d.valor),
+      data: dataEvol,
       borderColor: cores.primary,
       backgroundColor: cores.primary + '20',
-      borderWidth: 3,
-      fill: true,
-      tension: 0.4
+      borderWidth: 3, fill: true, tension: 0.4
     }]
   },
   options: {
-    responsive: true,
-    maintainAspectRatio: false,
+    responsive: true, maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: true,
-        position: 'top'
-      }
+      legend: { display: true, position: 'top' },
+      tooltip: { callbacks: {
+        label: (ctx) => 'R$ ' + Number(ctx.parsed.y||0).toLocaleString('pt-BR', {minimumFractionDigits:2})
+      }}
     },
     scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: function(value) {
-            return 'R$ ' + value.toLocaleString('pt-BR');
-          }
-        }
-      }
+      y: { beginAtZero: true, ticks: { callback: (v)=> 'R$ ' + Number(v).toLocaleString('pt-BR') } }
     }
   }
 });
 
 // Gráfico de Status dos Empenhos
-const ctxStatusEmpenhos = document.getElementById('chartStatusEmpenhos').getContext('2d');
-new Chart(ctxStatusEmpenhos, {
+const ctxStatusEmp = document.getElementById('chartStatusEmpenhos').getContext('2d');
+const lblEmp = hasDataObj(dadosStatusEmpenhos) ? Object.keys(dadosStatusEmpenhos) : ['Sem dados'];
+const valEmp = hasDataObj(dadosStatusEmpenhos) ? Object.values(dadosStatusEmpenhos) : [1];
+new Chart(ctxStatusEmp, {
   type: 'doughnut',
-  data: {
-    labels: Object.keys(dadosStatusEmpenhos),
-    datasets: [{
-      data: Object.values(dadosStatusEmpenhos),
-      backgroundColor: [cores.success, cores.warning, cores.danger, cores.info],
-      borderWidth: 2
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-      legend: {
-        position: 'bottom'
-      }
-    }
-  }
+  data: { labels: lblEmp, datasets: [{ data: valEmp, backgroundColor: [cores.success, cores.warning, cores.danger, cores.info], borderWidth: 2 }] },
+  options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
 });
 
 // Gráfico de Status das Notas
 const ctxStatusNotas = document.getElementById('chartStatusNotas').getContext('2d');
+const lblNotas = hasDataObj(dadosStatusNotas) ? Object.keys(dadosStatusNotas) : ['Sem dados'];
+const valNotas = hasDataObj(dadosStatusNotas) ? Object.values(dadosStatusNotas) : [1];
 new Chart(ctxStatusNotas, {
   type: 'doughnut',
-  data: {
-    labels: Object.keys(dadosStatusNotas),
-    datasets: [{
-      data: Object.values(dadosStatusNotas),
-      backgroundColor: [cores.primary, cores.warning, cores.danger],
-      borderWidth: 2
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-      legend: {
-        position: 'bottom'
-      }
-    }
-  }
+  data: { labels: lblNotas, datasets: [{ data: valNotas, backgroundColor: [cores.primary, cores.warning, cores.danger], borderWidth: 2 }] },
+  options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
 });
 
 // Seletor de período
@@ -614,72 +388,43 @@ document.querySelectorAll('.btn-period').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
-    
-    const periodo = this.dataset.period;
-    atualizarDadosPeriodo(periodo);
+    atualizarDadosPeriodo(this.dataset.period);
   });
 });
 
-// Funções auxiliares
-function atualizarDados() {
-  const btn = event.target;
-  const originalText = btn.innerHTML;
-  
-  btn.disabled = true;
-  btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1 spinner-border spinner-border-sm"></i>Atualizando...';
-  
-  setTimeout(() => {
-    window.location.reload();
-  }, 1000);
+// Botões com feedback
+function atualizarDados(btnEl) {
+  const original = btnEl.innerHTML;
+  btnEl.disabled = true;
+  btnEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Atualizando...';
+  setTimeout(() => { window.location.reload(); }, 800);
 }
-
-function exportarDashboard() {
-  const btn = event.target;
-  const originalText = btn.innerHTML;
-  
-  btn.disabled = true;
-  btn.innerHTML = '<i class="bi bi-download me-1 spinner-border spinner-border-sm"></i>Exportando...';
-  
-  // Simular export
+function exportarDashboard(btnEl) {
+  const original = btnEl.innerHTML;
+  btnEl.disabled = true;
+  btnEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Exportando...';
   setTimeout(() => {
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-    
-    // Aqui você pode implementar a exportação real
-    alert('Funcionalidade de export será implementada em breve!');
-  }, 2000);
+    btnEl.disabled = false;
+    btnEl.innerHTML = original;
+    alert('Exportação será implementada em breve.');
+  }, 1200);
 }
-
 function atualizarDadosPeriodo(periodo) {
   console.log('Atualizando dados para período:', periodo);
-  // Implementar atualização dinâmica via AJAX
+  // TODO: implementar fetch para /api/kpis?periodo=<...> e atualizar gráficos
 }
 
-// Função para scroll suave para o dashboard tradicional
+// Scroll suave
 function scrollToDashboard() {
-  document.getElementById('dashboard-tradicional').scrollIntoView({ 
-    behavior: 'smooth',
-    block: 'start'
-  });
+  document.getElementById('dashboard-tradicional')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Animações de entrada
 document.addEventListener('DOMContentLoaded', function() {
-  const cards = document.querySelectorAll('.dashboard-card');
-  cards.forEach((card, index) => {
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(20px)';
-    
-    setTimeout(() => {
-      card.style.transition = 'all 0.5s ease';
-      card.style.opacity = '1';
-      card.style.transform = 'translateY(0)';
-    }, index * 100);
+  document.querySelectorAll('.dashboard-card').forEach((card, i) => {
+    card.style.opacity = '0'; card.style.transform = 'translateY(20px)';
+    setTimeout(() => { card.style.transition = 'all .5s ease'; card.style.opacity = '1'; card.style.transform = 'translateY(0)'; }, i * 100);
   });
 });
 </script>
-
-<!-- Fechar div dashboard-tradicional -->
-</div>
-
-{% endblock %}
+{% endblock content %}

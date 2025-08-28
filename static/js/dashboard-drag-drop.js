@@ -148,26 +148,16 @@ class DashboardManager {
             acceptWidgets: true,
             removable: '.trash',
             dragIn: '.widget-library-card',
-            dragInOptions: { revert: 'invalid', scroll: false, appendTo: 'body', helper: 'clone' },
-            handle: '.card-header'        // <<< arrasta só pelo cabeçalho
+            dragInOptions: { revert: 'invalid', scroll: false, appendTo: 'body', helper: 'clone' }
         });
 
         // Salva layout ao mover/redimensionar
         this.gridStack.on('change', (event, items) => this.onLayoutChange(items));
-        this.gridStack.on('removed', (event, items) => {
-            // opcional: se você mantiver Map de instâncias por el.id, limpe aqui
-            // items.forEach(i => this.widgets.delete(i.el?.id));
-        });
+        this.gridStack.on('removed', (event, items) => items.forEach(i => this.removeWidget(i.id)));
 
         // Re-renderiza gráficos ao terminar resize/move
         this.gridStack.on('resizestop', (e, el) => this.redrawChartsInside(el));
         this.gridStack.on('dragstop', (e, el) => this.redrawChartsInside(el));
-    }
-
-    removeWidgetElement(el) {
-        if (!el) return;
-        this.gridStack.removeWidget(el, true);   // true = remove do DOM + engine
-        this.showSuccessMessage('Widget removido com sucesso!');
     }
 
     bindEvents() {
@@ -335,11 +325,6 @@ class DashboardManager {
         widgetEl.className = 'grid-stack-item';
         widgetEl.setAttribute('data-widget-id', config.id);
 
-        // id único para o grid item
-        const uniqueItemId = `w-${config.id}-${Date.now()}`;
-        widgetEl.id = uniqueItemId;
-        widgetEl.setAttribute('gs-id', uniqueItemId);
-
         const content = document.createElement('div');
         content.className = 'grid-stack-item-content widget-container';
 
@@ -376,11 +361,7 @@ class DashboardManager {
 
         // eventos
         content.querySelector('.widget-config-btn')?.addEventListener('click', () => this.configureWidget(config.id));
-        content.querySelector('.widget-remove-btn').addEventListener('click', (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            this.removeWidgetElement(widgetEl);   // <<< passa o elemento
-        });
+        content.querySelector('.widget-remove-btn').addEventListener('click', () => this.removeWidget(config.id));
 
         widgetEl.appendChild(content);
         return widgetEl;

@@ -52,15 +52,8 @@ A funcionalidade do Dashboard Interativo foi **100% implementada e integrada** a
 ```
 📊 Relatórios ▼
   ├── 📊 Central de Relatórios
-  ├── 🎛️ Dashboard Interativo [NOVO] 
-  └── 🧠 Base de Conhecimento [NOVO]
+  └── 🎛️ Dashboard Interativo [NOVO] 
 ```
-
-**✨ Funcionalidade Expandir/Recolher:**
-- 🔽 **Clique em "Relatórios"** para expandir/recolher o submenu
-- 🎯 **Seta animada** rotaciona para indicar estado (▼/▲)  
-- 🎨 **Animação suave** de abertura/fechamento
-- 🔄 **Estado persistente** - lembra se estava aberto ou fechado
 
 ### 🎨 **Central de Relatórios Modernizada**
 - **Header principal** com navegação visual entre modos

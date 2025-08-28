@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}Chat MSN Style{% endblock %}
+
+{% block extra_css %}
+<style>
+/* MSN Style Chat - Estilo Nostálgico */
+:root {
+    --msn-blue: #4285f4;
+    --msn-blue-dark: #3367d6;
+    --msn-green: #34a853;
+    --msn-red: #ea4335;
+    --msn-yellow: #fbbc04;
+    --msn-light-blue: #e8f0fe;
+    --msn-border: #dadce0;
+    --msn-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.msn-container {
+    background: linear-gradient(135deg, var(--msn-light-blue) 0%, #f8f9fa 100%);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: var(--msn-shadow);
+    min-height: 70vh;
+}
+
+.msn-header {
+    background: linear-gradient(135deg, var(--msn-blue) 0%, var(--msn-blue-dark) 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.msn-chat-area {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.msn-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    min-height: 300px;
+}
+
+.msn-message {
+    margin-bottom: 1rem;
+    animation: fadeInUp 0.3s ease;
+}
+
+.msn-message.user {
+    text-align: right;
+}
+
+.msn-message.bot {
+    text-align: left;
+}
+
+.msn-message-bubble {
+    display: inline-block;
+    padding: 0.75rem 1rem;
+    border-radius: 15px;
+    max-width: 70%;
+    word-wrap: break-word;
+}
+
+.msn-message.user .msn-message-bubble {
+    background: var(--msn-blue);
+    color: white;
+}
+
+.msn-message.bot .msn-message-bubble {
+    background: #e9ecef;
+    color: #333;
+}
+
+.msn-input-area {
+    display: flex;
+    gap: 0.5rem;
+    align-items: end;
+}
+
+.msn-input {
+    flex-grow: 1;
+    border: 2px solid var(--msn-border);
+    border-radius: 20px;
+    padding: 0.75rem 1rem;
+    resize: none;
+    min-height: 40px;
+    max-height: 100px;
+}
+
+.msn-send-btn {
+    background: var(--msn-green);
+    border: none;
+    color: white;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.msn-send-btn:hover {
+    background: #2d8f47;
+    transform: scale(1.05);
+}
+
+.msn-sidebar {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.msn-contact {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.msn-contact:hover {
+    background: var(--msn-light-blue);
+}
+
+.msn-contact.online {
+    border-left: 4px solid var(--msn-green);
+}
+
+.msn-contact.offline {
+    border-left: 4px solid #ccc;
+    opacity: 0.7;
+}
+
+.msn-avatar {
+    width: 40px;
+    height: 40px;
+    background: var(--msn-blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin-right: 0.75rem;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .msn-container {
+        padding: 1rem;
+    }
+    .msn-message-bubble {
+        max-width: 85%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="msn-container">
+        <!-- Header MSN -->
+        <div class="msn-header">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="bi bi-messenger me-2"></i>
+                        Chat MSN Style
+                    </h4>
+                    <small class="opacity-75">Interface nostálgica do Windows Live Messenger</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success">
+                        <i class="bi bi-circle-fill me-1" style="font-size: 0.7rem;"></i>
+                        Online
+                    </span>
+                    <small>{{ current_user.username }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Sidebar - Contatos -->
+            <div class="col-md-3 mb-3">
+                <div class="msn-sidebar">
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-people me-2 text-primary"></i>
+                        Contatos Online
+                    </h6>
+                    
+                    <div class="msn-contact online">
+                        <div class="msn-avatar">AI</div>
+                        <div>
+                            <div class="fw-semibold">Assistente IA</div>
+                            <small class="text-success">Online</small>
+                        </div>
+                    </div>
+
+                    <div class="msn-contact online">
+                        <div class="msn-avatar">SYS</div>
+                        <div>
+                            <div class="fw-semibold">Sistema</div>
+                            <small class="text-success">Online</small>
+                        </div>
+                    </div>
+
+                    <div class="msn-contact offline">
+                        <div class="msn-avatar" style="background: #ccc;">ADM</div>
+                        <div>
+                            <div class="fw-semibold">Administrador</div>
+                            <small class="text-muted">Ausente</small>
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-gear me-2 text-secondary"></i>
+                        Configurações
+                    </h6>
+                    
+                    <div class="d-flex gap-2 mb-2">
+                        <button class="btn btn-sm btn-outline-primary flex-fill">
+                            <i class="bi bi-palette"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary flex-fill">
+                            <i class="bi bi-volume-up"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-info flex-fill">
+                            <i class="bi bi-camera-video"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Área Principal do Chat -->
+            <div class="col-md-9">
+                <div class="msn-chat-area">
+                    <!-- Área de Mensagens -->
+                    <div class="msn-messages" id="messagesArea">
+                        <div class="text-center mb-4">
+                            <div class="mb-3">
+                                <i class="bi bi-messenger display-4 text-primary"></i>
+                            </div>
+                            <h5 class="text-muted">🎉 Bem-vindo ao Chat MSN Style!</h5>
+                            <p class="text-muted mb-4">
+                                Relembre os bons tempos do Windows Live Messenger.<br>
+                                Digite uma mensagem para começar a conversar!
+                            </p>
+                            
+                            <!-- Sugestões rápidas -->
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <div class="card border-primary h-100" style="cursor: pointer;" onclick="sendQuickMessage('Olá! Como você está?')">
+                                        <div class="card-body text-center py-2">
+                                            <i class="bi bi-chat-heart text-primary"></i>
+                                            <small class="d-block">Cumprimentar</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-success h-100" style="cursor: pointer;" onclick="sendQuickMessage('Preciso de ajuda com o sistema')">
+                                        <div class="card-body text-center py-2">
+                                            <i class="bi bi-question-circle text-success"></i>
+                                            <small class="d-block">Pedir ajuda</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Área de Input -->
+                    <div class="msn-input-area">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-emoji-smile"></i>
+                            </button>
+                            <div class="dropdown-menu">
+                                <span class="dropdown-item-text">Emoticons</span>
+                                <div class="d-flex flex-wrap gap-1 p-2">
+                                    <span class="btn btn-sm" onclick="addEmoji('😊')">😊</span>
+                                    <span class="btn btn-sm" onclick="addEmoji('😂')">😂</span>
+                                    <span class="btn btn-sm" onclick="addEmoji('😍')">😍</span>
+                                    <span class="btn btn-sm" onclick="addEmoji('👍')">👍</span>
+                                    <span class="btn btn-sm" onclick="addEmoji('❤️')">❤️</span>
+                                    <span class="btn btn-sm" onclick="addEmoji('🎉')">🎉</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <textarea 
+                            class="msn-input" 
+                            id="messageInput"
+                            placeholder="Digite sua mensagem aqui... (Enter para enviar)"
+                            rows="1"
+                        ></textarea>
+                        
+                        <button class="msn-send-btn" onclick="sendMessage()">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Chat MSN funcional
+document.addEventListener('DOMContentLoaded', function() {
+    const messageInput = document.getElementById('messageInput');
+    const messagesArea = document.getElementById('messagesArea');
+    
+    // Enter para enviar
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
+    // Auto-resize textarea
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+});
+
+function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Adicionar mensagem do usuário
+    addMessage(message, 'user', '{{ current_user.username }}');
+    input.value = '';
+    input.style.height = 'auto';
+    
+    // Simular resposta do bot
+    setTimeout(() => {
+        const responses = [
+            'Que legal! Adorei essa mensagem! 😊',
+            'Entendi! Como posso te ajudar hoje?',
+            'Oi! Como você está? Tudo bem por aí? 👋',
+            'Legal! O sistema MSN está funcionando perfeitamente! ✨',
+            'Que nostalgia! Lembra dos bons tempos do Messenger? 💭'
+        ];
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        addMessage(randomResponse, 'bot', 'Assistente IA');
+    }, 1000 + Math.random() * 2000);
+}
+
+function sendQuickMessage(message) {
+    document.getElementById('messageInput').value = message;
+    sendMessage();
+}
+
+function addEmoji(emoji) {
+    const input = document.getElementById('messageInput');
+    input.value += emoji;
+    input.focus();
+}
+
+function addMessage(text, type, sender) {
+    const messagesArea = document.getElementById('messagesArea');
+    
+    // Remover mensagem de boas-vindas se for a primeira mensagem
+    const welcomeMsg = messagesArea.querySelector('.text-center');
+    if (welcomeMsg && (messagesArea.children.length === 1)) {
+        welcomeMsg.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `msn-message ${type}`;
+    
+    const now = new Date().toLocaleTimeString();
+    
+    messageDiv.innerHTML = `
+        <div class="msn-message-bubble">
+            <div class="mb-1">${text}</div>
+            <small class="opacity-75">${sender} - ${now}</small>
+        </div>
+    `;
+    
+    messagesArea.appendChild(messageDiv);
+    messagesArea.scrollTop = messagesArea.scrollHeight;
+}
+</script>
+{% endblock %}

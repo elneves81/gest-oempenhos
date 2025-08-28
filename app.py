@@ -9,17 +9,15 @@ import os
 # =========================
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'empenhos-municipal-guarapuava-2025-sistema-robusto-sessao-permanente-admin123'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///empenhos.db'
+
+# Caminho absoluto do DB para evitar problemas
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "empenhos.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
-
-# Configurações para Chat com anexos PDF
-app.config["UPLOAD_FOLDER"] = os.path.join(app.instance_path, "chat_uploads")
-app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024  # 20 MB
-os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
-
-ALLOWED_MIMES = {"application/pdf"}
-ALLOWED_EXTS = {".pdf"}
 
 # Configurações WTForms
 app.config['WTF_CSRF_ENABLED'] = True
@@ -46,6 +44,21 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.jinja_env.auto_reload = True
 app.jinja_env.cache = {}
+
+# -- Filtros de formatação p/ usar no Jinja -----------------
+@app.template_filter('brl')
+def _fmt_brl(v):
+    try:
+        return f"R$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except Exception:
+        return "R$ 0,00"
+
+@app.template_filter('ptnum')
+def _fmt_ptnum(v):
+    try:
+        return f"{int(v):,}".replace(",", ".")
+    except Exception:
+        return "0"
 
 # Garantir Content-Type correto para HTML
 @app.after_request
@@ -126,14 +139,13 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 # Importação dos modelos
 print("📊 Importando modelos...")
 from models import db, User, Empenho, Contrato, AditivoContratual
-print("✅ Modelos principais importados")
-
 # Importar modelos de chat
 try:
-    from models_chat import ChatRoom, ChatMember, ChatRoomMessage, ChatAttachment
-    print("✅ Modelos de chat interno importados")
-except ImportError as e:
-    print(f"⚠️ Erro ao importar modelos de chat: {e}")
+    # from models_chat_rooms import ChatRoom, ChatMember, ChatRoomMessage
+    pass  # Comentado temporariamente para testar chat IA
+except ImportError:
+    print("⚠️ Modelos de chat rooms não encontrados - sistema de chat pode não funcionar")
+print("✅ Modelos principais importados")
 
 # Tentar importar NotaFiscal se existir
 try:
@@ -227,14 +239,14 @@ except NameError:
 print("✅ Blueprints principais registrados")
 
 print("📋 Registrando blueprints opcionais...")
-# Importar e registrar o blueprint do chat
+# Importar e registrar o blueprint do chat IA
 try:
-    from routes.chat import chat
-    app.register_blueprint(chat)
-    print("✅ Chat blueprint registrado com sucesso!")
+    from routes.chat import chat_ai
+    app.register_blueprint(chat_ai)
+    print("✅ Chat IA blueprint registrado com sucesso!")
 except Exception as e:
-    print(f"⚠️ Erro ao registrar chat blueprint: {e}")
-    print("⚠️ Chat funcionará em modo básico")
+    print(f"⚠️ Erro ao registrar chat IA blueprint: {e}")
+    print("⚠️ Chat IA funcionará em modo básico")
 
 # Importar e registrar o chat offline
 try:
@@ -244,13 +256,29 @@ try:
 except Exception as e:
     print(f"⚠️ Erro ao registrar chat offline: {e}")
 
+# Importar e registrar o chat offline MSN Style
+try:
+    from routes.chat_msn_novo import chat_msn, init_upload_dir
+    app.register_blueprint(chat_msn, url_prefix='/chat-msn')
+    init_upload_dir(app)
+    print("✅ Chat offline MSN Style registrado com sucesso!")
+except Exception as e:
+    print(f"⚠️ Erro ao registrar chat offline MSN: {e}")
+
 # Importar e registrar blueprints da Base de Conhecimento da IA
 try:
-    from routes_ai_kb_admin import ai_kb_admin
+    from routes_ai_kb_admin_standalone import ai_kb_admin
     app.register_blueprint(ai_kb_admin)
-    print("✅ KB Admin blueprint registrado com sucesso!")
+    print("✅ KB Admin blueprint standalone registrado com sucesso!")
 except Exception as e:
-    print(f"⚠️ Erro ao registrar KB Admin blueprint: {e}")
+    print(f"⚠️ Erro ao registrar KB Admin blueprint standalone: {e}")
+    # Fallback para versão original
+    try:
+        from routes_ai_kb_admin import ai_kb_admin
+        app.register_blueprint(ai_kb_admin)
+        print("✅ KB Admin blueprint original registrado como fallback!")
+    except Exception as e2:
+        print(f"⚠️ Erro no fallback KB Admin: {e2}")
 
 try:
     from routes_ai_kb_api import ai_kb_api
@@ -268,6 +296,46 @@ except Exception as e:
     print(f"⚠️ Erro ao registrar debug relatorios: {e}")
 
 print("✅ Todos os blueprints processados")
+
+# Sanidade imediata: Testar URLs dos chats
+from flask import url_for
+with app.app_context():
+    try:
+        chat_ai_url = url_for('chat_ai.index')
+        chat_offline_url = url_for('chat_offline.index')
+        print(f"🧪 SANITY CHECK:")
+        print(f"   Chat IA => {chat_ai_url}")
+        print(f"   Chat Interno => {chat_offline_url}")
+        
+        if chat_ai_url == chat_offline_url:
+            print("❌ ERRO: URLs iguais! Há colisão de blueprints!")
+        else:
+            print("✅ URLs distintas: blueprints OK")
+    except Exception as e:
+        print(f"❌ Erro no sanity check: {e}")
+
+# Debug: Imprimir URL map para verificar rotas
+print("\n🗺️ URL MAP DEBUG:")
+for rule in app.url_map.iter_rules():
+    if 'chat' in str(rule):
+        print(f"  {rule.rule} -> {rule.endpoint}")
+print("🗺️ FIM URL MAP\n")
+
+# Alias para compatibilidade: /chat -> /chat-ia (DEVE vir após registro dos blueprints)
+@app.route("/chat")
+@app.route("/chat/")
+def chat_alias():
+    print("🔄 ALIAS CHAMADO: Redirecionando /chat para /chat-ia")
+    from flask import redirect, url_for
+    try:
+        redirect_url = url_for("chat_ai.index")
+        print(f"🎯 URL gerada: {redirect_url}")
+        return redirect(redirect_url)
+    except Exception as e:
+        print(f"❌ Erro no alias: {e}")
+        return f"Erro no redirecionamento: {e}"
+
+print("✅ Alias /chat -> /chat-ia configurado!")
 
 # ==========================
 # Rotas simples e navegação
@@ -298,153 +366,175 @@ def login_redirect():
 @app.route('/painel')
 @login_required
 def painel():
-    """Painel Principal Executivo"""
-    print("DEBUG PAINEL: Iniciando função painel()")
+    """Dashboard principal com widgets drag-and-drop"""
+    return render_template('painel_widgets.html')
+
+@app.route('/api/kpis')
+@login_required
+def api_kpis():
+    """API para fornecer KPIs em JSON para os widgets"""
+    total_empenhos = 0
+    valor_total_empenhos = 0.0
+    total_contratos = 0
+    valor_total_contratos = 0.0
+    total_notas_fiscais = 0
+    valor_total_notas_fiscais = 0.0
+    contratos_ativos = 0
+
     try:
-        from sqlalchemy import func
-        print("DEBUG PAINEL: Imports realizados com sucesso")
+        # Importar modelos dinamicamente
+        from models import Empenho, Contrato, NotaFiscal
 
-        # Estatísticas básicas
-        total_empenhos = Empenho.query.count()
-        total_contratos = Contrato.query.count()
+        # Totais
+        total_empenhos = db.session.query(Empenho).count()
+        total_contratos = db.session.query(Contrato).count()
+        total_notas_fiscais = db.session.query(NotaFiscal).count()
 
-        # Normaliza status para ATIVO (independente de caixa)
-        contratos_ativos = Contrato.query.filter(func.upper(Contrato.status) == 'ATIVO').count()
+        # Somatórios
+        valor_total_empenhos = db.session.query(db.func.coalesce(db.func.sum(Empenho.valor_empenhado), 0.0)).scalar() or 0.0
+        valor_total_contratos = db.session.query(db.func.coalesce(db.func.sum(Contrato.valor_total), 0.0)).scalar() or 0.0
+        valor_total_notas_fiscais = db.session.query(db.func.coalesce(db.func.sum(NotaFiscal.valor_liquido), 0.0)).scalar() or 0.0
 
-        # Novos empenhos este mês
-        inicio_mes = date.today().replace(day=1)
-        # usa data_criacao se existir; senão, cai para data_empenho
-        col_data = getattr(Empenho, 'data_criacao', Empenho.data_empenho)
-        novos_empenhos_mes = Empenho.query.filter(col_data >= inicio_mes).count()
-
-        # Valor total dos contratos ativos
-        valor_total = (db.session.query(func.sum(Contrato.valor_total))
-                       .filter(func.upper(Contrato.status) == 'ATIVO')
-                       .scalar()) or 0
-
-        # Data atual para cálculo de dias restantes
-        hoje = date.today()
-
-        # Buscar todos os contratos ativos com datas de término
-        contratos = Contrato.query.filter(
-            func.upper(Contrato.status) == 'ATIVO',
-            Contrato.data_fim.isnot(None)
-        ).all()
-
-        # Buscar empenhos para estatísticas
-        empenhos = Empenho.query.order_by(
-            getattr(Empenho, 'data_criacao', Empenho.data_empenho).desc()
-        ).all()
-
-        # Calcular dias restantes e categorizar contratos
-        contratos_com_dias = []
-        for contrato in contratos:
-            if contrato.data_fim:
-                dias_restantes = (contrato.data_fim - hoje).days
-                contrato.dias_restantes = dias_restantes
-                contratos_com_dias.append(contrato)
-
-        # Categorizar por tempo restante
-        contratos_criticos = [c for c in contratos_com_dias if c.dias_restantes <= 30]
-        contratos_atencao = [c for c in contratos_com_dias if 31 <= c.dias_restantes <= 60]
-        contratos_ok = [c for c in contratos_com_dias if c.dias_restantes > 60]
-
-        # Ordenar por dias restantes (mais críticos primeiro)
-        contratos_criticos.sort(key=lambda x: x.dias_restantes)
-        contratos_atencao.sort(key=lambda x: x.dias_restantes)
-        contratos_ok.sort(key=lambda x: x.dias_restantes)
-
-        print("DEBUG DASHBOARD: Preparando contexto para template")
-
-        context = {
-            'total_empenhos': total_empenhos,
-            'total_contratos': total_contratos,
-            'contratos_ativos': contratos_ativos,
-            'novos_empenhos_mes': novos_empenhos_mes,
-            'valor_total_contratos': valor_total,
-            'valor_total_empenhos': sum(e.valor_empenhado for e in empenhos if e.valor_empenhado),
-            'contratos_criticos': contratos_criticos,
-            'contratos_atencao': contratos_atencao,
-            'contratos_normais': contratos_ok,
-            'contratos_criticos_count': len(contratos_criticos),
-            'empenhos_pendentes': len([e for e in empenhos if e.status == 'PENDENTE']),
-            'empenhos_aprovados': len([e for e in empenhos if e.status == 'APROVADO']),
-            'empenhos_pagos': len([e for e in empenhos if e.status == 'PAGO']),
-            'empenhos_rejeitados': len([e for e in empenhos if e.status == 'REJEITADO']),
-            'ultimos_empenhos': empenhos[:10],
-            'now': datetime.now
-        }
-
-        print(f"DEBUG DASHBOARD: Renderizando painel.html")
-        context['valor_total_formatted'] = f"{valor_total:,.0f}".replace(',', '.')
-
-        return render_template('painel.html', **context)
+        # Contratos ativos
+        if hasattr(Contrato, 'status'):
+            contratos_ativos = db.session.query(Contrato).filter(Contrato.status == 'ATIVO').count()
+        elif hasattr(Contrato, 'data_fim'):
+            contratos_ativos = db.session.query(Contrato).filter(Contrato.data_fim >= datetime.utcnow().date()).count()
 
     except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        print(f"ERRO NO DASHBOARD: {e}")
-        print(error_details)
+        print(f"[API_KPIS] Erro ao calcular KPIs: {e}")
 
-        # Fallback para dashboard simples em caso de erro
+    return jsonify({
+        'total_empenhos': total_empenhos,
+        'total_contratos': total_contratos,
+        'total_notas_fiscais': total_notas_fiscais,
+        'valor_total_empenhos': float(valor_total_empenhos),
+        'valor_total_contratos': float(valor_total_contratos),
+        'valor_total_notas_fiscais': float(valor_total_notas_fiscais),
+        'contratos_ativos': contratos_ativos
+    })
+
+@app.route('/api/buscar/contratos')
+@login_required
+def api_buscar_contratos():
+    """API para buscar contratos por termo"""
+    termo = request.args.get('q', '').strip()
+    if len(termo) < 2:
+        return jsonify({'error': 'Termo de busca muito curto', 'results': []})
+    
+    try:
+        from models import Contrato
+        # Busca em múltiplos campos
+        contratos = db.session.query(Contrato).filter(
+            db.or_(
+                Contrato.numero_contrato.ilike(f'%{termo}%'),
+                Contrato.objeto.ilike(f'%{termo}%'),
+                Contrato.fornecedor.ilike(f'%{termo}%'),
+                Contrato.numero_pregao.ilike(f'%{termo}%')
+            )
+        ).limit(10).all()
+        
+        results = []
+        for contrato in contratos:
+            results.append({
+                'id': contrato.id,
+                'numero_contrato': contrato.numero_contrato,
+                'objeto': contrato.objeto[:100] + '...' if len(contrato.objeto) > 100 else contrato.objeto,
+                'fornecedor': contrato.fornecedor,
+                'valor_total': float(contrato.valor_total),
+                'data_fim': contrato.data_fim.strftime('%d/%m/%Y') if contrato.data_fim else None
+            })
+        
+        return jsonify({'results': results})
+    except Exception as e:
+        return jsonify({'error': str(e), 'results': []})
+
+@app.route('/api/buscar/empenhos')
+@login_required
+def api_buscar_empenhos():
+    """API para buscar empenhos por termo"""
+    termo = request.args.get('q', '').strip()
+    if len(termo) < 2:
+        return jsonify({'error': 'Termo de busca muito curto', 'results': []})
+    
+    try:
+        from models import Empenho
+        # Busca em múltiplos campos
+        empenhos = db.session.query(Empenho).filter(
+            db.or_(
+                Empenho.numero_empenho.ilike(f'%{termo}%'),
+                Empenho.resumo_objeto.ilike(f'%{termo}%'),
+                Empenho.fornecedores.ilike(f'%{termo}%'),
+                Empenho.numero_pregao.ilike(f'%{termo}%')
+            )
+        ).limit(10).all()
+        
+        results = []
+        for empenho in empenhos:
+            results.append({
+                'id': empenho.id,
+                'numero_empenho': empenho.numero_empenho,
+                'resumo_objeto': empenho.resumo_objeto[:100] + '...' if len(empenho.resumo_objeto) > 100 else empenho.resumo_objeto,
+                'fornecedores': empenho.fornecedores,
+                'valor_empenhado': float(empenho.valor_empenhado),
+                'data_empenho': empenho.data_empenho.strftime('%d/%m/%Y') if empenho.data_empenho else None
+            })
+        
+        return jsonify({'results': results})
+    except Exception as e:
+        return jsonify({'error': str(e), 'results': []})
+
+@app.route('/api/buscar/notas-fiscais')
+@login_required
+def api_buscar_notas_fiscais():
+    """API para buscar notas fiscais por termo"""
+    termo = request.args.get('q', '').strip()
+    if len(termo) < 2:
+        return jsonify({'error': 'Termo de busca muito curto', 'results': []})
+    
+    try:
+        from models import NotaFiscal
+        # Busca em múltiplos campos
+        notas = db.session.query(NotaFiscal).filter(
+            db.or_(
+                NotaFiscal.numero_nota.ilike(f'%{termo}%'),
+                NotaFiscal.fornecedor_nome.ilike(f'%{termo}%'),
+                NotaFiscal.fornecedor_cnpj.ilike(f'%{termo}%'),
+                NotaFiscal.chave_acesso.ilike(f'%{termo}%')
+            )
+        ).limit(10).all()
+        
+        results = []
+        for nota in notas:
+            results.append({
+                'id': nota.id,
+                'numero_nota': nota.numero_nota,
+                'serie': nota.serie,
+                'fornecedor_nome': nota.fornecedor_nome,
+                'valor_liquido': float(nota.valor_liquido),
+                'data_emissao': nota.data_emissao.strftime('%d/%m/%Y') if nota.data_emissao else None,
+                'status': nota.get_status_display()
+            })
+        
+        return jsonify({'results': results})
+    except Exception as e:
+        return jsonify({'error': str(e), 'results': []})
+
+@app.context_processor
+def inject_helpers():
+    """Helper para URLs seguras"""
+    from flask import url_for
+    def safe_url_for(endpoint, **kwargs):
         try:
-            context = {
-                'total_empenhos': Empenho.query.count() if 'Empenho' in globals() else 0,
-                'total_contratos': Contrato.query.count() if 'Contrato' in globals() else 0,
-                'contratos_criticos': [],
-                'contratos_atencao': [],
-                'contratos_ok': [],
-                'valor_total_contratos': 0,
-                'contratos_criticos_count': 0,
-                'now': datetime.now
-            }
-            return render_template('dashboard_simple.html', **context)
-        except:
-            # Último recurso - HTML estático
-            return f'''<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Erro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container mt-4">
-        <div class="alert alert-danger">
-            <h4>Erro no Dashboard</h4>
-            <p><strong>Erro:</strong> {str(e)}</p>
-            <p><strong>Usuário:</strong> {current_user.nome if current_user.is_authenticated else 'Não logado'}</p>
-            <details>
-                <summary>Detalhes técnicos</summary>
-                <pre>{error_details}</pre>
-            </details>
-        </div>
-        <div class="row">
-            <div class="col-md-4">
-                <a href="/empenhos/" class="btn btn-primary w-100 mb-2">Empenhos</a>
-            </div>
-            <div class="col-md-4">
-                <a href="/contratos/" class="btn btn-info w-100 mb-2">Contratos</a>
-            </div>
-            <div class="col-md-4">
-                <a href="/auth/logout" class="btn btn-secondary w-100 mb-2">Logout</a>
-            </div>
-        </div>
-    </div>
-</body>
-</html>'''
+            return url_for(endpoint, **kwargs)
+        except Exception:
+            return '#'  # fallback se rota não existir
+    return dict(safe_url_for=safe_url_for)
 
 @app.route('/test')
 def test_doctype():
     """Página de teste para DOCTYPE"""
     return render_template('test.html', now=datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
-
-@app.route('/admin/backup')
-@login_required
-def admin_backup_redirect():
-    """Redirecionamento de /admin/backup para /relatorios/backup"""
-    return redirect(url_for('relatorios.backup'))
 
 @app.route('/simple')
 def simple_test():
@@ -710,7 +800,7 @@ def debug_dashboard():
             'valor_total_contratos': 0,
             'format_currency': format_currency_filter
         }
-        return render_template('dashboard.html', **context)
+        return render_template('painel_widgets.html', **context)
 
     except Exception as e:
         import traceback
@@ -883,37 +973,65 @@ def format_date_filter(dt):
 def create_tables():
     """Criar tabelas do banco de dados"""
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+            print("✅ Tabelas criadas com sucesso!")
+        except Exception as e:
+            print(f"⚠️ Aviso ao criar tabelas: {e}")
 
-        # Criar usuário admin padrão se não existir
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
-            admin = User(
-                username='admin',
-                email='admin@sistema.com',
-                nome='Administrador',
-                is_admin=True
-            )
-            admin.set_password('admin123')
+        try:
+            # Criar usuário admin padrão se não existir
+            admin = User.query.filter_by(username='admin').first()
+            if not admin:
+                admin = User(
+                    username='admin',
+                    email='admin@sistema.com',
+                    nome='Administrador',
+                    is_admin=True
+                )
+                admin.set_password('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                print("✅ Usuário admin criado")
+            else:
+                print("✅ Usuário admin já existe")
+        except Exception as e:
+            print(f"⚠️ Aviso ao verificar admin: {e}")
+            # Continuar mesmo com erro
             db.session.add(admin)
             db.session.commit()
             print("Usuário admin criado - Login: admin, Senha: admin123")
 
+# =============================
+# Aliases de compatibilidade
+# =============================
+
+if __name__ == '__main__':
+    create_tables()
+    
+    try:
         # Configurar Base de Conhecimento da IA
         print("🧠 Configurando Base de Conhecimento da IA...")
-        try:
-            from ai_kb_setup import ensure_ai_kb_schema, populate_initial_kb
-            ensure_ai_kb_schema()
-            populate_initial_kb()
-            print("✅ Base de Conhecimento configurada!")
-        except Exception as e:
-            print(f"⚠️ Erro ao configurar KB da IA: {e}")
+        from ai_kb_setup import ensure_ai_kb_schema, populate_initial_kb
+        ensure_ai_kb_schema()
+        populate_initial_kb()
+        print("✅ Base de Conhecimento configurada!")
+    except Exception as e:
+        print(f"⚠️ Erro ao configurar KB da IA: {e}")
 
 # Rota de teste para JavaScript
 @app.route('/teste-js')
 @login_required
 def teste_js():
     return render_template('teste_js.html')
+
+# Debug das rotas
+@app.route("/_debug/routes")
+def _debug_routes():
+    lines = []
+    for r in sorted(app.url_map.iter_rules(), key=lambda x: x.rule):
+        lines.append(f"{r.rule:35s} -> {r.endpoint}")
+    return "<pre>" + "\n".join(lines) + "</pre>"
 
 print("🔍 Chegou ao final do arquivo - __name__ =", __name__)
 
@@ -935,13 +1053,13 @@ if __name__ == '__main__':
     print("\n📊 CONFIGURAÇÕES DO SERVIDOR")
     print("------------------------------")
     print("🌐 Host: 0.0.0.0")
-    print("🔌 Porta: 5000")
+    print("🔌 Porta: 5001")
     print("🧵 Debug: Ativo")
     print("------------------------------")
     
     print("📍 ENDEREÇOS DE ACESSO")
-    print("   • Local: http://127.0.0.1:5000")
-    print("   • Rede: http://10.0.50.79:5000")
+    print("   • Local: http://127.0.0.1:5001")
+    print("   • Rede: http://10.0.50.79:5001")
     print("------------------------------")
     
     print("🎯 FUNCIONALIDADES DISPONÍVEIS")
@@ -953,4 +1071,4 @@ if __name__ == '__main__':
     print("   ✅ Debug avançado de requisições")
     print("   ✅ Filtros Jinja2 personalizados")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)

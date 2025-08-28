@@ -1,0 +1,732 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard – Widgets{% endblock %}
+{% block page_title %}Painel Principal (Widgets){% endblock %}
+
+{% block extra_head %}
+  <!-- GridStack (CSS) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack.min.css">
+  <style>
+    .dashboard-actions .btn { border-radius: 10px; }
+    .grid-stack { background: transparent; min-height: 70vh; }
+    .grid-stack-item { min-width: 220px; min-height: 120px; }
+    .grid-stack-item-content{
+      background:#fff; height:100%; border-radius:14px; padding:14px 14px 10px;
+      box-shadow:0 8px 28px rgba(0,0,0,.06); border:1px solid rgba(0,0,0,.05);
+      display:flex; flex-direction:column; overflow:hidden;
+      transition: box-shadow .2s ease, transform .2s ease;
+    }
+    .grid-stack-item-content:hover { box-shadow:0 12px 36px rgba(0,0,0,.12); transform: translateY(-1px); }
+
+    .widget-header{
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid #efefef; padding-bottom:8px; margin-bottom:10px;
+    }
+    .widget-title{ font-weight:600; color:#333; display:flex; align-items:center; gap:8px; }
+    .widget-actions .btn{ padding:.2rem .45rem; border-radius:8px; }
+    .kpi-card{ text-align:center; display:flex; flex:1; flex-direction:column; justify-content:center; gap:6px; }
+    .kpi-icon{ font-size: 2.2rem; opacity:.9; }
+    .kpi-value{ font-size:2rem; font-weight:800; line-height:1.1; }
+    .kpi-label{ color:#6b7280; font-size:.85rem; text-transform:uppercase; letter-spacing:.4px; }
+
+    .apps-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:12px; }
+    .app-card{
+      background:#f8f9fa; border:1px solid #e9ecef; border-radius:12px; padding:14px; text-align:center;
+      text-decoration:none; transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+      color:inherit;
+    }
+    .app-card:hover{ background:#eef2f7; transform: translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.08); }
+    .app-card i{ font-size:1.75rem; display:block; margin-bottom:6px; }
+
+    .library-card{
+      border:1px dashed #d0d7de; border-radius:12px; padding:12px;
+      background:#fff; display:flex; align-items:center; gap:10px; justify-content:space-between;
+    }
+    .library-card .meta{ display:flex; align-items:center; gap:10px; }
+    .library-card .meta i{ font-size:1.3rem; }
+
+    .search-widget{ padding:10px; }
+    .search-widget input{ border-radius:8px; margin-bottom:10px; }
+    .search-results{ max-height:200px; overflow-y:auto; }
+    .search-result-item{
+      padding:8px; border:1px solid #e9ecef; border-radius:6px; margin-bottom:6px;
+      background:#f8f9fa; cursor:pointer; transition:all .15s ease;
+    }
+    .search-result-item:hover{ background:#e9ecef; }
+    .search-result-item.selected{ background:#d1ecf1; border-color:#bee5eb; }
+    .result-details{ font-size:.85rem; color:#6c757d; margin-top:4px; }
+    .result-value{ font-weight:bold; color:#198754; }
+  </style>
+{% endblock %}
+
+{% block page_actions %}
+  <div class="dashboard-actions d-flex gap-2">
+    <button id="btnAdd" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-plus-square-dotted me-1"></i> Adicionar Widget
+    </button>
+    <button id="btnSave" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-save me-1"></i> Salvar Layout
+    </button>
+    <button id="btnReset" class="btn btn-outline-danger btn-sm">
+      <i class="bi bi-arrow-clockwise me-1"></i> Reset
+    </button>
+    <button id="btnClear" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-trash me-1"></i> Limpar Tudo
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <!-- Grade -->
+  <div class="grid-stack" id="dashboard-grid"></div>
+
+  <!-- Biblioteca de Widgets -->
+  <div class="modal fade" id="widgetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title"><i class="bi bi-grid-3x3-gap me-2"></i>Biblioteca de Widgets</h6>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-grid gap-2">
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-file-earmark-text text-primary"></i>
+                <div>
+                  <div class="fw-semibold">Total de Empenhos</div>
+                  <small class="text-muted">Quantidade total de empenhos no sistema</small>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" data-widget="total-empenhos">+</button>
+            </div>
+
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-file-earmark-check text-success"></i>
+                <div>
+                  <div class="fw-semibold">Total de Contratos</div>
+                  <small class="text-muted">Quantidade total de contratos no sistema</small>
+                </div>
+              </div>
+              <button class="btn btn-success btn-sm" data-widget="total-contratos">+</button>
+            </div>
+
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-receipt text-warning"></i>
+                <div>
+                  <div class="fw-semibold">Total de Notas Fiscais</div>
+                  <small class="text-muted">Quantidade total de notas fiscais</small>
+                </div>
+              </div>
+              <button class="btn btn-warning btn-sm" data-widget="total-notas-fiscais">+</button>
+            </div>
+
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-currency-dollar text-info"></i>
+                <div>
+                  <div class="fw-semibold">Valor Total Empenhos</div>
+                  <small class="text-muted">Soma dos valores de todos os empenhos</small>
+                </div>
+              </div>
+              <button class="btn btn-info btn-sm" data-widget="valor-empenhos">+</button>
+            </div>
+
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-cash-stack text-success"></i>
+                <div>
+                  <div class="fw-semibold">Valor Total Contratos</div>
+                  <small class="text-muted">Soma dos valores de todos os contratos</small>
+                </div>
+              </div>
+              <button class="btn btn-success btn-sm" data-widget="valor-contratos">+</button>
+            </div>
+
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-receipt-cutoff text-warning"></i>
+                <div>
+                  <div class="fw-semibold">Valor Total Notas Fiscais</div>
+                  <small class="text-muted">Soma dos valores de todas as notas fiscais</small>
+                </div>
+              </div>
+              <button class="btn btn-warning btn-sm" data-widget="valor-notas-fiscais">+</button>
+            </div>
+
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-search text-dark"></i>
+                <div>
+                  <div class="fw-semibold">Buscar Contratos</div>
+                  <small class="text-muted">Widget de busca individual por contratos</small>
+                </div>
+              </div>
+              <button class="btn btn-dark btn-sm" data-widget="buscar-contratos">+</button>
+            </div>
+
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-search text-secondary"></i>
+                <div>
+                  <div class="fw-semibold">Buscar Empenhos</div>
+                  <small class="text-muted">Widget de busca individual por empenhos</small>
+                </div>
+              </div>
+              <button class="btn btn-secondary btn-sm" data-widget="buscar-empenhos">+</button>
+            </div>
+
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-search text-warning"></i>
+                <div>
+                  <div class="fw-semibold">Buscar Notas Fiscais</div>
+                  <small class="text-muted">Widget de busca individual por notas fiscais</small>
+                </div>
+              </div>
+              <button class="btn btn-warning btn-sm" data-widget="buscar-notas-fiscais">+</button>
+            </div>
+
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-lightning-charge text-warning"></i>
+                <div>
+                  <div class="fw-semibold">Ações Rápidas</div>
+                  <small class="text-muted">Botões de atalho para telas</small>
+                </div>
+              </div>
+              <button class="btn btn-warning btn-sm" data-widget="acoes">+</button>
+            </div>
+
+            <div class="library-card">
+              <div class="meta">
+                <i class="bi bi-grid text-secondary"></i>
+                <div>
+                  <div class="fw-semibold">Aplicações do Sistema</div>
+                  <small class="text-muted">Links de acesso (Empenhos, Contratos, Notas...)</small>
+                </div>
+              </div>
+              <button class="btn btn-secondary btn-sm" data-widget="apps">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  // Carrega um script com timeout e melhor tratamento de erros
+  function loadScript(src, onload, onerror, timeout = 10000) {
+    console.log(`🔄 Tentando carregar: ${src}`);
+    
+    const script = document.createElement('script');
+    let isComplete = false;
+    
+    const cleanup = () => {
+      if (!isComplete) {
+        isComplete = true;
+        clearTimeout(timer);
+        script.onload = script.onerror = null;
+      }
+    };
+    
+    const timer = setTimeout(() => {
+      cleanup();
+      console.error(`⏰ Timeout ao carregar: ${src}`);
+      if (onerror) onerror(new Error('Timeout'));
+    }, timeout);
+    
+    script.onload = () => {
+      cleanup();
+      console.log(`✅ Carregado com sucesso: ${src}`);
+      if (onload) onload();
+    };
+    
+    script.onerror = (error) => {
+      cleanup();
+      console.error(`❌ Erro ao carregar: ${src}`, error);
+      if (onerror) onerror(error);
+    };
+    
+    script.src = src;
+    script.async = true;
+    document.head.appendChild(script);
+  }
+
+  function startDashboard() {
+    if (!window.GridStack) { console.error('GridStack ainda não está disponível.'); return; }
+
+    const LS_KEY = 'widgets-layout-v1';
+    const grid = GridStack.init({
+      column: 12, cellHeight: 90, margin: 8, float: false, animate: true, minRow: 6
+    }, '#dashboard-grid');
+
+    grid.enableMove(true);
+    grid.enableResize(true);
+
+    const okFlash = (selector, text) => {
+      const btn = document.querySelector(selector);
+      if (!btn) return;
+      const original = btn.innerHTML;
+      btn.innerHTML = '<i class="bi bi-check2"></i> ' + text;
+      btn.classList.remove('btn-outline-success'); btn.classList.add('btn-success');
+      setTimeout(() => { btn.innerHTML = original; btn.classList.add('btn-outline-success'); btn.classList.remove('btn-success'); }, 1200);
+    };
+
+    const saveLayout = () => {
+      localStorage.setItem(LS_KEY, JSON.stringify(grid.save()));
+      okFlash('#btnSave','Salvo!');
+    };
+
+    const loadLayout = () => {
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return false;
+        const layout = JSON.parse(raw);
+        if (!Array.isArray(layout) || !layout.length) return false;
+        grid.load(layout);
+        return true;
+      } catch { return false; }
+    };
+
+    const resetLayout = () => { localStorage.removeItem(LS_KEY); grid.removeAll(); };
+
+    function bindActions(el) {
+      el.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const a = btn.getAttribute('data-action');
+          const node = el.gridstackNode; if (!node) return;
+          if (a === 'remove') { grid.removeWidget(el); saveLayout(); }
+          if (a === 'grow')   { grid.update(el, { w: Math.min(12,(node.w||3)+1), h: Math.min(12,(node.h||3)+1) }); saveLayout(); }
+          if (a === 'shrink') { grid.update(el, { w: Math.max( 2,(node.w||3)-1), h: Math.max( 2,(node.h||3)-1) }); saveLayout(); }
+        });
+      });
+    }
+
+    function addWidget({id, w=3, h=3, title, icon, innerHTML}) {
+      if (document.querySelector(`[gs-id="${id}"]`)) return null;
+      const el = document.createElement('div');
+      el.className = 'grid-stack-item';
+      el.setAttribute('gs-id', id);
+      el.setAttribute('gs-w', w);
+      el.setAttribute('gs-h', h);
+      el.innerHTML = `
+        <div class="grid-stack-item-content">
+          <div class="widget-header">
+            <div class="widget-title"><i class="bi ${icon}"></i> <span>${title}</span></div>
+            <div class="widget-actions">
+              <button class="btn btn-outline-secondary btn-sm" data-action="shrink" title="Diminuir"><i class="bi bi-arrows-angle-contract"></i></button>
+              <button class="btn btn-outline-secondary btn-sm" data-action="grow"   title="Aumentar"><i class="bi bi-arrows-angle-expand"></i></button>
+              <button class="btn btn-outline-danger   btn-sm" data-action="remove" title="Remover"><i class="bi bi-x-lg"></i></button>
+            </div>
+          </div>
+          <div class="widget-body" style="flex:1; overflow:auto;">${innerHTML}</div>
+        </div>`;
+      grid.addWidget(el, {autoPosition:true});
+      bindActions(el);
+      return el;
+    }
+
+    function addKPI(instanceId, label, icon, color, dataKey) {
+      const valId = `val-${instanceId}`;
+      addWidget({
+        id: instanceId, w:3, h:3, title: label, icon,
+        innerHTML: `
+          <div class="kpi-card">
+            <div class="kpi-icon text-${color}"><i class="bi ${icon}"></i></div>
+            <div class="kpi-value text-${color}" id="${valId}">—</div>
+            <div class="kpi-label">${label}</div>
+          </div>`
+      });
+      fetch('{{ url_for("api_kpis") }}').then(r => r.json()).then(data => {
+        const el = document.getElementById(valId);
+        if (el) {
+          const v = data[dataKey] ?? 0;
+          if (dataKey.includes('valor')) {
+            el.textContent = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+          } else {
+            el.textContent = new Intl.NumberFormat('pt-BR').format(v||0);
+          }
+        }
+      }).catch(()=>{});
+    }
+
+    function addSearchWidget(type, title, icon, color, apiEndpoint) {
+      const searchId = `search-${type}`;
+      const resultsId = `results-${type}`;
+      
+      addWidget({
+        id: type, w:6, h:5, title: title, icon,
+        innerHTML: `
+          <div class="search-widget">
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control" placeholder="Digite para buscar..." id="${searchId}">
+              <button class="btn btn-outline-${color}" type="button">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+            <div class="search-results" id="${resultsId}">
+              <div class="text-muted text-center p-3">
+                <i class="bi bi-search me-2"></i>Digite pelo menos 2 caracteres para buscar
+              </div>
+            </div>
+          </div>`
+      });
+
+      // Adicionar funcionalidade de busca
+      setTimeout(() => {
+        const input = document.getElementById(searchId);
+        const results = document.getElementById(resultsId);
+        let timeout = null;
+
+        if (input && results) {
+          input.addEventListener('input', () => {
+            clearTimeout(timeout);
+            const term = input.value.trim();
+            
+            if (term.length < 2) {
+              results.innerHTML = '<div class="text-muted text-center p-3"><i class="bi bi-search me-2"></i>Digite pelo menos 2 caracteres para buscar</div>';
+              return;
+            }
+
+            results.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm" role="status"></div> Buscando...</div>';
+
+            timeout = setTimeout(() => {
+              fetch(`${apiEndpoint}?q=${encodeURIComponent(term)}`)
+                .then(response => response.json())
+                .then(data => {
+                  if (data.results && data.results.length > 0) {
+                    results.innerHTML = data.results.map(item => {
+                      let details = '';
+                      let value = '';
+                      
+                      if (type === 'buscar-contratos') {
+                        details = `<div class="result-details">Fornecedor: ${item.fornecedor}<br>Válido até: ${item.data_fim || 'N/A'}</div>`;
+                        value = `<span class="result-value">R$ ${new Intl.NumberFormat('pt-BR').format(item.valor_total)}</span>`;
+                      } else if (type === 'buscar-empenhos') {
+                        details = `<div class="result-details">Fornecedor: ${item.fornecedores}<br>Data: ${item.data_empenho || 'N/A'}</div>`;
+                        value = `<span class="result-value">R$ ${new Intl.NumberFormat('pt-BR').format(item.valor_empenhado)}</span>`;
+                      } else if (type === 'buscar-notas-fiscais') {
+                        details = `<div class="result-details">Fornecedor: ${item.fornecedor_nome}<br>Emissão: ${item.data_emissao || 'N/A'} | Status: ${item.status}</div>`;
+                        value = `<span class="result-value">R$ ${new Intl.NumberFormat('pt-BR').format(item.valor_liquido)}</span>`;
+                      }
+
+                      return `
+                        <div class="search-result-item" data-id="${item.id}">
+                          <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                              <div class="fw-semibold">${type === 'buscar-contratos' ? item.numero_contrato : type === 'buscar-empenhos' ? item.numero_empenho : item.numero_nota}</div>
+                              <div class="small">${type === 'buscar-contratos' ? item.objeto : type === 'buscar-empenhos' ? item.resumo_objeto : item.fornecedor_nome}</div>
+                              ${details}
+                            </div>
+                            <div class="text-end">
+                              ${value}
+                            </div>
+                          </div>
+                        </div>`;
+                    }).join('');
+
+                    // Adicionar click nos resultados para criar widget individual
+                    results.querySelectorAll('.search-result-item').forEach(item => {
+                      item.addEventListener('click', () => {
+                        const itemData = data.results.find(r => r.id == item.dataset.id);
+                        addIndividualResultWidget(type, itemData);
+                      });
+                    });
+                  } else {
+                    results.innerHTML = '<div class="text-muted text-center p-3"><i class="bi bi-exclamation-circle me-2"></i>Nenhum resultado encontrado</div>';
+                  }
+                })
+                .catch(error => {
+                  results.innerHTML = '<div class="text-danger text-center p-3"><i class="bi bi-exclamation-triangle me-2"></i>Erro na busca</div>';
+                });
+            }, 500);
+          });
+        }
+      }, 100);
+    }
+
+    function addIndividualResultWidget(type, data) {
+      let title, icon, color, content;
+      const uniqueId = `result-${type}-${data.id}-${Date.now()}`;
+
+      if (type === 'buscar-contratos') {
+        title = `Contrato ${data.numero_contrato}`;
+        icon = 'bi-file-earmark-check';
+        color = 'success';
+        content = `
+          <div class="p-2">
+            <h6 class="fw-bold">${data.numero_contrato}</h6>
+            <div class="small mb-2">${data.objeto}</div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Fornecedor:</span>
+              <span class="fw-semibold">${data.fornecedor}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Valor:</span>
+              <span class="fw-bold text-success">R$ ${new Intl.NumberFormat('pt-BR').format(data.valor_total)}</span>
+            </div>
+            ${data.data_fim ? `<div class="d-flex justify-content-between"><span class="text-muted">Válido até:</span><span>${data.data_fim}</span></div>` : ''}
+          </div>`;
+      } else if (type === 'buscar-empenhos') {
+        title = `Empenho ${data.numero_empenho}`;
+        icon = 'bi-file-earmark-text';
+        color = 'primary';
+        content = `
+          <div class="p-2">
+            <h6 class="fw-bold">${data.numero_empenho}</h6>
+            <div class="small mb-2">${data.resumo_objeto}</div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Fornecedor:</span>
+              <span class="fw-semibold">${data.fornecedores}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Valor:</span>
+              <span class="fw-bold text-primary">R$ ${new Intl.NumberFormat('pt-BR').format(data.valor_empenhado)}</span>
+            </div>
+            ${data.data_empenho ? `<div class="d-flex justify-content-between"><span class="text-muted">Data:</span><span>${data.data_empenho}</span></div>` : ''}
+          </div>`;
+      } else if (type === 'buscar-notas-fiscais') {
+        title = `NF ${data.numero_nota}`;
+        icon = 'bi-receipt';
+        color = 'warning';
+        content = `
+          <div class="p-2">
+            <h6 class="fw-bold">NF ${data.numero_nota}${data.serie ? ` - Série ${data.serie}` : ''}</h6>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Fornecedor:</span>
+              <span class="fw-semibold">${data.fornecedor_nome}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Valor:</span>
+              <span class="fw-bold text-warning">R$ ${new Intl.NumberFormat('pt-BR').format(data.valor_liquido)}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Status:</span>
+              <span class="badge bg-${data.status === 'Pago' ? 'success' : data.status === 'Em Aberto' ? 'warning' : 'secondary'}">${data.status}</span>
+            </div>
+            ${data.data_emissao ? `<div class="d-flex justify-content-between"><span class="text-muted">Emissão:</span><span>${data.data_emissao}</span></div>` : ''}
+          </div>`;
+      }
+
+      addWidget({
+        id: uniqueId, w:3, h:4, title: title, icon: icon,
+        innerHTML: content
+      });
+      
+      saveLayout();
+    }
+
+    function addApps() {
+      addWidget({
+        id:'apps', w:6, h:4, title:'Aplicações do Sistema', icon:'bi-grid',
+        innerHTML: `
+          <div class="apps-grid">
+            <a href="{{ safe_url_for('empenhos.index') }}"  class="app-card"><i class="bi bi-file-earmark-text text-primary"></i><div class="fw-bold">Empenhos</div><small class="text-muted">Gestão orçamentária</small></a>
+            <a href="{{ safe_url_for('contratos.index') }}" class="app-card"><i class="bi bi-file-earmark-check text-success"></i><div class="fw-bold">Contratos</div><small class="text-muted">Gestão de contratos</small></a>
+            <a href="{{ safe_url_for('notas.index') }}"     class="app-card"><i class="bi bi-receipt text-warning"></i><div class="fw-bold">Notas Fiscais</div><small class="text-muted">NF-e e documentos</small></a>
+            <a href="{{ safe_url_for('relatorios.index') }}"class="app-card"><i class="bi bi-graph-up text-info"></i><div class="fw-bold">Relatórios</div><small class="text-muted">Análises e gráficos</small></a>
+            {% if current_user.is_admin %}
+            <a href="{{ safe_url_for('auth.users') }}"      class="app-card"><i class="bi bi-people text-secondary"></i><div class="fw-bold">Usuários</div><small class="text-muted">Gestão de acesso</small></a>
+            {% endif %}
+          </div>`
+      });
+    }
+
+    function addAcoes() {
+      addWidget({
+        id:'acoes', w:6, h:4, title:'Ações Rápidas', icon:'bi-lightning-charge',
+        innerHTML: `
+          <div class="d-grid gap-2">
+            <a href="{{ safe_url_for('empenhos.novo') }}"  class="btn btn-outline-primary"><i class="bi bi-plus-circle me-1"></i> Novo Empenho</a>
+            <a href="{{ safe_url_for('contratos.novo') }}" class="btn btn-outline-success"><i class="bi bi-file-plus me-1"></i> Novo Contrato</a>
+            <a href="{{ safe_url_for('relatorios.index') }}"class="btn btn-outline-info"><i class="bi bi-bar-chart me-1"></i> Ver Relatórios</a>
+            <a href="{{ safe_url_for('auth.users') }}"      class="btn btn-outline-secondary"><i class="bi bi-people me-1"></i> Usuários</a>
+          </div>`
+      });
+    }
+
+    // Começa vazio – só carrega o que o usuário salvou
+    loadLayout();
+
+    grid.on('change', saveLayout);
+
+    document.getElementById('btnSave') ?.addEventListener('click', saveLayout);
+    document.getElementById('btnReset')?.addEventListener('click', () => { if (confirm('Resetar layout salvo?')) resetLayout(); });
+    document.getElementById('btnClear')?.addEventListener('click', () => { if (confirm('Remover TODOS os widgets?')) { grid.removeAll(); saveLayout(); } });
+
+    const modal = new bootstrap.Modal(document.getElementById('widgetModal'));
+    document.getElementById('btnAdd')?.addEventListener('click', () => modal.show());
+    document.querySelectorAll('#widgetModal [data-widget]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.getAttribute('data-widget');
+        
+        // KPIs Principais
+        if (type==='total-empenhos') addKPI('total-empenhos','Total de Empenhos','bi-file-earmark-text','primary','total_empenhos');
+        if (type==='total-contratos') addKPI('total-contratos','Total de Contratos','bi-file-earmark-check','success','total_contratos');
+        if (type==='total-notas-fiscais') addKPI('total-notas-fiscais','Total de Notas Fiscais','bi-receipt','warning','total_notas_fiscais');
+        
+        // KPIs de Valores
+        if (type==='valor-empenhos') addKPI('valor-empenhos','Valor Total Empenhos','bi-currency-dollar','info','valor_total_empenhos');
+        if (type==='valor-contratos') addKPI('valor-contratos','Valor Total Contratos','bi-cash-stack','success','valor_total_contratos');
+        if (type==='valor-notas-fiscais') addKPI('valor-notas-fiscais','Valor Total Notas Fiscais','bi-receipt-cutoff','warning','valor_total_notas_fiscais');
+        
+        // Widgets de Busca
+        if (type==='buscar-contratos') addSearchWidget('buscar-contratos','Buscar Contratos','bi-search','dark','/api/buscar/contratos');
+        if (type==='buscar-empenhos') addSearchWidget('buscar-empenhos','Buscar Empenhos','bi-search','secondary','/api/buscar/empenhos');
+        if (type==='buscar-notas-fiscais') addSearchWidget('buscar-notas-fiscais','Buscar Notas Fiscais','bi-search','warning','/api/buscar/notas-fiscais');
+        
+        // Widgets Funcionais
+        if (type==='apps') addApps();
+        if (type==='acoes') addAcoes();
+        
+        saveLayout(); 
+        modal.hide();
+      });
+    });
+  }
+
+  // Sistema de carregamento com múltiplos fallbacks
+  if (window.GridStack) {
+    console.log('✅ GridStack já carregado');
+    startDashboard();
+  } else {
+    console.log('🔄 Carregando GridStack...');
+    
+    // Tentativa 1: jsdelivr.net
+    loadScript(
+      'https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack-h5.js',
+      () => {
+        console.log('✅ GridStack carregado via jsdelivr');
+        startDashboard();
+      },
+      () => {
+        console.warn('⚠️ Fallback 1: jsdelivr falhou, tentando unpkg...');
+        
+        // Tentativa 2: unpkg.com
+        loadScript(
+          'https://unpkg.com/gridstack@9.2.2/dist/gridstack-h5.js',
+          () => {
+            console.log('✅ GridStack carregado via unpkg');
+            startDashboard();
+          },
+          () => {
+            console.warn('⚠️ Fallback 2: unpkg falhou, tentando cdnjs...');
+            
+            // Tentativa 3: cdnjs.cloudflare.com
+            loadScript(
+              'https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/9.2.2/gridstack-h5.min.js',
+              () => {
+                console.log('✅ GridStack carregado via cdnjs');
+                startDashboard();
+              },
+              () => {
+                console.warn('⚠️ Fallback 3: cdnjs falhou, tentando versão local...');
+                
+                // Tentativa 4: Versão local básica
+                loadScript(
+                  '{{ url_for("static", filename="js/gridstack-basic.js") }}',
+                  () => {
+                    console.log('✅ GridStack básico carregado (versão local)');
+                    showBasicModeAlert();
+                    startDashboard();
+                  },
+                  () => {
+                    console.error('❌ Todos os fallbacks falharam, incluindo versão local');
+                    createEmergencyFallback();
+                  }
+                );
+              }
+            );
+          }
+        );
+      }
+    );
+  }
+
+  // Exibe alerta de modo básico
+  function showBasicModeAlert() {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-info d-flex align-items-center mb-3';
+    alertDiv.innerHTML = `
+      <i class="bi bi-info-circle-fill me-2"></i>
+      <div>
+        <strong>Modo Básico:</strong> GridStack local carregado. 
+        Arrastar e redimensionar não funcionam, mas widgets são totalmente funcionais.
+      </div>
+    `;
+    document.getElementById('dashboard-grid').parentNode.insertBefore(alertDiv, document.getElementById('dashboard-grid'));
+  }
+
+  // Fallback de emergência quando tudo falha
+  function createEmergencyFallback() {
+    console.log('🆘 Criando fallback de emergência...');
+    
+    // Simula o comportamento básico do GridStack
+    const emergencyGrid = {
+      element: document.getElementById('dashboard-grid'),
+      widgets: [],
+      
+      addWidget: function(el, options) {
+        el.style.cssText = `
+          display: inline-block; 
+          vertical-align: top; 
+          margin: 8px; 
+          width: ${(options?.w || 3) * 80}px; 
+          min-height: ${(options?.h || 3) * 90}px;
+        `;
+        this.element.appendChild(el);
+        this.widgets.push(el);
+        return el;
+      },
+      
+      removeWidget: function(el) {
+        if (el && el.parentNode) {
+          el.parentNode.removeChild(el);
+          this.widgets = this.widgets.filter(w => w !== el);
+        }
+      },
+      
+      removeAll: function() {
+        this.widgets.forEach(w => this.removeWidget(w));
+        this.widgets = [];
+      },
+      
+      enableMove: () => {},
+      enableResize: () => {},
+      save: () => [],
+      load: () => {},
+      update: () => {},
+      on: () => {}
+    };
+    
+    // Substitui window.GridStack
+    window.GridStack = {
+      init: () => emergencyGrid
+    };
+    
+    // Exibe aviso para o usuário
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-warning d-flex align-items-center mb-3';
+    alertDiv.innerHTML = `
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <div>
+        <strong>Modo Emergência:</strong> Todos os carregamentos falharam. 
+        Widgets funcionam em modo básico sem drag-and-drop.
+      </div>
+    `;
+    document.getElementById('dashboard-grid').parentNode.insertBefore(alertDiv, document.getElementById('dashboard-grid'));
+    
+    startDashboard();
+  }
+})();
+</script>
+{% endblock %}

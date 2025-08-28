@@ -13,7 +13,7 @@
       <ul class="list-group" id="sessionList">
         {% for s in sessions %}
         <li class="list-group-item d-flex justify-content-between align-items-center {% if s.session_id == current_session_id %}active{% endif %}">
-          <a class="{% if s.session_id == current_session_id %}text-white{% endif %}" href="{{ url_for('chat.index', session_id=s.session_id) }}">
+          <a class="{% if s.session_id == current_session_id %}text-white{% endif %}" href="{{ url_for('chat_ai.index', session_id=s.session_id) }}">
             {{ s.title or 'Nova Conversa' }}
           </a>
           <button class="btn btn-sm btn-outline-danger ms-2 btnDeleteSession" data-session="{{ s.session_id }}">×</button>
@@ -218,11 +218,77 @@
 <script>
   window.currentSessionId = "{{ current_session_id or '' }}";
   window.CHAT_CONFIG = {
-    sendUrl: "{{ url_for('chat.send_message') }}",
-    newSessionUrl: "{{ url_for('chat.new_session') }}",
-    deleteSessionBaseUrl: "{{ url_for('chat.delete_session', session_id='__ID__') }}",
-    getMessagesBaseUrl: "{{ url_for('chat.get_messages', session_id='__ID__') }}"
+    sendUrl: "#",  // TODO: implementar endpoint send_message
+    newSessionUrl: "#",  // TODO: implementar endpoint new_session  
+    deleteSessionBaseUrl: "#",  // TODO: implementar endpoint delete_session
+    getMessagesBaseUrl: "#"  // TODO: implementar endpoint get_messages
   };
 </script>
-<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script>
+// Chat básico - funcionalidade mínima
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('sendForm');
+  const messageInput = document.getElementById('messageInput');
+  const messagesPane = document.getElementById('messagesPane');
+  
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const message = messageInput.value.trim();
+      if (!message) return;
+      
+      // Adicionar mensagem do usuário
+      addMessage(message, 'user');
+      messageInput.value = '';
+      
+      // Simular resposta da IA
+      setTimeout(() => {
+        addMessage('Chat IA em desenvolvimento. Em breve estará disponível!', 'ai');
+      }, 1000);
+    });
+  }
+  
+  function addMessage(text, type) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}-message mb-3`;
+    
+    if (type === 'user') {
+      messageDiv.innerHTML = `
+        <div class="d-flex justify-content-end">
+          <div class="message-content" style="max-width: 70%;">
+            <div class="bg-primary text-white p-3 rounded-3 shadow-sm">
+              <div class="message-text">${text}</div>
+            </div>
+            <div class="message-meta text-end mt-1">
+              <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      messageDiv.innerHTML = `
+        <div class="d-flex">
+          <div class="avatar-container me-2">
+            <div class="bg-success rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+              <i class="bi bi-robot text-white"></i>
+            </div>
+          </div>
+          <div class="message-content flex-grow-1" style="max-width: 70%;">
+            <div class="bg-light border p-3 rounded-3 shadow-sm">
+              <div class="message-text">${text}</div>
+            </div>
+            <div class="message-meta mt-1">
+              <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    messagesPane.appendChild(messageDiv);
+    messagesPane.scrollTop = messagesPane.scrollHeight;
+  }
+});
+</script>
 {% endblock content %}

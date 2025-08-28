@@ -393,57 +393,19 @@
   }
 
   function deleteSession(sessionId) {
-    if (!cfg.deleteSessionBaseUrl) {
-      console.error('URL de delete não configurada');
-      return;
-    }
-    
-    if (!confirm('🗑️ Tem certeza que deseja deletar esta conversa?\n\nEsta ação não pode ser desfeita.')) {
-      return;
-    }
-
-    // Feedback visual - desabilitar botão
-    const btn = document.querySelector(`[data-session="${sessionId}"]`);
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-    }
+    if (!cfg.deleteSessionBaseUrl) return;
+    if (!confirm('Tem certeza que deseja deletar esta conversa?')) return;
 
     const url = cfg.deleteSessionBaseUrl.replace('__ID__', encodeURIComponent(sessionId));
-    
-    fetch(url, { 
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-      .then(r => {
-        if (!r.ok) {
-          throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-        }
-        return r.json();
-      })
+    fetch(url, { method: 'DELETE' })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => {
-        if (data.success) {
-          showToast('✅ Conversa deletada com sucesso!', 'success');
-          // Pequeno delay para mostrar o toast antes de recarregar
-          setTimeout(() => {
-            location.reload();
-          }, 1000);
-        } else {
-          throw new Error(data.error || 'Erro desconhecido');
-        }
+        if (data.success) location.reload();
+        else alert('Erro ao deletar sessão: ' + (data.error || 'desconhecido'));
       })
       .catch(err => {
         console.error('Erro ao deletar sessão:', err);
-        
-        // Restaurar botão em caso de erro
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = '×';
-        }
-        
-        showToast('❌ Erro ao deletar conversa: ' + err.message, 'error');
+        alert('Erro de conexão');
       });
   }
 
@@ -573,20 +535,10 @@
     }
   }
 
-  // Event delegation para botões de deletar sessão (funciona mesmo se adicionados dinamicamente)
-  document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('btnDeleteSession') || e.target.closest('.btnDeleteSession')) {
-      e.stopPropagation();
-      const btn = e.target.classList.contains('btnDeleteSession') ? e.target : e.target.closest('.btnDeleteSession');
-      const id = btn.getAttribute('data-session');
-      if (id) deleteSession(id);
-    }
-  });
-
-  qsa('.btnDeleteSession').forEach(btn => {
+  qsa('.delete-session-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const id = btn.getAttribute('data-session');
+      const id = btn.getAttribute('data-session-id');
       if (id) deleteSession(id);
     });
   });

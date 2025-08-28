@@ -807,7 +807,7 @@ window.confirmarExclusao = function(url) {
     <p class="text-muted mb-0">Gerencie todos os contratos da instituição</p>
   </div>
   <div>
-    <a href="{{ url_for('contratos.novo') }}" class="btn btn-primary">
+    <a href="{{ url_for('contratos_wtf.novo') }}" class="btn btn-primary">
       <i class="bi bi-plus-circle me-1" aria-hidden="true"></i> Novo Contrato
     </a>
   </div>
@@ -974,9 +974,9 @@ window.confirmarExclusao = function(url) {
             </td>
             <td>
               <div class="btn-group btn-group-sm" role="group" aria-label="Ações do contrato {{ contrato.numero_contrato }}">
-                <a href="{{ url_for('contratos.detalhes', id=contrato.id) }}" class="btn btn-outline-info btn-action" title="Visualizar Detalhes">
+                <!-- <a href="{{ safe_url_for('contratos.detalhes', id=contrato.id) }}" class="btn btn-outline-info btn-action" title="Visualizar Detalhes">
                   <i class="bi bi-eye" aria-hidden="true"></i><span class="visually-hidden">Detalhes</span>
-                </a>
+                </a> -->
                 <a href="{{ url_for('contratos_wtf.editar', id=contrato.id) }}" class="btn btn-outline-primary btn-action" title="Editar Contrato">
                   <i class="bi bi-pencil" aria-hidden="true"></i><span class="visually-hidden">Editar</span>
                 </a>
@@ -995,11 +995,11 @@ window.confirmarExclusao = function(url) {
                         title="Gerar Relatório">
                   <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span class="visually-hidden">Relatório</span>
                 </button>
-                <button type="button" class="btn btn-outline-danger btn-action"
-                        onclick="confirmarExclusao('{{ url_for('contratos.excluir', id=contrato.id) }}')"
+                <!-- <button type="button" class="btn btn-outline-danger btn-action"
+                        onclick="confirmarExclusao('{{ safe_url_for('contratos.excluir', id=contrato.id) }}')"
                         title="Excluir Contrato">
                   <i class="bi bi-trash" aria-hidden="true"></i><span class="visually-hidden">Excluir</span>
-                </button>
+                </button> -->
               </div>
             </td>
           </tr>
@@ -1012,7 +1012,7 @@ window.confirmarExclusao = function(url) {
       <i class="bi bi-file-earmark-text fa-3x text-muted mb-3" aria-hidden="true"></i>
       <h5 class="text-muted">Nenhum contrato encontrado</h5>
       <p class="text-muted">Comece criando um novo contrato.</p>
-      <a href="{{ url_for('contratos.novo') }}" class="btn btn-primary">
+      <a href="{{ url_for('contratos_wtf.novo') }}" class="btn btn-primary">
         <i class="bi bi-plus-circle me-1" aria-hidden="true"></i> Criar Primeiro Contrato
       </a>
     </div>

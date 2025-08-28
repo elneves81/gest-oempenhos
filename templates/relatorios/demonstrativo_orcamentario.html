@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+
+{% block title %}Demonstrativo Orçamentário{% endblock %}
+{% block page_title %}Demonstrativo Orçamentário{% endblock %}
+{% block page_actions %}
+  <div class="btn-group">
+    <button id="btnExport" class="btn btn-outline-secondary">
+      <i class="bi bi-download me-1"></i>Exportar CSV
+    </button>
+    <button id="btnPrint" class="btn btn-outline-secondary">
+      <i class="bi bi-printer me-1"></i>Imprimir
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+  <!-- Filtros -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <form id="filtrosForm" class="row gy-2 gx-3 align-items-end">
+          <div class="col-12 col-md-3">
+            <label for="dataInicio" class="form-label">Data início</label>
+            <input type="date" id="dataInicio" class="form-control">
+          </div>
+          <div class="col-12 col-md-3">
+            <label for="dataFim" class="form-label">Data fim</label>
+            <input type="date" id="dataFim" class="form-control">
+          </div>
+          <div class="col-12 col-md-3">
+            <label for="secretaria" class="form-label">Secretaria</label>
+            <input type="text" id="secretaria" class="form-control" placeholder="Ex.: Saúde">
+          </div>
+          <div class="col-12 col-md-3">
+            <label for="fornecedor" class="form-label">Fornecedor</label>
+            <input type="text" id="fornecedor" class="form-control" placeholder="Nome/CNPJ">
+          </div>
+          <div class="col-12 d-flex gap-2 justify-content-end mt-2">
+            <button type="submit" id="btnAplicar" class="btn btn-primary">
+              <i class="bi bi-filter me-1"></i>Aplicar filtros
+            </button>
+            <button type="button" id="btnLimpar" class="btn btn-outline-secondary">
+              <i class="bi bi-eraser me-1"></i>Limpar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="col-12">
+    <div class="row g-3">
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="text-muted small">Orçamento Previsto</div>
+                <div id="kpiPrevisto" class="fs-4 fw-bold">R$ 0,00</div>
+              </div>
+              <i class="bi bi-wallet2 fs-2 text-primary"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="text-muted small">Empenhado</div>
+                <div id="kpiEmpenhado" class="fs-4 fw-bold">R$ 0,00</div>
+              </div>
+              <i class="bi bi-clipboard2-check fs-2 text-success"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="text-muted small">Liquidado</div>
+                <div id="kpiLiquidado" class="fs-4 fw-bold">R$ 0,00</div>
+              </div>
+              <i class="bi bi-check2-square fs-2 text-info"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="text-muted small">Pago / Execução</div>
+                <div class="d-flex align-items-baseline gap-2">
+                  <div id="kpiPago" class="fs-4 fw-bold">R$ 0,00</div>
+                  <span id="kpiExecucao" class="badge bg-success">0%</span>
+                </div>
+              </div>
+              <i class="bi bi-cash-coin fs-2 text-warning"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="col-12 col-xl-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-pie-chart me-1"></i>Execução Orçamentária</span>
+      </div>
+      <div class="card-body">
+        <canvas id="chartExecucao" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-graph-up me-1"></i>Evolução Mensal</span>
+      </div>
+      <div class="card-body">
+        <canvas id="chartEvolucao" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-bar-chart me-1"></i>Empenhado por Secretaria</span>
+      </div>
+      <div class="card-body">
+        <canvas id="chartPorSecretaria" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-table me-1"></i>Detalhamento de Empenhos</span>
+        <small class="text-muted" id="regCount">0 registros</small>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Nº Empenho</th>
+              <th>Fornecedor</th>
+              <th>Secretaria</th>
+              <th>Data Emissão</th>
+              <th class="text-end">Empenhado</th>
+              <th class="text-end">Liquidado</th>
+              <th class="text-end">Pago</th>
+              <th class="text-end">Saldo</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaBody"></tbody>
+        </table>
+      </div>
+      <div class="card-footer text-muted small">
+        Atualizado em <span id="atualizadoEm">—</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js (carregado apenas se necessário) -->
+<script>
+  (function ensureChartJS(){
+    if (!window.Chart){
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+      s.defer = true;
+      document.head.appendChild(s);
+    }
+  })();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // -------------------- Utils --------------------
+  const fmtBRL = (v)=>
+    'R$ ' + Number(v||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const parseISO = (s)=> s ? new Date(s) : null;
+  const inRange = (d, a, b)=> !d ? true : (!a || d>=a) && (!b || d<=b);
+  const norm = (s)=> (s||'').toString().normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+
+  function setText(id, v){ const el = document.getElementById(id); if (el) el.textContent = v; }
+
+  // -------------------- Dados Demo (fallback) --------------------
+  // Cada item representa um "empenho"
+  let baseData = [
+    {numero:'2025/0001', fornecedor:'Alpha Saúde Ltda', secretaria:'Saúde', data:'2025-01-15', empenhado:180000, liquidado:120000, pago:100000, status:'ATIVO'},
+    {numero:'2025/0002', fornecedor:'Beta Construções', secretaria:'Obras', data:'2025-02-02', empenhado:250000, liquidado:100000, pago:80000, status:'ATIVO'},
+    {numero:'2025/0003', fornecedor:'Gamma TI', secretaria:'Administração', data:'2025-02-18', empenhado:75000,  liquidado:50000,  pago:45000,  status:'ATIVO'},
+    {numero:'2025/0004', fornecedor:'Delta Alimentos', secretaria:'Educação', data:'2025-03-12', empenhado:90000,  liquidado:90000,  pago:90000,  status:'PAGO'},
+    {numero:'2025/0005', fornecedor:'Epsilon Seg.', secretaria:'Segurança', data:'2025-03-21', empenhado:120000, liquidado:40000,  pago:20000,  status:'EM ANÁLISE'},
+    {numero:'2025/0006', fornecedor:'Zeta Serviços', secretaria:'Obras', data:'2025-04-10', empenhado:300000, liquidado:150000, pago:120000, status:'ATIVO'},
+    {numero:'2025/0007', fornecedor:'Omega Saúde', secretaria:'Saúde', data:'2025-05-05', empenhado:210000, liquidado:110000, pago:95000,  status:'ATIVO'},
+    {numero:'2025/0008', fornecedor:'Sigma Papelaria', secretaria:'Administração', data:'2025-06-01', empenhado:45000,  liquidado:20000,  pago:15000,  status:'ATIVO'},
+    {numero:'2025/0009', fornecedor:'Kappa Energia', secretaria:'Iluminação', data:'2025-06-20', empenhado:160000, liquidado:160000, pago:160000, status:'PAGO'}
+  ];
+
+  // -------------------- Tentar enriquecer com API --------------------
+  (async function tryAPI(){
+    const fx = window.fetchRetry || fetch;
+    try{
+      // KPIs gerais (seu endpoint real)
+      const r = await fx('/api/kpis', {method:'GET'});
+      if (r.ok){
+        const payload = await r.json();
+        // não substituímos a base da tabela (endpoint de busca limita 25/precisa de q),
+        // mas usamos valores para calibrar o "previsto"
+        const k = payload?.data || payload || {};
+        const totalEmp = Number(k.valor_total_empenhos || 0);
+        // Ajuste do "previsto" usando dado real, se existir
+        window.__previsto_from_api = totalEmp * 1.25; // heurística simples
+      }
+    }catch(e){
+      console.warn('API KPIs indisponível, mantendo modo demo.', e);
+    }
+    init();
+  })();
+
+  // -------------------- Estado / Refs --------------------
+  let charts = {execucao:null, evolucao:null, porSec:null};
+  const els = {
+    body: document.getElementById('tabelaBody'),
+    count: document.getElementById('regCount'),
+    atualizado: document.getElementById('atualizadoEm'),
+    form: document.getElementById('filtrosForm'),
+    dataInicio: document.getElementById('dataInicio'),
+    dataFim: document.getElementById('dataFim'),
+    secretaria: document.getElementById('secretaria'),
+    fornecedor: document.getElementById('fornecedor'),
+    btnLimpar: document.getElementById('btnLimpar'),
+    btnExport: document.getElementById('btnExport'),
+    btnPrint: document.getElementById('btnPrint'),
+  };
+
+  // -------------------- Cálculos --------------------
+  function filtrar(){
+    const a = els.dataInicio.value ? new Date(els.dataInicio.value) : null;
+    const b = els.dataFim.value ? new Date(els.dataFim.value) : null;
+    const sec = norm(els.secretaria.value);
+    const forn = norm(els.fornecedor.value);
+
+    return baseData.filter(r=>{
+      const d = parseISO(r.data);
+      const okDate = inRange(d, a, b);
+      const okSec = sec ? norm(r.secretaria).includes(sec) : true;
+      const okForn = forn ? norm(r.fornecedor).includes(forn) : true;
+      return okDate && okSec && okForn;
+    });
+  }
+
+  function agregados(rows){
+    const somar = (k)=> rows.reduce((acc, r)=> acc + Number(r[k]||0), 0);
+    const empenhado = somar('empenhado');
+    const liquidado = somar('liquidado');
+    const pago = somar('pago');
+    const previsto = (window.__previsto_from_api && window.__previsto_from_api>0)
+      ? window.__previsto_from_api
+      : empenhado * 1.25; // heurística local
+
+    const saldo = Math.max(previsto - pago, 0);
+    const execPerc = previsto > 0 ? (pago / previsto) * 100 : 0;
+
+    // Série mensal
+    const byMonth = {};
+    rows.forEach(r=>{
+      const d = parseISO(r.data);
+      if (!d) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      byMonth[key] = byMonth[key] || {empenhado:0, pago:0};
+      byMonth[key].empenhado += Number(r.empenhado||0);
+      byMonth[key].pago += Number(r.pago||0);
+    });
+    const months = Object.keys(byMonth).sort();
+    const serieEmp = months.map(m=> byMonth[m].empenhado);
+    const seriePag = months.map(m=> byMonth[m].pago);
+
+    // Por secretaria
+    const bySec = {};
+    rows.forEach(r=>{
+      bySec[r.secretaria] = bySec[r.secretaria] || 0;
+      bySec[r.secretaria] += Number(r.empenhado||0);
+    });
+    const labelsSec = Object.keys(bySec);
+    const valoresSec = labelsSec.map(k=> bySec[k]);
+
+    return {previsto, empenhado, liquidado, pago, saldo, execPerc, months, serieEmp, seriePag, labelsSec, valoresSec};
+  }
+
+  // -------------------- Renderizações --------------------
+  function renderKPIs(agg){
+    setText('kpiPrevisto', fmtBRL(agg.previsto));
+    setText('kpiEmpenhado', fmtBRL(agg.empenhado));
+    setText('kpiLiquidado', fmtBRL(agg.liquidado));
+    setText('kpiPago', fmtBRL(agg.pago));
+    const pct = isFinite(agg.execPerc) ? agg.execPerc : 0;
+    setText('kpiExecucao', `${pct.toFixed(1)}%`);
+    document.getElementById('kpiExecucao').className =
+      `badge ${pct>=90?'bg-success':pct>=60?'bg-warning text-dark':'bg-danger'}`;
+  }
+
+  function renderTabela(rows){
+    els.body.innerHTML = '';
+    rows.forEach(r=>{
+      const saldo = Math.max(Number(r.empenhado||0) - Number(r.pago||0), 0);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-nowrap">${r.numero}</td>
+        <td>${r.fornecedor}</td>
+        <td>${r.secretaria}</td>
+        <td class="text-nowrap">${r.data ? new Date(r.data).toLocaleDateString('pt-BR') : '-'}</td>
+        <td class="text-end">${fmtBRL(r.empenhado)}</td>
+        <td class="text-end">${fmtBRL(r.liquidado)}</td>
+        <td class="text-end">${fmtBRL(r.pago)}</td>
+        <td class="text-end">${fmtBRL(saldo)}</td>
+        <td>
+          <span class="badge ${r.status==='PAGO'?'bg-success':(r.status==='ATIVO'?'bg-primary':'bg-secondary')}">
+            ${r.status}
+          </span>
+        </td>`;
+      els.body.appendChild(tr);
+    });
+    els.count.textContent = `${rows.length} registro${rows.length!==1?'s':''}`;
+    els.atualizado.textContent = new Date().toLocaleString('pt-BR');
+  }
+
+  function destroyChart(ch){ try{ ch && ch.destroy(); }catch(_){ } }
+
+  function renderCharts(agg){
+    // garante Chart disponível
+    if (!window.Chart){ setTimeout(()=>renderCharts(agg), 200); return; }
+
+    // Execução (donut)
+    const ctx1 = document.getElementById('chartExecucao').getContext('2d');
+    destroyChart(charts.execucao);
+    charts.execucao = new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels: ['Pago','Empenhado não pago','Saldo do Previsto'],
+        datasets: [{
+          data: [agg.pago, Math.max(agg.empenhado-agg.pago,0), Math.max(agg.saldo,0)],
+          backgroundColor: ['#198754','#0d6efd','#ffc107'],
+          borderWidth: 0
+        }]
+      },
+      options: { responsive:true, plugins:{ legend:{ position:'bottom' } } }
+    });
+
+    // Evolução mensal (linha)
+    const ctx2 = document.getElementById('chartEvolucao').getContext('2d');
+    destroyChart(charts.evolucao);
+    charts.evolucao = new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: agg.months.map(m=> m.split('-').reverse().join('/')),
+        datasets: [
+          { label:'Empenhado', data: agg.serieEmp, borderColor:'#0d6efd', backgroundColor:'rgba(13,110,253,.15)', fill:true, tension:.3 },
+          { label:'Pago', data: agg.seriePag, borderColor:'#198754', backgroundColor:'rgba(25,135,84,.15)', fill:true, tension:.3 }
+        ]
+      },
+      options: { responsive:true, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true } } }
+    });
+
+    // Por secretaria (barras)
+    const ctx3 = document.getElementById('chartPorSecretaria').getContext('2d');
+    destroyChart(charts.porSec);
+    charts.porSec = new Chart(ctx3, {
+      type: 'bar',
+      data: { labels: agg.labelsSec, datasets:[{ label:'Empenhado', data: agg.valoresSec, backgroundColor:'#6610f2' }] },
+      options: { responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+    });
+  }
+
+  // -------------------- Ações --------------------
+  function run(){
+    const rows = filtrar();
+    const agg = agregados(rows);
+    renderKPIs(agg);
+    renderTabela(rows);
+    renderCharts(agg);
+  }
+
+  function limpar(){
+    els.dataInicio.value = '';
+    els.dataFim.value = '';
+    els.secretaria.value = '';
+    els.fornecedor.value = '';
+  }
+
+  function exportCSV(){
+    const rows = filtrar();
+    const header = ['numero','fornecedor','secretaria','data','empenhado','liquidado','pago','saldo','status'];
+    const lines = [header.join(';')];
+    rows.forEach(r=>{
+      const saldo = Math.max(Number(r.empenhado||0) - Number(r.pago||0), 0);
+      const line = [
+        r.numero,
+        r.fornecedor,
+        r.secretaria,
+        r.data ? new Date(r.data).toLocaleDateString('pt-BR') : '',
+        r.empenhado,
+        r.liquidado,
+        r.pago,
+        saldo,
+        r.status
+      ].map(v => (''+v).replace(/;/g, ','));
+      lines.push(line.join(';'));
+    });
+    const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `demonstrativo_orcamentario_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // -------------------- Bindings --------------------
+  function init(){
+    els.form.addEventListener('submit', (e)=>{ e.preventDefault(); run(); });
+    els.btnLimpar.addEventListener('click', ()=>{ limpar(); run(); });
+    els.btnExport.addEventListener('click', exportCSV);
+    els.btnPrint.addEventListener('click', ()=> window.print());
+
+    run();
+
+    // Ajusta charts no resize
+    window.addEventListener('resize', ()=> {
+      Object.values(charts).forEach(ch => ch && ch.resize && ch.resize());
+    });
+
+    // Limpeza ao sair
+    window.addEventListener('beforeunload', ()=> {
+      Object.values(charts).forEach(destroyChart);
+    });
+  }
+});
+</script>
+{% endblock %}

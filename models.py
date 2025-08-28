@@ -4,11 +4,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from decimal import Decimal
 
+# Inicializar SQLAlchemy diretamente
 db = SQLAlchemy()
+
+def create_models(database_instance):
+    """Cria e retorna todas as classes de modelo com a instância db fornecida"""
+    global db
+    db = database_instance
 
 class User(UserMixin, db.Model):
     """Modelo para usuários do sistema"""
     __tablename__ = 'users'
+    __table_args__ = {'extend_existing': True}  # Para evitar conflito com tabela existente
     
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -19,6 +26,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
     ultimo_login = db.Column(db.DateTime)
+    # Não incluir last_seen e presence no modelo para evitar conflitos
     
     def set_password(self, password):
         """Define a senha do usuário com hash"""
@@ -234,7 +242,6 @@ class Empenho(db.Model):
     data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     usuario_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     contrato_id = db.Column(db.Integer, db.ForeignKey('contratos.id'))
-    contrato_otimizado_id = db.Column(db.Integer, db.ForeignKey('contratos_otimizados.id'), nullable=True)
     
     # Relacionamentos
     usuario = db.relationship('User', backref='empenhos')
@@ -573,51 +580,3 @@ class Comunicacao(db.Model):
     
     def __repr__(self):
         return f'<Comunicacao {self.id}: {self.titulo}>'
-
-
-# =================== MODELO CONTRATO OTIMIZADO SQLITE ===================
-from sqlalchemy import Column, Integer, String, Numeric, Date, ForeignKey, CheckConstraint, UniqueConstraint
-from sqlalchemy.orm import relationship
-
-DEC = Numeric(14,2)
-
-class ContratoOtimizado(db.Model):
-    """Modelo otimizado para contratos com SQLite"""
-    __tablename__ = "contratos_otimizados"
-    
-    id = Column(Integer, primary_key=True)
-    numero = Column(String(60), nullable=False, unique=True)
-    fornecedor = Column(String(200), nullable=False)
-    objeto = Column(String(500), nullable=True)
-
-    data_inicio = Column(Date, nullable=True)
-    data_fim = Column(Date, nullable=True)
-    status = Column(String(20), nullable=False, default="VIGENTE")  # VIGENTE|ENCERRADO|RESCINDIDO
-
-    valor_inicial = Column(DEC, nullable=False, default=0)
-    aditivos_total = Column(DEC, nullable=False, default=0)
-    valor_atualizado = Column(DEC, nullable=False, default=0)      # calculado: inicial + aditivos
-    empenhado_contrato = Column(DEC, nullable=False, default=0)
-    liquidado_contrato = Column(DEC, nullable=False, default=0)
-    pago_contrato = Column(DEC, nullable=False, default=0)
-
-    # (opcional) vincular contrato a uma linha orçamentária principal
-    orcamento_id = Column(Integer, ForeignKey("orcamentos.id"), nullable=True)
-
-    __table_args__ = (
-        CheckConstraint("valor_inicial >= 0 AND aditivos_total >= 0", name="ck_contrato_vals_pos"),
-    )
-
-    # Relacionamentos
-    empenhos_vinculados = relationship("Empenho", 
-                                     primaryjoin="ContratoOtimizado.id == Empenho.contrato_otimizado_id",
-                                     back_populates="contrato_otimizado")
-
-    @property
-    def saldo_contrato(self):
-        return float((self.valor_atualizado or 0) - (self.empenhado_contrato or 0))
-
-# Ajustar relacionamento no Empenho existente - usar primaryjoin para evitar conflitos
-Empenho.contrato_otimizado = relationship("ContratoOtimizado", 
-                                        primaryjoin="Empenho.contrato_otimizado_id == ContratoOtimizado.id",
-                                        back_populates="empenhos_vinculados")

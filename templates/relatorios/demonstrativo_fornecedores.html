@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+
+{% block title %}Demonstrativo por Fornecedores{% endblock %}
+{% block page_title %}Demonstrativo por Fornecedores{% endblock %}
+{% block page_actions %}
+  <div class="btn-group">
+    <button id="btnExport" class="btn btn-outline-secondary">
+      <i class="bi bi-download me-1"></i>Exportar CSV
+    </button>
+    <button id="btnPrint" class="btn btn-outline-secondary">
+      <i class="bi bi-printer me-1"></i>Imprimir
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+  <!-- Filtros -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <form id="filtrosForm" class="row gy-2 gx-3 align-items-end">
+          <div class="col-12 col-md-3">
+            <label for="dataInicio" class="form-label">Data início</label>
+            <input type="date" id="dataInicio" class="form-control">
+          </div>
+          <div class="col-12 col-md-3">
+            <label for="dataFim" class="form-label">Data fim</label>
+            <input type="date" id="dataFim" class="form-control">
+          </div>
+          <div class="col-12 col-md-3">
+            <label for="secretaria" class="form-label">Secretaria</label>
+            <input type="text" id="secretaria" class="form-control" placeholder="Ex.: Saúde">
+          </div>
+          <div class="col-12 col-md-3">
+            <label for="fornecedor" class="form-label">Fornecedor / CNPJ</label>
+            <input type="text" id="fornecedor" class="form-control" placeholder="Nome ou CNPJ">
+          </div>
+          <div class="col-12 d-flex gap-2 justify-content-end mt-2">
+            <button type="submit" id="btnAplicar" class="btn btn-primary">
+              <i class="bi bi-filter me-1"></i>Aplicar filtros
+            </button>
+            <button type="button" id="btnLimpar" class="btn btn-outline-secondary">
+              <i class="bi bi-eraser me-1"></i>Limpar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="col-12">
+    <div class="row g-3">
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small">Fornecedores únicos</div>
+              <div id="kpiFornecedores" class="fs-4 fw-bold">0</div>
+            </div>
+            <i class="bi bi-buildings fs-2 text-primary"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small">Qtde de Empenhos</div>
+              <div id="kpiEmpenhos" class="fs-4 fw-bold">0</div>
+            </div>
+            <i class="bi bi-clipboard2-check fs-2 text-success"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small">Total Empenhado</div>
+              <div id="kpiValorEmpenhado" class="fs-4 fw-bold">R$ 0,00</div>
+            </div>
+            <i class="bi bi-currency-dollar fs-2 text-warning"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small">Líder (Participação)</div>
+              <div class="d-flex flex-column">
+                <span id="kpiLider" class="fw-semibold">—</span>
+                <small id="kpiLiderShare" class="text-muted">0%</small>
+              </div>
+            </div>
+            <i class="bi bi-trophy fs-2 text-danger"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="col-12 col-xl-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-pie-chart me-1"></i>Top 5 Fornecedores (Empenhado)
+      </div>
+      <div class="card-body">
+        <canvas id="chartTop5" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-bar-chart-steps me-1"></i>Top 10 (Barras)
+      </div>
+      <div class="card-body">
+        <canvas id="chartTop10" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-graph-up-arrow me-1"></i>Evolução Mensal (Top 5) — Empenhado
+      </div>
+      <div class="card-body">
+        <canvas id="chartEvolucaoEmpilhada" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela agregada por fornecedor -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-table me-1"></i>Resumo por Fornecedor</span>
+        <small class="text-muted" id="regCount">0 fornecedores</small>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Fornecedor</th>
+              <th>CNPJ</th>
+              <th>Secretarias</th>
+              <th class="text-end">Empenhos</th>
+              <th class="text-end">Empenhado</th>
+              <th class="text-end">Liquidado</th>
+              <th class="text-end">Pago</th>
+              <th class="text-end">% Part.</th>
+              <th class="text-end">Saldo</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaBody"></tbody>
+        </table>
+      </div>
+      <div class="card-footer text-muted small">
+        Atualizado em <span id="atualizadoEm">—</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js (lazy) -->
+<script>
+  (function ensureChartJS(){
+    if (!window.Chart){
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+      s.defer = true;
+      document.head.appendChild(s);
+    }
+  })();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // ---------- Utils ----------
+  const fmtBRL = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+  const parseISO = s => s ? new Date(s) : null;
+  const inRange = (d,a,b)=> !d ? true : (!a || d>=a) && (!b || d<=b);
+  const norm = s => (s||'').toString().normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+  const setText = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; }
+
+  // ---------- Dados DEMO (cada item simula 1 empenho) ----------
+  let baseData = [
+    {fornecedor:'Alpha Saúde Ltda', cnpj:'11.111.111/0001-11', secretaria:'Saúde', data:'2025-01-15', empenhado:180000, liquidado:120000, pago:100000},
+    {fornecedor:'Alpha Saúde Ltda', cnpj:'11.111.111/0001-11', secretaria:'Saúde', data:'2025-02-20', empenhado:90000,  liquidado:60000,  pago:50000},
+    {fornecedor:'Beta Construções', cnpj:'22.222.222/0001-22', secretaria:'Obras', data:'2025-02-02', empenhado:250000, liquidado:100000, pago:80000},
+    {fornecedor:'Gamma TI',         cnpj:'33.333.333/0001-33', secretaria:'Administração', data:'2025-02-18', empenhado:75000,  liquidado:50000,  pago:45000},
+    {fornecedor:'Delta Alimentos',  cnpj:'44.444.444/0001-44', secretaria:'Educação', data:'2025-03-12', empenhado:90000,  liquidado:90000,  pago:90000},
+    {fornecedor:'Epsilon Segurança',cnpj:'55.555.555/0001-55', secretaria:'Segurança', data:'2025-03-21', empenhado:120000, liquidado:40000,  pago:20000},
+    {fornecedor:'Zeta Serviços',    cnpj:'66.666.666/0001-66', secretaria:'Obras', data:'2025-04-10', empenhado:300000, liquidado:150000, pago:120000},
+    {fornecedor:'Omega Saúde',      cnpj:'77.777.777/0001-77', secretaria:'Saúde', data:'2025-05-05', empenhado:210000, liquidado:110000, pago:95000},
+    {fornecedor:'Sigma Papelaria',  cnpj:'88.888.888/0001-88', secretaria:'Administração', data:'2025-06-01', empenhado:45000,  liquidado:20000,  pago:15000},
+    {fornecedor:'Kappa Energia',    cnpj:'99.999.999/0001-99', secretaria:'Iluminação', data:'2025-06-20', empenhado:160000, liquidado:160000, pago:160000},
+    {fornecedor:'Beta Construções', cnpj:'22.222.222/0001-22', secretaria:'Obras', data:'2025-06-28', empenhado:130000, liquidado:70000,  pago:60000}
+  ];
+
+  // ---------- Tenta enriquecer com API (flexível) ----------
+  (async function tryAPI(){
+    const fx = window.fetchRetry || fetch;
+    const endpoints = [
+      '/relatorios/api/fornecedores',               // hipotético (detalhado)
+      '/relatorios/api/fornecedores/resumo',        // hipotético (agregado)
+      '/api/integracoes/fornecedores',              // hipotético
+    ];
+    for (const url of endpoints){
+      try{
+        const r = await fx(url);
+        if (!r.ok) continue;
+        const payload = await r.json();
+        const arr = payload?.data || payload?.items || payload;
+        if (Array.isArray(arr) && arr.length){
+          // tentar detectar formato:
+          // detalhado se tem 'fornecedor' e 'empenhado' (ou valor_empenhado) e 'data'
+          if ('fornecedor' in arr[0] && (('empenhado' in arr[0]) || ('valor_empenhado' in arr[0]))){
+            // normalizar campos
+            baseData = arr.map(x=>({
+              fornecedor: x.fornecedor || x.nome_fornecedor || '—',
+              cnpj: x.cnpj || x.cnpj_fornecedor || '',
+              secretaria: x.secretaria || x.orgao || x.unidade || '—',
+              data: x.data || x.data_emissao || x.created_at || null,
+              empenhado: Number(x.empenhado ?? x.valor_empenhado ?? x.total_empenhado ?? 0),
+              liquidado: Number(x.liquidado ?? x.valor_liquidado ?? 0),
+              pago: Number(x.pago ?? x.valor_pago ?? 0),
+            }));
+            break;
+          }
+          // agregado por fornecedor? (tem total_empenhos, total_empenhado etc.)
+          if ('fornecedor' in arr[0] && ('total_empenhado' in arr[0] || 'valor_empenhado' in arr[0])){
+            // converter para linhas "sintéticas" (uma por fornecedor)
+            baseData = arr.map(x=>({
+              fornecedor: x.fornecedor || '—',
+              cnpj: x.cnpj || x.cnpj_fornecedor || '',
+              secretaria: (x.secretarias && x.secretarias.join(', ')) || '—',
+              data: null,
+              empenhado: Number(x.total_empenhado ?? x.valor_empenhado ?? 0),
+              liquidado: Number(x.total_liquidado ?? 0),
+              pago: Number(x.total_pago ?? 0),
+            }));
+            break;
+          }
+        }
+      }catch(e){ /* segue para o próximo */ }
+    }
+    init();
+  })();
+
+  // ---------- Estado / Refs ----------
+  let charts = { top5:null, top10:null, evo:null };
+  const els = {
+    body: document.getElementById('tabelaBody'),
+    count: document.getElementById('regCount'),
+    atualizado: document.getElementById('atualizadoEm'),
+    form: document.getElementById('filtrosForm'),
+    dataInicio: document.getElementById('dataInicio'),
+    dataFim: document.getElementById('dataFim'),
+    secretaria: document.getElementById('secretaria'),
+    fornecedor: document.getElementById('fornecedor'),
+    btnLimpar: document.getElementById('btnLimpar'),
+    btnExport: document.getElementById('btnExport'),
+    btnPrint: document.getElementById('btnPrint'),
+  };
+
+  // ---------- Filtro ----------
+  function filtrar(){
+    const a = els.dataInicio.value ? new Date(els.dataInicio.value) : null;
+    const b = els.dataFim.value ? new Date(els.dataFim.value) : null;
+    const sec = norm(els.secretaria.value);
+    const forn = norm(els.fornecedor.value);
+
+    return baseData.filter(r=>{
+      const d = parseISO(r.data);
+      const okDate = inRange(d, a, b);
+      const okSec = sec ? norm(r.secretaria).includes(sec) : true;
+      const okForn = forn ? (norm(r.fornecedor).includes(forn) || norm(r.cnpj).includes(forn)) : true;
+      return okDate && okSec && okForn;
+    });
+  }
+
+  // ---------- Agregação por fornecedor ----------
+  function agruparPorFornecedor(rows){
+    const map = new Map();
+    rows.forEach(r=>{
+      const key = (r.fornecedor || '—').trim();
+      if (!map.has(key)){
+        map.set(key, {
+          fornecedor: key,
+          cnpj: r.cnpj || '',
+          secretarias: new Set(),
+          empenhos: 0,
+          empenhado: 0,
+          liquidado: 0,
+          pago: 0,
+          mensal: {} // YYYY-MM -> soma empenhado
+        });
+      }
+      const it = map.get(key);
+      it.empenhos += 1;
+      it.empenhado += Number(r.empenhado||0);
+      it.liquidado += Number(r.liquidado||0);
+      it.pago += Number(r.pago||0);
+      if (r.secretaria) it.secretarias.add(r.secretaria);
+      const d = parseISO(r.data);
+      if (d){
+        const m = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        it.mensal[m] = (it.mensal[m]||0) + Number(r.empenhado||0);
+      }
+    });
+
+    // vetor + totais
+    const list = Array.from(map.values())
+      .map(x => ({...x, secretarias: Array.from(x.secretarias)}))
+      .sort((a,b)=> b.empenhado - a.empenhado);
+
+    const totalEmpenhado = list.reduce((s,x)=> s+x.empenhado, 0);
+    return { list, totalEmpenhado };
+  }
+
+  // ---------- Render KPIs ----------
+  function renderKPIs(list, totalEmpenhado, totalEmpenhos){
+    setText('kpiFornecedores', list.length.toString());
+    setText('kpiEmpenhos', totalEmpenhos.toString());
+    setText('kpiValorEmpenhado', fmtBRL(totalEmpenhado));
+    if (list.length){
+      const lider = list[0];
+      const share = totalEmpenhado>0 ? (lider.empenhado/totalEmpenhado*100) : 0;
+      setText('kpiLider', lider.fornecedor);
+      setText('kpiLiderShare', `${share.toFixed(1)}%`);
+    } else {
+      setText('kpiLider','—'); setText('kpiLiderShare','0%');
+    }
+  }
+
+  // ---------- Render Tabela ----------
+  function renderTabela(list, totalEmpenhado){
+    els.body.innerHTML = '';
+    list.forEach(x=>{
+      const saldo = Math.max(x.empenhado - x.pago, 0);
+      const part = totalEmpenhado>0 ? (x.empenhado/totalEmpenhado*100) : 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${x.fornecedor}</td>
+        <td class="text-nowrap">${x.cnpj||'—'}</td>
+        <td class="text-nowrap">${x.secretarias.length ? x.secretarias.slice(0,2).join(', ') + (x.secretarias.length>2?'…':'') : '—'}</td>
+        <td class="text-end">${x.empenhos}</td>
+        <td class="text-end">${fmtBRL(x.empenhado)}</td>
+        <td class="text-end">${fmtBRL(x.liquidado)}</td>
+        <td class="text-end">${fmtBRL(x.pago)}</td>
+        <td class="text-end">${part.toFixed(1)}%</td>
+        <td class="text-end">${fmtBRL(saldo)}</td>
+      `;
+      els.body.appendChild(tr);
+    });
+    els.count.textContent = `${list.length} fornecedor${list.length!==1?'es':''}`;
+    els.atualizado.textContent = new Date().toLocaleString('pt-BR');
+  }
+
+  // ---------- Charts ----------
+  function destroyChart(ch){ try{ ch && ch.destroy(); }catch(_){ } }
+
+  function renderCharts(list, totalEmpenhado){
+    if (!window.Chart){ setTimeout(()=>renderCharts(list,totalEmpenhado), 200); return; }
+
+    // Top 5 (pizza)
+    const top5 = list.slice(0,5);
+    const outros = Math.max(totalEmpenhado - top5.reduce((s,x)=>s+x.empenhado,0), 0);
+    const labels5 = top5.map(x=>x.fornecedor).concat(outros>0?['Outros']:[]);
+    const data5 = top5.map(x=>x.empenhado).concat(outros>0?[outros]:[]);
+    const ctx1 = document.getElementById('chartTop5').getContext('2d');
+    destroyChart(charts.top5);
+    charts.top5 = new Chart(ctx1, {
+      type:'doughnut',
+      data:{ labels:labels5, datasets:[{ data:data5, borderWidth:0 }] },
+      options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
+    });
+
+    // Top 10 (barras horizontais)
+    const top10 = list.slice(0,10);
+    const ctx2 = document.getElementById('chartTop10').getContext('2d');
+    destroyChart(charts.top10);
+    charts.top10 = new Chart(ctx2, {
+      type:'bar',
+      data:{ labels: top10.map(x=>x.fornecedor),
+        datasets:[{ label:'Empenhado', data: top10.map(x=>x.empenhado) }] },
+      options:{ indexAxis:'y', responsive:true, plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true } } }
+    });
+
+    // Evolução mensal empilhada (Top 5)
+    const monthsSet = new Set();
+    top5.forEach(f=> Object.keys(f.mensal).forEach(m=> monthsSet.add(m)));
+    const months = Array.from(monthsSet).sort();
+    const datasets = top5.map((f,i)=>({
+      label: f.fornecedor,
+      data: months.map(m=> f.mensal[m]||0),
+      stack: 'stack1'
+    }));
+    const ctx3 = document.getElementById('chartEvolucaoEmpilhada').getContext('2d');
+    destroyChart(charts.evo);
+    charts.evo = new Chart(ctx3, {
+      type:'bar',
+      data:{ labels: months.map(m=> m.split('-').reverse().join('/')), datasets },
+      options:{ responsive:true, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, stacked:true }, x:{ stacked:true } } }
+    });
+  }
+
+  // ---------- Export ----------
+  function exportCSV(list, totalEmpenhado){
+    const header = ['fornecedor','cnpj','secretarias','empenhos','empenhado','liquidado','pago','percentual_part','saldo'];
+    const lines = [header.join(';')];
+    list.forEach(x=>{
+      const saldo = Math.max(x.empenhado - x.pago, 0);
+      const part = totalEmpenhado>0 ? (x.empenhado/totalEmpenhado*100) : 0;
+      const line = [
+        x.fornecedor,
+        x.cnpj||'',
+        x.secretarias.join(', '),
+        x.empenhos,
+        x.empenhado.toFixed(2),
+        x.liquidado.toFixed(2),
+        x.pago.toFixed(2),
+        part.toFixed(2),
+        saldo.toFixed(2)
+      ].map(v=> (''+v).replace(/;/g, ','));
+      lines.push(line.join(';'));
+    });
+    const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `demonstrativo_fornecedores_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // ---------- Run ----------
+  function run(){
+    const det = filtrar();
+    const { list, totalEmpenhado } = agruparPorFornecedor(det);
+    renderKPIs(list, totalEmpenhado, det.length);
+    renderTabela(list, totalEmpenhado);
+    renderCharts(list, totalEmpenhado);
+  }
+
+  function limpar(){
+    els.dataInicio.value = '';
+    els.dataFim.value = '';
+    els.secretaria.value = '';
+    els.fornecedor.value = '';
+  }
+
+  // ---------- Init ----------
+  function init(){
+    els.form.addEventListener('submit', e=>{ e.preventDefault(); run(); });
+    els.btnLimpar.addEventListener('click', ()=>{ limpar(); run(); });
+    els.btnExport.addEventListener('click', ()=>{
+      const det = filtrar();
+      const { list, totalEmpenhado } = agruparPorFornecedor(det);
+      exportCSV(list, totalEmpenhado);
+    });
+    els.btnPrint.addEventListener('click', ()=> window.print());
+
+    run();
+
+    // Redimensiona charts
+    window.addEventListener('resize', ()=> {
+      Object.values(charts).forEach(ch => ch && ch.resize && ch.resize());
+    });
+    window.addEventListener('beforeunload', ()=> {
+      Object.values(charts).forEach(destroyChart);
+    });
+  }
+});
+</script>
+{% endblock %}

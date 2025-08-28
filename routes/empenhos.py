@@ -1,10 +1,17 @@
+from sqlalchemy.orm import joinedload
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from models import Empenho, Contrato, AditivoContratual, db
 from datetime import datetime
 import json
 
+# Blueprint
 empenhos_bp = Blueprint('empenhos', __name__)
+
+# Dependências que serão injetadas pelo app principal
+Empenho = None
+Contrato = None  
+AditivoContratual = None
+db = None
 
 @empenhos_bp.route('/')
 @login_required
@@ -37,7 +44,7 @@ def index():
     )
     
     # Estatísticas para os cards
-    total_empenhos = Empenho.query.count()
+    total_empenhos = Empenho.query.options(joinedload(Empenho.contrato)).count()
     valor_total_empenhos = db.session.query(db.func.sum(Empenho.valor_empenhado)).scalar() or 0
     empenhos_recentes = Empenho.query.order_by(Empenho.data_criacao.desc()).limit(10).all()
     
@@ -316,7 +323,7 @@ def editar_contrato(id):
 def visualizar_contrato(id):
     """Visualizar detalhes do contrato"""
     contrato = Contrato.query.get_or_404(id)
-    empenhos = Empenho.query.filter_by(contrato_id=id).all()
+    empenhos = Empenho.query.options(joinedload(Empenho.contrato)).filter_by(contrato_id=id).all()
     return render_template('empenhos/contrato_detalhes.html', contrato=contrato, empenhos=empenhos)
 
 @empenhos_bp.route('/contratos/<int:id>/excluir', methods=['POST'])
@@ -358,5 +365,5 @@ def excluir_contrato(id):
 @login_required
 def por_status(status):
     """Filtrar empenhos por status"""
-    empenhos = Empenho.query.filter_by(status=status).order_by(Empenho.data_criacao.desc()).all()
+    empenhos = Empenho.query.options(joinedload(Empenho.contrato)).filter_by(status=status).order_by(Empenho.data_criacao.desc()).all()
     return render_template('empenhos/por_status.html', empenhos=empenhos, status=status)

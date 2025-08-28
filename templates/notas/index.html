@@ -10,11 +10,11 @@
         <p class="mb-0 text-muted">Gestão de notas fiscais e faturas</p>
     </div>
     <div class="btn-group" role="group">
-        <a href="{{ url_for('notas.nova') }}" class="btn btn-primary">
+        <a href="{{ url_for('notas_nova') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i>
             Nova Nota Fiscal
         </a>
-        <a href="{{ url_for('notas.dashboard') }}" class="btn btn-outline-primary">
+        <a href="{{ safe_url_for('notas.dashboard') }}" class="btn btn-outline-primary">
             <i class="bi bi-graph-up me-1"></i>
             Dashboard
         </a>
@@ -165,7 +165,7 @@
                     <i class="bi bi-search"></i>
                     Filtrar
                 </button>
-                <a href="{{ url_for('notas.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ safe_url_for('notas.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-clockwise"></i>
                 </a>
             </div>
@@ -211,7 +211,7 @@
                             <small class="text-muted">{{ nota.fornecedor_cnpj }}</small>
                         </td>
                         <td>
-                            <a href="{{ url_for('empenhos.detalhes', id=nota.empenho.id) }}" class="text-decoration-none">
+                            <a href="{{ safe_url_for('empenhos.detalhes', id=nota.empenho.id) }}" class="text-decoration-none">
                                 {{ nota.empenho.numero_empenho }}
                             </a>
                         </td>
@@ -241,11 +241,11 @@
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ url_for('notas.detalhes', id=nota.id) }}" 
+                                <a href="{{ safe_url_for('notas.detalhes', id=nota.id) }}" 
                                    class="btn btn-outline-primary" title="Ver Detalhes">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{{ url_for('notas.editar', id=nota.id) }}" 
+                                <a href="{{ safe_url_for('notas.editar', id=nota.id) }}" 
                                    class="btn btn-outline-secondary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>

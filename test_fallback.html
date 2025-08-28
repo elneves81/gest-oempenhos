@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste de Fallback GridStack</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste de Sistema de Fallback GridStack</h1>
+    <div id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(div);
+            console.log(message);
+        }
+        
+        // Carrega um script com timeout e melhor tratamento de erros
+        function loadScript(src, onload, onerror, timeout = 5000) {
+            addLog(`🔄 Tentando carregar: ${src}`);
+            
+            const script = document.createElement('script');
+            let isComplete = false;
+            
+            const cleanup = () => {
+                if (!isComplete) {
+                    isComplete = true;
+                    clearTimeout(timer);
+                    script.onload = script.onerror = null;
+                }
+            };
+            
+            const timer = setTimeout(() => {
+                cleanup();
+                addLog(`⏰ Timeout ao carregar: ${src}`, 'error');
+                if (onerror) onerror(new Error('Timeout'));
+            }, timeout);
+            
+            script.onload = () => {
+                cleanup();
+                addLog(`✅ Carregado com sucesso: ${src}`, 'success');
+                if (onload) onload();
+            };
+            
+            script.onerror = (error) => {
+                cleanup();
+                addLog(`❌ Erro ao carregar: ${src}`, 'error');
+                if (onerror) onerror(error);
+            };
+            
+            script.src = src;
+            script.async = true;
+            document.head.appendChild(script);
+        }
+        
+        // Fallback básico quando todos os CDNs falham
+        function createBasicFallback() {
+            addLog('🔧 Iniciando modo básico sem GridStack...', 'warning');
+            
+            // Simula o comportamento básico do GridStack
+            window.GridStack = {
+                init: () => ({
+                    addWidget: () => addLog('📦 Widget adicionado (modo básico)', 'success'),
+                    removeWidget: () => addLog('🗑️ Widget removido (modo básico)', 'success'),
+                    removeAll: () => addLog('🧹 Todos widgets removidos (modo básico)', 'success'),
+                    enableMove: () => {},
+                    enableResize: () => {},
+                    save: () => [],
+                    load: () => {},
+                    update: () => {},
+                    on: () => {}
+                })
+            };
+            
+            addLog('✅ Sistema básico configurado com sucesso!', 'success');
+        }
+        
+        // Inicia teste
+        addLog('🚀 Iniciando teste de sistema de fallback...');
+        
+        // Sistema de carregamento com múltiplos fallbacks
+        if (window.GridStack) {
+            addLog('✅ GridStack já carregado', 'success');
+        } else {
+            addLog('🔄 GridStack não encontrado, iniciando carregamento...');
+            
+            // Tentativa 1: jsdelivr.net
+            loadScript(
+                'https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack-h5.js',
+                () => {
+                    addLog('✅ GridStack carregado via jsdelivr', 'success');
+                },
+                () => {
+                    addLog('⚠️ Fallback 1: jsdelivr falhou, tentando unpkg...', 'warning');
+                    
+                    // Tentativa 2: unpkg.com
+                    loadScript(
+                        'https://unpkg.com/gridstack@9.2.2/dist/gridstack-h5.js',
+                        () => {
+                            addLog('✅ GridStack carregado via unpkg', 'success');
+                        },
+                        () => {
+                            addLog('⚠️ Fallback 2: unpkg falhou, tentando cdnjs...', 'warning');
+                            
+                            // Tentativa 3: cdnjs.cloudflare.com
+                            loadScript(
+                                'https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/9.2.2/gridstack-h5.min.js',
+                                () => {
+                                    addLog('✅ GridStack carregado via cdnjs', 'success');
+                                },
+                                () => {
+                                    addLog('❌ Todos os CDNs falharam. Criando fallback básico...', 'error');
+                                    createBasicFallback();
+                                }
+                            );
+                        }
+                    );
+                }
+            );
+        }
+    </script>
+</body>
+</html>

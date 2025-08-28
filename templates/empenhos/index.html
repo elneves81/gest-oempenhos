@@ -10,19 +10,19 @@
         <p class="mb-0 text-muted">Gestão de empenhos orçamentários</p>
     </div>
     <div class="btn-group" role="group">
-        <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
+        <a href="{{ safe_url_for('empenhos.novo') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i>
             Novo Empenho
         </a>
-        <a href="{{ url_for('empenhos.novo_completo') }}" class="btn btn-success">
+        <a href="{{ safe_url_for('empenhos.novo_completo') }}" class="btn btn-success">
             <i class="bi bi-file-earmark-plus me-1"></i>
             Formulário Completo
         </a>
-        <a href="{{ url_for('relatorios.importar') }}" class="btn btn-outline-secondary">
+        <a href="{{ safe_url_for('relatorios.importar') }}" class="btn btn-outline-secondary">
             <i class="bi bi-cloud-arrow-up me-1"></i>
             Importar
         </a>
-        <a href="{{ url_for('relatorios.exportar_excel') }}{{ '?' + request.query_string.decode() if request.query_string else '' }}" class="btn btn-outline-info">
+        <a href="{{ safe_url_for('relatorios.exportar_excel') }}{{ '?' + request.query_string.decode() if request.query_string else '' }}" class="btn btn-outline-info">
             <i class="bi bi-file-earmark-spreadsheet me-1"></i>
             Exportar Excel
         </a>
@@ -181,7 +181,7 @@
                 <button type="submit" class="btn btn-primary me-2">
                     <i class="bi bi-search me-1"></i>Buscar
                 </button>
-                <a href="{{ url_for('empenhos.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ safe_url_for('empenhos.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-x me-1"></i>Limpar
                 </a>
             </div>
@@ -260,11 +260,11 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{{ url_for('empenhos.detalhes', id=empenho.id) }}" 
+                                    <a href="{{ safe_url_for('empenhos.detalhes', id=empenho.id) }}" 
                                        class="btn btn-outline-primary" title="Ver Detalhes">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{{ url_for('empenhos.editar', id=empenho.id) }}" 
+                                    <a href="{{ safe_url_for('empenhos.editar', id=empenho.id) }}" 
                                        class="btn btn-outline-warning" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
@@ -313,11 +313,11 @@
                         </div>
                         <div class="card-footer">
                             <div class="btn-group w-100" role="group">
-                                <a href="{{ url_for('empenhos.detalhes', id=empenho.id) }}" 
+                                <a href="{{ safe_url_for('empenhos.detalhes', id=empenho.id) }}" 
                                    class="btn btn-outline-primary">
                                     <i class="bi bi-eye me-1"></i>Detalhes
                                 </a>
-                                <a href="{{ url_for('empenhos.editar', id=empenho.id) }}" 
+                                <a href="{{ safe_url_for('empenhos.editar', id=empenho.id) }}" 
                                    class="btn btn-outline-warning">
                                     <i class="bi bi-pencil me-1"></i>Editar
                                 </a>
@@ -334,7 +334,7 @@
                 <ul class="pagination justify-content-center">
                     {% if empenhos.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('empenhos.index', page=empenhos.prev_num, search=search, status=status) }}">
+                            <a class="page-link" href="{{ safe_url_for('empenhos.index', page=empenhos.prev_num, search=search, status=status) }}">
                                 <i class="bi bi-chevron-left"></i>
                             </a>
                         </li>
@@ -344,7 +344,7 @@
                         {% if page %}
                             {% if page != empenhos.page %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('empenhos.index', page=page, search=search, status=status) }}">{{ page }}</a>
+                                    <a class="page-link" href="{{ safe_url_for('empenhos.index', page=page, search=search, status=status) }}">{{ page }}</a>
                                 </li>
                             {% else %}
                                 <li class="page-item active">
@@ -360,7 +360,7 @@
                     
                     {% if empenhos.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('empenhos.index', page=empenhos.next_num, search=search, status=status) }}">
+                            <a class="page-link" href="{{ safe_url_for('empenhos.index', page=empenhos.next_num, search=search, status=status) }}">
                                 <i class="bi bi-chevron-right"></i>
                             </a>
                         </li>
@@ -381,7 +381,7 @@
                     {% endif %}
                 </p>
                 {% if not search and not status %}
-                <a href="{{ url_for('empenhos.novo') }}" class="btn btn-primary">
+                <a href="{{ safe_url_for('empenhos.novo') }}" class="btn btn-primary">
                     <i class="bi bi-plus-circle me-1"></i>
                     Criar Primeiro Empenho
                 </a>

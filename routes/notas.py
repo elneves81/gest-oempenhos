@@ -1,11 +1,16 @@
+from sqlalchemy.orm import joinedload
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from models import NotaFiscal, Empenho, db
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, extract, and_, or_
 import os
 
 notas_bp = Blueprint('notas', __name__, url_prefix='/notas')
+
+# Dependências que serão injetadas pelo app principal
+NotaFiscal = None
+Empenho = None
+db = None
 
 @notas_bp.route('/')
 @login_required
@@ -41,7 +46,7 @@ def index():
     notas = query.order_by(NotaFiscal.data_emissao.desc()).all()
     
     # Estatísticas
-    total_notas = NotaFiscal.query.count()
+    total_notas = NotaFiscal.query.options(joinedload(NotaFiscal.empenho).joinedload('contrato')).count()
     notas_em_aberto = NotaFiscal.query.filter_by(status='EM_ABERTO').count()
     notas_pagas = NotaFiscal.query.filter_by(status='PAGO').count()
     notas_vencidas = NotaFiscal.query.filter(
